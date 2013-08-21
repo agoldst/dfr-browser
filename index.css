@@ -7,9 +7,13 @@ a.topic_overview {
     display: block;
     text-decoration: none;
     line-height: 1.5em;
+    color: blue;
 }
 
 a.topic_overview:hover {
     text-decoration: underline;
 }
 
+a.topic_overview:visited {
+    color: blue;
+}
