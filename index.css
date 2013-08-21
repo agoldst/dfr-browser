@@ -3,17 +3,53 @@
     display: none;
 }
 
-a.topic_overview {
-    display: block;
+a {
     text-decoration: none;
-    line-height: 1.5em;
     color: blue;
 }
 
-a.topic_overview:hover {
+a:hover {
     text-decoration: underline;
 }
 
-a.topic_overview:visited {
+a:visited {
     color: blue;
+}
+
+/* overview */
+
+#overview a {
+    display: block;
+    line-height: 1.5em;
+}
+
+
+/* topic_view */
+
+div#topic_words {
+    position: absolute;
+    width: 50%;
+}
+
+div#topic_docs {
+    float: right;
+    width: 50%;
+}
+
+#topic_words a {
+    display: block;
+    font-size: 0.75em;
+    line-height: 1em;
+}
+
+#topic_docs a {
+    display: block;
+    line-height: 1.5em;
+}
+
+/* word_view */
+
+#word_view a {
+    display: block;
+    line-height: 1.5em;
 }

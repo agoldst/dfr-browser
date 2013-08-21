@@ -28,33 +28,148 @@ var topic_label = function(m,t,n) {
     
     label = d3.format("03d")(t + 1); // user-facing index is 1-based
     label += " ";
-    label += top_words(m,t,VIS.overview_words)
-        .reduce(function(prev,cur) {
-            return prev + " " + cur;
-        });
+    label += top_words(m,t,VIS.overview_words).join(" ");
     return label;
 };
+
+var word_topics = function(m,word) {
+    var result,rank;
+
+    result = [];
+    for(t = 0;t < m.n;t++) {
+        if(m.tw[t].has(word)) {
+            rank = 0;
+            word_wt = m.tw[t].get(word);
+
+            m.tw[t].forEach(function(w,wt) {
+                if(wt > word_wt) {
+                    rank++; // tied elts are ranked as high (ordinally) as poss.
+                }
+            });
+            result.push([t,rank]);
+        }
+    }
+    return result;
+};
+
+
+
 
 // Principal view-generating functions
 // -----------------------------------
 
-var topic_view = function(m,topic) {
+var topic_view = function(m,t) {
+    var view, as;
 
-    console.log("View for topic " + (topic + 1));
+    console.log("View for topic " + (t + 1));
+
+    hide_views();
+
+    view = d3.select("div#topic_view");
 
     // get top words and weights
-    //
+    // -------------------------
+
+    view.select("h2")
+        .text(topic_label(m,t,VIS.overview_words));
+
+    view.select("p#topic_remark")
+        .text("α = " + d3.round(m.alpha[t],3));
+
+
+    as = view.select("div#topic_words")
+        .selectAll("a")
+        .data(top_words(m,t,m.tw[t].keys().length));
+
+    as.enter()
+        .append("a");
+
+    as.exit().remove();
+
+    as
+        .attr({ href: "#" })
+        .text(function (w) {
+                return m.tw[t].get(w) + " " + w;
+        }) 
+        .on("click",function (w) {
+            word_view(m,w);
+        });
+
+
     // get top articles
-    //
+    // ----------------
+
+        /*
+    as = view.select("div#topic_docs")
+        .selectAll("a")
+        .data(top_articles(m,t,VIS.topic_docs));
+
+    as.enter()
+        .append("a");
+
+    as.exit().remove();
+
+    as
+        .attr({ href: "#" })
+        .text(function (d) {
+            var weight,frac;
+
+            weight = m.dt[d][t]; 
+            frac = weight / d3.sum(m.dt[d]);
+            return weight.toString() + " ("
+                + frac.toString() + ") "
+                + m.cites[d];
+        })
+        .on("click",function (d) {
+            doc_view(m,d);
+        })
+
+
+        */
+    // ready
+    view.classed("hidden",false);
+
     // (later: time graph)
     // (later: nearby topics by J-S div or cor on log probs)
+    //
 };
 
 var word_view = function(m,word) {
+    var view, as, topics;
 
     console.log("View for word " + word);
-    // get top topics
-    //
+
+    hide_views();
+
+    view = d3.select("div#word_view");
+
+    view.select("h2")
+        .text(word);
+
+    topics = word_topics(m,word);
+    topics = topics.sort(function(a,b) {
+        return d3.ascending(a[1],b[1]);
+    });
+    as = view.selectAll("a")
+        .data(topics);
+
+    as.enter().append("a");
+    as.exit().remove();
+
+    as
+        .text(function(d) {
+            return "Ranked " + (d[1] + 1)
+                + " in " + topic_label(m,d[0],VIS.overview_words);
+        })
+        .attr({ href: "#" })
+        .on("click",function(d) {
+            topic_view(m,d[0]);
+        });
+
+        
+    // ready
+    view.classed("hidden",false);
+
     // (later: time graph)
 };
 
@@ -82,8 +197,6 @@ var overview = function(m) {
         as.enter().append("a");
 
         as.exit().remove();
-
-        as.classed("topic_overview",true);
 
         as.text(function (t) {
             var label;
@@ -182,6 +295,7 @@ var read_files = function(ready_callback) {
                     m.tw[t] = d3.map();
                 }
                 m.tw[t].set(d.word,+d.weight);
+                // TODO should precalculate ranks here...? or save memory?
 
                 // read topic alpha value
 
