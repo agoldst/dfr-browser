@@ -12,6 +12,28 @@ var Model = function() {
 }
 
 
+// utility functions
+// -----------------
+
+var top_words = function(m,t,n) {
+    w = m.tw[t].keys().sort(function(j,k) {
+        return d3.descending(m.tw[t].get(j),m.tw[t].get(k));
+    });
+
+    return w.slice(0,n);
+};
+
+var topic_label = function(m,t,n) {
+    var label;
+    
+    label = d3.format("03d")(t + 1); // user-facing index is 1-based
+    label += " ";
+    label += top_words(m,t,VIS.overview_words)
+        .reduce(function(prev,cur) {
+            return prev + " " + cur;
+        });
+    return label;
+};
 
 // Principal view-generating functions
 // -----------------------------------
@@ -64,15 +86,9 @@ var overview = function(m) {
         as.classed("topic_overview",true);
 
         as.text(function (t) {
-            var label, w;
+            var label;
             
-            label = d3.format("03d")(t + 1); // user-facing index is 1-based
-            w = m.tw[t].keys().sort(function(j,k) {
-                return d3.descending(m.tw[t].get(j),m.tw[t].get(k));
-            });
-            for(i = 0;i < VIS.overview_words;i++) {
-                label += " " + w[i];
-            }
+            label = topic_label(m,t,VIS.overview_words);
             label += " (α = " + d3.round(m.alpha[t],3) + ")";
             return label;
         });
