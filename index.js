@@ -170,9 +170,9 @@ var topic_view = function(m,t) {
     // ready
     view.classed("hidden",false);
 
+    // TODO visualize word and doc weights as lengths
     // (later: time graph)
     // (later: nearby topics by J-S div or cor on log probs)
-    //
 };
 
 var word_view = function(m,word) {
@@ -251,6 +251,7 @@ var doc_view = function(m,doc) {
             topic_view(m,t);
         });
 
+    // TODO visualize topic proportions as rectangles at the very least
 
     // ready 
     view.classed("hidden",false);
@@ -295,6 +296,7 @@ var overview = function(m) {
     d3.select("div#overview")
         .classed("hidden",false);
 
+    // TODO visualize alphas
     // (later: word clouds)
     // (later: grid of time graphs)
     // (later: multi-dimensional scaling projection showing topic clusters)
