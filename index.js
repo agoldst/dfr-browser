@@ -8,6 +8,7 @@ var Model = function() {
         uris: [],   // document uris
         cites: [],  // document citations
         n: 0,
+        n_top_words: 0
     };
 }
 
@@ -33,23 +34,30 @@ var topic_label = function(m,t,n) {
 };
 
 var word_topics = function(m,word) {
-    var result,rank;
+    var result,score;
 
     result = [];
     for(t = 0;t < m.n;t++) {
-        if(m.tw[t].has(word)) {
+        row = m.tw[t]
+        if(row.has(word)) {
             rank = 0;
-            word_wt = m.tw[t].get(word);
+            word_wt = row.get(word);
 
-            m.tw[t].forEach(function(w,wt) {
+            row.forEach(function(w,wt) {
                 if(wt > word_wt) {
-                    rank++; // tied elts are ranked as high (ordinally) as poss.
+                    rank++;
                 }
             });
+
+            // zero-based rank = (# of words strictly greater than word)
             result.push([t,rank]);
         }
     }
     return result;
+};
+
+var top_documents = function(m,t) {
+    // TODO IMPLEMENT
 };
 
 
@@ -79,7 +87,7 @@ var topic_view = function(m,t) {
 
     as = view.select("div#topic_words")
         .selectAll("a")
-        .data(top_words(m,t,m.tw[t].keys().length));
+        .data(top_words(m,t,m.n_top_words));
 
     as.enter()
         .append("a");
@@ -99,10 +107,10 @@ var topic_view = function(m,t) {
     // get top articles
     // ----------------
 
-        /*
+    // TODO TEST
     as = view.select("div#topic_docs")
         .selectAll("a")
-        .data(top_articles(m,t,VIS.topic_docs));
+        .data(top_docs(m,t,VIS.topic_docs));
 
     as.enter()
         .append("a");
@@ -125,7 +133,6 @@ var topic_view = function(m,t) {
         })
 
 
-        */
     // ready
     view.classed("hidden",false);
 
@@ -158,7 +165,7 @@ var word_view = function(m,word) {
 
     as
         .text(function(d) {
-            return "Ranked " + (d[1] + 1)
+            return "Ranked " + (d[1] + 1) // user-facing rank is 1-based
                 + " in " + topic_label(m,d[0],VIS.overview_words);
         })
         .attr({ href: "#" })
@@ -177,6 +184,7 @@ var doc_view = function(m,doc) {
 
     console.log("View for doc " + doc);
     // get top topics
+    // TODO implement
     //
     // (later: nearby documents)
 };
@@ -273,21 +281,15 @@ var read_files = function(ready_callback) {
 
     m = Model();
 
-    // 
-    // TODO read doc-topics
-    // dt: [],     // docs in rows, topic counts in columns
-    //
-    // TODO read metadata:
-    //      uris: [],   // document uris
-    //      cites: [],  // document citations
+    // read some explanatory info about the model
     d3.json("data/model_meta.json",function (d) {
         m.model_meta = d;
 
         console.log("Read model_meta.json");
 
+        // read topic-words (but only N most probable) as d3.maps()s
         d3.csv("data/keys.csv",
-            function(d) {
-                // read topic-words (but only N most probable) as d3.maps()s
+            function(d) {   // d3.csv accessor
                 
                 t = +d.topic - 1;   // topics indexed from 1 in keys.csv
 
@@ -303,17 +305,38 @@ var read_files = function(ready_callback) {
                     m.alpha[t] = parseFloat(d.alpha);
                 }
             },
-            function(d) {
-                console.log("Read keys.csv");
+            function(d) {   // d3.csv callback
                 // set topic count
                 m.n = m.tw.length;
 
-                console.log("I count " + m.n + " topics");
+                // set count of number of top words given
+                m.n_top_words = m.tw[0].keys().length;
 
-                return ready_callback(m);
-            });
-    });
-};
+                console.log("Read keys.csv: " + m.n + " topics");
+
+                // read doc-topics
+                // TODO TEST
+                d3.text("data/dt.csv",function (dt_text) {
+                    m.dt = d3.csv.parseRows(dt_text,function(row,j) {
+                        return row.map(function (x) { return +x; })
+                    });
+
+                    // TODO TEST
+                    d3.text("data/cites.txt",function (cites_text) {
+                        m.cites = cites_text.split("\n");
+
+                        // TODO TEST
+                        d3.text("data/uris.txt",function (uris_text) {
+                            m.uris = uris_text.split("\n");
+
+                            return ready_callback(m);
+                        });
+                    });
+                }); // d3.text("data/dt.csv",...
+
+            }); // d3.csv("data/keys.csv",...
+    }); // d3.json("data/model_meta.json",...
+}; // read_files()
 
 
 // main
