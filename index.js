@@ -87,6 +87,13 @@ var top_docs = function(m,t,n) {
     return docs.reverse(); // biggest first
 };
 
+var doc_topics = function(m,d,n) {
+    return d3.range(m.n)
+        .sort(function (a,b) {
+            return d3.descending(m.dt[d][a],m.dt[d][b]);
+        })
+        .slice(0,n);
+};
 
 
 // Principal view-generating functions
@@ -135,7 +142,6 @@ var topic_view = function(m,t) {
 
     docs = top_docs(m,t,VIS.topic_view_docs);
 
-    // TODO TEST
     as = view.select("div#topic_docs")
         .selectAll("a")
         .data(docs);
@@ -209,11 +215,46 @@ var word_view = function(m,word) {
 };
 
 var doc_view = function(m,doc) {
+    var view, as;
 
     console.log("View for doc " + doc);
-    // get top topics
-    // TODO implement
-    //
+
+    hide_views();
+
+    view = d3.select("div#doc_view");
+
+    view.select("#doc_view h2")
+        .html(m.cites[doc]);
+
+    view.select("p#doc_remark")
+        .html("<a href="
+                + m.uris[doc]
+                + ">View on jstor</a>");
+
+    as = view.select("div#doc_topics")
+        .selectAll("a")
+        .data(doc_topics(m,doc,VIS.doc_view_topics));
+
+    as.enter().append("a");
+    as.exit().remove();
+    as
+        .attr({ href: "#"})
+        .text(function(t) {
+            var label, score;
+            score = m.dt[doc][t];
+            label = score.toString();
+            label += " (" + VIS.float_format(score / m.doc_len[doc]) + ") ";
+            label += topic_label(m,t,VIS.overview_words);
+            return label;
+        })
+        .on("click",function(t) {
+            topic_view(m,t);
+        });
+
+
+    // ready 
+    view.classed("hidden",false);
+
     // (later: nearby documents)
 };
 
@@ -266,6 +307,7 @@ var VIS = {
     overview_words: 15,
     topic_view_words: 50,
     topic_view_docs: 10,
+    doc_view_topics: 5,
     overview_ready: false,
     float_format: function(x) {
         return d3.round(x,3);

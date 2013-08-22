@@ -53,3 +53,10 @@ div#topic_docs {
     display: block;
     line-height: 1.5em;
 }
+
+/* doc_view */
+
+#doc_view a {
+    display: block;
+    line-height: 1.5em;
+}
