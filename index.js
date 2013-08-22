@@ -56,10 +56,36 @@ var word_topics = function(m,word) {
     return result;
 };
 
-var top_documents = function(m,t) {
-    // TODO IMPLEMENT
-};
+var top_docs = function(m,t,n) {
+    var docs,wts,wt,insert;
 
+    // naive document ranking: just by the proportion of words assigned to t 
+    // which does *not* necessarily give the docs where t is most salient
+
+    var weight = function (d) {
+        return m.dt[d][t] / m.doc_len[d];
+    };
+    // initial guess
+    docs = d3.range(n);
+    wts = docs.map(weight);
+    docs.sort(function (a,b) {
+        return d3.ascending(wts[a],wts[b]);
+    });
+    wts = docs.map(function (d) { return wts[d]; });
+
+    for(i = n;i < m.dt.length;i++) {
+        wt = weight(i);
+        insert = d3.bisectLeft(wts,wt);
+        if(insert > 0) {
+            docs.splice(insert,0,i);
+            docs.shift();
+            wts.splice(insert,0,wt);
+            wts.shift();
+        }
+    }
+
+    return docs.reverse(); // biggest first
+};
 
 
 
@@ -67,7 +93,7 @@ var top_documents = function(m,t) {
 // -----------------------------------
 
 var topic_view = function(m,t) {
-    var view, as;
+    var view, as, docs;
 
     console.log("View for topic " + (t + 1));
 
@@ -82,7 +108,7 @@ var topic_view = function(m,t) {
         .text(topic_label(m,t,VIS.overview_words));
 
     view.select("p#topic_remark")
-        .text("α = " + d3.round(m.alpha[t],3));
+        .text("α = " + VIS.float_format(m.alpha[t]));
 
 
     as = view.select("div#topic_words")
@@ -107,10 +133,12 @@ var topic_view = function(m,t) {
     // get top articles
     // ----------------
 
+    docs = top_docs(m,t,VIS.topic_view_docs);
+
     // TODO TEST
     as = view.select("div#topic_docs")
         .selectAll("a")
-        .data(top_docs(m,t,VIS.topic_docs));
+        .data(docs);
 
     as.enter()
         .append("a");
@@ -119,13 +147,13 @@ var topic_view = function(m,t) {
 
     as
         .attr({ href: "#" })
-        .text(function (d) {
+        .html(function (d) {
             var weight,frac;
 
             weight = m.dt[d][t]; 
-            frac = weight / d3.sum(m.dt[d]);
+            frac = weight / m.doc_len[d];
             return weight.toString() + " ("
-                + frac.toString() + ") "
+                + VIS.float_format(frac) + ") "
                 + m.cites[d];
         })
         .on("click",function (d) {
@@ -210,7 +238,7 @@ var overview = function(m) {
             var label;
             
             label = topic_label(m,t,VIS.overview_words);
-            label += " (α = " + d3.round(m.alpha[t],3) + ")";
+            label += " (α = " + VIS.float_format(m.alpha[t]) + ")";
             return label;
         });
 
@@ -237,7 +265,11 @@ var overview = function(m) {
 var VIS = {
     overview_words: 15,
     topic_view_words: 50,
-    overview_ready: false
+    topic_view_docs: 10,
+    overview_ready: false,
+    float_format: function(x) {
+        return d3.round(x,3);
+    }
 };
 
 var hide_views = function() {
@@ -315,20 +347,27 @@ var read_files = function(ready_callback) {
                 console.log("Read keys.csv: " + m.n + " topics");
 
                 // read doc-topics
-                // TODO TEST
                 d3.text("data/dt.csv",function (dt_text) {
                     m.dt = d3.csv.parseRows(dt_text,function(row,j) {
-                        return row.map(function (x) { return +x; })
+                        return row.map(function (x) { return +x; });
                     });
 
-                    // TODO TEST
+                    console.log("Read dt.csv: " + m.dt.length + " docs");
+
+                    // precalculate doc lengths
+                    m.doc_len = m.dt.map(function(d) { return d3.sum(d); });
+
                     d3.text("data/cites.txt",function (cites_text) {
-                        m.cites = cites_text.split("\n");
+                        m.cites = cites_text.trim().split("\n");
 
-                        // TODO TEST
+                        console.log("Read cites.txt: " + m.cites.length
+                            + " citations");
+
                         d3.text("data/uris.txt",function (uris_text) {
-                            m.uris = uris_text.split("\n");
+                            m.uris = uris_text.trim().split("\n");
 
+                            console.log("Read uris.txt: " + m.uris.length
+                                + " URIs");
                             return ready_callback(m);
                         });
                     });

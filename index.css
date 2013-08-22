@@ -28,12 +28,12 @@ a:visited {
 
 div#topic_words {
     position: absolute;
-    width: 50%;
+    width: 20%;
 }
 
 div#topic_docs {
     float: right;
-    width: 50%;
+    width: 80%;
 }
 
 #topic_words a {
