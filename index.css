@@ -61,3 +61,20 @@ div#topic_docs {
     display: block;
     line-height: 1.5em;
 }
+
+/* bib_view */
+
+#bib_view a {
+    display: block;
+    line-height: 1em;
+    font-size: 0.75em;
+}
+
+#bib_view nav li {
+    display: inline;
+    margin-right: 0.5em;
+}
+
+#bib_view nav li a {
+    display: inline;
+}

@@ -1,8 +1,3 @@
-// global data
-var MONTHS = d3.range(12).map(function (n) {
-    return d3.time.format("%B")(new Date(1900,n,1));
-});
-
 // model specification
 // -------------------
 var Model = function() {
@@ -46,7 +41,7 @@ var cite_doc = function(m,d) {
     result += doc.volume + ", no. " + doc.issue;
 
     // Could do "proper" date formatting via d3.time.format() instead
-    result += " (" + MONTHS[doc.month - 1] + " " + doc.year + "): ";
+    result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange;
 
     result = result.replace(/_/g,",");
@@ -133,6 +128,48 @@ var doc_topics = function(m,d,n) {
             return d3.descending(m.dt[d][a],m.dt[d][b]);
         })
         .slice(0,n);
+};
+
+var bib_sort = function(m,sort_order) {
+    var result = {
+        headings: [],
+        docs: []
+    },
+        docs = d3.range(m.meta.length),
+        dec,i,last,
+        cur_dec = undefined,
+        partition = [];
+
+    // default
+    if(sort_order === undefined) {
+        sort_order = "date_decades";
+    }
+
+    if(sort_order !== "date_decades") {
+        console.log("bib_sort only supports sorting by date");
+    }
+
+    docs = docs.sort(function (a,b) {
+        return d3.ascending(+m.meta[a].date,+m.meta[b].date);
+    });
+
+    for(i = 0;i < docs.length;i++) {
+        dec = Math.floor(m.meta[docs[i]].date.getFullYear() / 10);
+        if(dec !== cur_dec) {
+            partition.push(i);
+            result.headings.push(dec.toString() + "0s");
+            cur_dec = dec;
+        }
+    }
+
+    for(i = 0,last = 0;i < partition.length;i++) {
+        result.docs.push(docs.slice(last,partition[i]));
+        last = partition[i];
+    }
+
+    // TODO FIX result.docs is offset by one from result.headings
+
+    return result;
 };
 
 
@@ -299,6 +336,71 @@ var doc_view = function(m,doc) {
     // (later: nearby documents)
 };
 
+var bib_view = function(m,sort_order) {
+    var ordering,view,nav_headings,headings,as;
+
+    hide_views();
+
+    console.log("Bibliography, sorting: " + sort_order);
+
+    ordering = bib_sort(m,sort_order);
+
+    view = d3.select("div#bib_view");
+    nav_headings = view.select("nav ul")
+        .selectAll("li")
+        .data(ordering.headings);
+
+    // TODO fix nav li's never get removed when you return to bib_view
+    // multiple times
+    nav_headings.enter().append("li");
+    nav_headings.exit().remove();
+
+    // TODO fix nav links don't work
+    nav_headings
+        .append("a")
+        .attr(function (h) {
+            return { href: "#" + h };
+        })
+        .text(function (h) { return h; });
+
+    headings = view.select("div#bib_main")
+        .selectAll("h2")
+        .data(ordering.headings);
+
+    headings.enter().append("h2");
+    headings.exit().remove();
+
+    headings
+        .attr(function (h) {
+            return { id: h };
+        })
+        .text(function (h) { return h; });
+
+    // TODO FIX a's end up crammed *into* the h2 element instead of after it
+    as = headings
+        .selectAll("a")
+            .data(function(h,i) {
+                return ordering.docs[i];
+            });
+        
+    as.enter().append("a");
+    as.exit().remove();
+
+    as
+        .attr( { href: "#" } )
+        .html(function (d) {
+            return cite_doc(m,d);
+        })
+        .on("click",function (d) {
+            doc_view(m,d);
+        });
+
+    // ready
+    view.classed("hidden",false);
+};
+
+
+
 var overview = function(m) {
     var ps;
 
@@ -342,6 +444,24 @@ var overview = function(m) {
     // (later: multi-dimensional scaling projection showing topic clusters)
 };
 
+
+var hide_views = function() {
+    var views,selector;
+    views = [
+        "overview",
+        "topic_view",
+        "doc_view",
+        "word_view",
+        "bib_view" 
+    ];
+
+    for(i = 0;i < views.length;i++) {
+        selector = "div#" + views[i];
+        d3.select(selector)
+            .classed("hidden",true);
+    }
+};
+
 // visualization object and parameters
 // -----------------------------------
 
@@ -354,23 +474,8 @@ var VIS = {
     float_format: function(x) {
         return d3.round(x,3);
     },
+    cite_date_format: d3.time.format("%B %Y"),
     uri_proxy: ".proxy.libraries.rutgers.edu"
-};
-
-var hide_views = function() {
-    var views,selector;
-    views = [
-        "overview",
-        "topic_view",
-        "doc_view",
-        "word_view"
-    ];
-
-    for(i = 0;i < views.length;i++) {
-        selector = "div#" + views[i];
-        d3.select(selector)
-            .classed("hidden",true);
-    }
 };
 
 // initialization
@@ -384,8 +489,11 @@ var setup_vis = function(m) {
             overview(m);
         });
 
-    // TODO setup bibliography link
-    //
+    d3.select("a#bib_link")
+        .on("click",function() {
+            bib_view(m);
+        });
+
     // TODO navigation history
 
     // load model information and stick it in page header elements
@@ -427,9 +535,7 @@ var read_files = function(ready) {
         //id,doi,title,author,journaltitle,volume,issue,
         //pubdate,pagerange,publisher,type,reviewed-work
         var a_str = d.author.trim();
-
-        // could do fancier date parsing via:
-        // var date = new Date(d.pubdate.trim());
+        var date = new Date(d.pubdate.trim());
 
         return {
             authors: a_str==="" ? [] : a_str.split("\t"),
@@ -437,8 +543,7 @@ var read_files = function(ready) {
             journaltitle: d.journaltitle.trim(),
             volume: d.volume.trim(),
             issue: d.issue.trim(),
-            year: +d.pubdate.substr(0,4),
-            month: +d.pubdate.substr(5,2),
+            date: date,
             pagerange: d.pagerange.trim()
                 .replace(/^p?p\. /,"")
                 .replace(/-/g,"–"),
