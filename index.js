@@ -475,8 +475,8 @@ var VIS = {
     bib_ready: false,
     overview_words: 15,     // TODO set these parameters interactively
     topic_view_words: 50,
-    topic_view_docs: 10,
-    doc_view_topics: 5,
+    topic_view_docs: 20,
+    doc_view_topics: 10,
     overview_ready: false,
     float_format: function(x) {
         return d3.round(x,3);
