@@ -304,9 +304,12 @@ var doc_view = function(m,doc) {
         .html(cite_doc(m,doc));
 
     view.select("p#doc_remark")
-        .html("<a href="
+        .html(m.doc_len[doc] + " tokens. "
+                + "<a href="
                 + doc_uri(m,doc)
-                + ">View on jstor</a>");
+                + ">View "
+                + m.meta[doc].doi
+                + " on JSTOR</a>");
 
     as = view.select("div#doc_topics")
         .selectAll("a")

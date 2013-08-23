@@ -57,7 +57,7 @@ div#topic_docs {
 
 /* doc_view */
 
-#doc_view a {
+#doc_view #doc_topics a {
     display: block;
     line-height: 1.5em;
 }
