@@ -131,7 +131,7 @@ var doc_topics = function(m,d,n) {
         .slice(0,n);
 };
 
-var bib_sort = function(m,sort_order) {
+var bib_sort = function(m) {
     var result = {
         headings: [],
         docs: []
@@ -141,14 +141,7 @@ var bib_sort = function(m,sort_order) {
         cur_dec = undefined,
         partition = [];
 
-    // default
-    if(sort_order === undefined) {
-        sort_order = "date_decades";
-    }
-
-    if(sort_order !== "date_decades") {
-        console.log("bib_sort only supports sorting by date");
-    }
+    // TODO other sorting / sectioning than date / decade
 
     docs = docs.sort(function (a,b) {
         return d3.ascending(+m.meta[a].date,+m.meta[b].date);
@@ -340,67 +333,72 @@ var doc_view = function(m,doc) {
     // (later: nearby documents)
 };
 
-var bib_view = function(m,sort_order) {
+var bib_view = function(m) {
     var ordering,view,nav_as,headings,as;
 
     hide_views();
 
-    console.log("Bibliography, sorting: " + sort_order);
-
-    ordering = bib_sort(m,sort_order);
+    console.log("Bibliography view");
 
     view = d3.select("div#bib_view");
-    nav_as = view.select("nav")
-        .selectAll("a")
-        .data(ordering.headings);
 
-    nav_as.enter().append("a");
-    nav_as.exit().remove();
+    if(!VIS.bib_ready) {
+        ordering = bib_sort(m);
 
-    nav_as
-        .attr("href",function (h) { return "#" + h; })
-        .text(function (h) { return h; });
+        nav_as = view.select("nav")
+            .selectAll("a")
+            .data(ordering.headings);
 
-    sections = view.select("div#bib_main")
-        .selectAll("section")
-        .data(ordering.headings);
+        nav_as.enter().append("a");
+        nav_as.exit().remove();
 
-    sections.enter()
-        .append("section")
-        .append("h2");
+        nav_as
+            .attr("href",function (h) { return "#" + h; })
+            .text(function (h) { return h; });
 
-    sections.exit().remove();
+        sections = view.select("div#bib_main")
+            .selectAll("section")
+            .data(ordering.headings);
 
-    headings = sections.selectAll("h2");
+        sections.enter()
+            .append("section")
+            .append("h2");
 
-    headings
-        .attr("id",function (h) {
-            return h;
-        })
-        .text(function (h) { return h; });
+        sections.exit().remove();
 
-    as = sections
-        .selectAll("a")
-        .data(function(h,i) {
-            return ordering.docs[i];
-        });
-        
-    as.enter().append("a");
-    as.exit().remove();
+        headings = sections.selectAll("h2");
 
-    // TODO list topic as well as coloring bib entry
+        headings
+            .attr("id",function (h) {
+                return h;
+            })
+            .text(function (h) { return h; });
 
-    as
-        .attr("href","#")
-        .style("background-color",function (d) {
-            return VIS.topic_scale(doc_topics(m,d,1));
-        })
-        .html(function (d) {
-            return cite_doc(m,d);
-        })
-        .on("click",function (d) {
-            doc_view(m,d);
-        });
+        as = sections
+            .selectAll("a")
+            .data(function(h,i) {
+                return ordering.docs[i];
+            });
+            
+        as.enter().append("a");
+        as.exit().remove();
+
+        // TODO list topic as well as coloring bib entry
+
+        as
+            .attr("href","#")
+            .style("background-color",function (d) {
+                return VIS.topic_scale(doc_topics(m,d,1));
+            })
+            .html(function (d) {
+                return cite_doc(m,d);
+            })
+            .on("click",function (d) {
+                doc_view(m,d);
+            });
+
+        VIS.bib_ready = true;
+    }
 
     // ready
     view.classed("hidden",false);
@@ -473,6 +471,8 @@ var hide_views = function() {
 // -----------------------------------
 
 var VIS = {
+    overview_ready: false,
+    bib_ready: false,
     overview_words: 15,     // TODO set these parameters interactively
     topic_view_words: 50,
     topic_view_docs: 10,
