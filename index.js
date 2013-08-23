@@ -122,6 +122,7 @@ var top_docs = function(m,t,n) {
     return docs.reverse(); // biggest first
 };
 
+// TODO user faster "top N" algorithm as in top_docs ?
 var doc_topics = function(m,d,n) {
     return d3.range(m.n)
         .sort(function (a,b) {
@@ -205,7 +206,7 @@ var topic_view = function(m,t) {
     as.exit().remove();
 
     as
-        .attr({ href: "#" })
+        .attr("href","#")
         .text(function (w) {
                 return m.tw[t].get(w) + " " + w;
         }) 
@@ -387,10 +388,13 @@ var bib_view = function(m,sort_order) {
     as.enter().append("a");
     as.exit().remove();
 
-    // TODO color docs to indicate topic affiliation
+    // TODO list topic as well as coloring bib entry
 
     as
-        .attr( { href: "#" } )
+        .attr("href","#")
+        .style("background-color",function (d) {
+            return VIS.topic_scale(doc_topics(m,d,1));
+        })
         .html(function (d) {
             return cite_doc(m,d);
         })
@@ -429,7 +433,7 @@ var overview = function(m) {
             return label;
         });
 
-        as.attr({ href: "#" });
+        as.attr("href","#");
 
         as.on("click",function(t) {
             topic_view(m,t);
@@ -478,7 +482,8 @@ var VIS = {
         return d3.round(x,3);
     },
     cite_date_format: d3.time.format("%B %Y"),
-    uri_proxy: ".proxy.libraries.rutgers.edu"
+    uri_proxy: ".proxy.libraries.rutgers.edu",
+    topic_scale: undefined // color scale
 };
 
 // initialization
@@ -505,6 +510,14 @@ var setup_vis = function(m) {
         .text(m.model_meta.title);
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);
+
+    // scales
+
+    VIS.topic_scale = d3.scale.ordinal()
+        .domain(d3.range(m.n))
+        .range(d3.range(m.n).map(function (t) {
+            return d3.hsl(360 * t / m.n,0.5,0.8).toString();
+        }));
 
 };
 

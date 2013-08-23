@@ -75,3 +75,6 @@ div#topic_docs {
     font-size: 0.75em;
 }
 
+#bib_view #bib_main a {
+    color: black;
+}
