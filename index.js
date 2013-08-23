@@ -161,13 +161,13 @@ var bib_sort = function(m,sort_order) {
             cur_dec = dec;
         }
     }
+    partition.shift(); // correct for "0" always getting added at the start
+    partition.push(docs.length); // make sure we get the tail 
 
     for(i = 0,last = 0;i < partition.length;i++) {
         result.docs.push(docs.slice(last,partition[i]));
         last = partition[i];
     }
-
-    // TODO FIX result.docs is offset by one from result.headings
 
     return result;
 };
@@ -337,7 +337,7 @@ var doc_view = function(m,doc) {
 };
 
 var bib_view = function(m,sort_order) {
-    var ordering,view,nav_headings,headings,as;
+    var ordering,view,nav_as,headings,as;
 
     hide_views();
 
@@ -346,45 +346,45 @@ var bib_view = function(m,sort_order) {
     ordering = bib_sort(m,sort_order);
 
     view = d3.select("div#bib_view");
-    nav_headings = view.select("nav ul")
-        .selectAll("li")
+    nav_as = view.select("nav")
+        .selectAll("a")
         .data(ordering.headings);
 
-    // TODO fix nav li's never get removed when you return to bib_view
-    // multiple times
-    nav_headings.enter().append("li");
-    nav_headings.exit().remove();
+    nav_as.enter().append("a");
+    nav_as.exit().remove();
 
-    // TODO fix nav links don't work
-    nav_headings
-        .append("a")
-        .attr(function (h) {
-            return { href: "#" + h };
-        })
+    nav_as
+        .attr("href",function (h) { return "#" + h; })
         .text(function (h) { return h; });
 
-    headings = view.select("div#bib_main")
-        .selectAll("h2")
+    sections = view.select("div#bib_main")
+        .selectAll("section")
         .data(ordering.headings);
 
-    headings.enter().append("h2");
-    headings.exit().remove();
+    sections.enter()
+        .append("section")
+        .append("h2");
+
+    sections.exit().remove();
+
+    headings = sections.selectAll("h2");
 
     headings
-        .attr(function (h) {
-            return { id: h };
+        .attr("id",function (h) {
+            return h;
         })
         .text(function (h) { return h; });
 
-    // TODO FIX a's end up crammed *into* the h2 element instead of after it
-    as = headings
+    as = sections
         .selectAll("a")
-            .data(function(h,i) {
-                return ordering.docs[i];
-            });
+        .data(function(h,i) {
+            return ordering.docs[i];
+        });
         
     as.enter().append("a");
     as.exit().remove();
+
+    // TODO color docs to indicate topic affiliation
 
     as
         .attr( { href: "#" } )

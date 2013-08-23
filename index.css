@@ -66,15 +66,12 @@ div#topic_docs {
 
 #bib_view a {
     display: block;
-    line-height: 1em;
+    line-height: 1.33em;
+}
+
+#bib_view nav a {
+    display: inline;
+    padding-right: 0.5em;
     font-size: 0.75em;
 }
 
-#bib_view nav li {
-    display: inline;
-    margin-right: 0.5em;
-}
-
-#bib_view nav li a {
-    display: inline;
-}
