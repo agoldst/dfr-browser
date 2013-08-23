@@ -306,7 +306,7 @@ var overview = function(m) {
 // -----------------------------------
 
 var VIS = {
-    overview_words: 15,
+    overview_words: 15,     // TODO set these parameters interactively
     topic_view_words: 50,
     topic_view_docs: 10,
     doc_view_topics: 5,
