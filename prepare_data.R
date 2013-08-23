@@ -31,23 +31,18 @@ prepare_data <- function(dfr_dirs,
     }
 
     metadata <- read_metadata(file.path(dfr_dirs,"citations.CSV"))
-    cites <- cite_articles(metadata,ids=ids)
 
-    cites <- sub('," *','," <em>',cites,fixed=T)
-    cites <- sub('* ','</em> ',cites,fixed=T)
+    if(nrow(metadata) > 0) {
+        i_md <- match(ids,metadata$id)
+        metadata <- metadata[i_md,]
 
-    cites_out <- file.path(out_dir,"cites.txt")
-    writeLines(cites,cites_out)
-    message("Saved ",cites_out)
-
-    uris <- dfr_id_url(ids,jstor_direct=F,
-                       proxy=".proxy.libraries.rutgers.edu")
-    uris_out <- file.path(out_dir,"uris.txt")
-    writeLines(uris,uris_out)
-
-    message("saved ",uris_out)
+        meta_out <- file.path(out_dir,"meta.csv")
+        write.csv(metadata,meta_out,row.names=F,quote=F)
+        message("Saved ",meta_out)
+    }
+    else {
+        warning("Unable to read metadata.")
+    }
 }
 
-# sample call to prepare_data():
-# prepare_data(dfr_dirs="../test_data/pmla_sample/",doc_topics="~/Documents/research/20c/hls/tmhls/models/test/doc_topics.csv")
-
+# no file-writing code executed until you invoke prepare_data()

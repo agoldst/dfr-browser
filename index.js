@@ -1,3 +1,8 @@
+// global data
+var MONTHS = d3.range(12).map(function (n) {
+    return d3.time.format("%B")(new Date(1900,n,1));
+});
+
 // model specification
 // -------------------
 var Model = function() {
@@ -5,8 +10,7 @@ var Model = function() {
         tw: [],     // array of d3.map()s
         dt: [],     // docs in rows, topic counts in columns
         alpha: [],  // alpha value for topics
-        uris: [],   // document uris
-        cites: [],  // document citations
+        meta: [],   // document citations
         n: 0,
         n_top_words: 0
     };
@@ -16,13 +20,8 @@ var Model = function() {
 // utility functions
 // -----------------
 
-var top_words = function(m,t,n) {
-    w = m.tw[t].keys().sort(function(j,k) {
-        return d3.descending(m.tw[t].get(j),m.tw[t].get(k));
-    });
-
-    return w.slice(0,n);
-};
+// -- stringifiers
+//    ------------
 
 var topic_label = function(m,t,n) {
     var label;
@@ -31,6 +30,47 @@ var topic_label = function(m,t,n) {
     label += " ";
     label += top_words(m,t,VIS.overview_words).join(" ");
     return label;
+};
+
+var cite_doc = function(m,d) {
+    var doc,result;
+
+    doc = m.meta[d];
+    result = doc.authors.length > 0
+        ? doc.authors.join(" and ")
+        : "[Anon]";
+
+    result += ", ";
+    result += '"' + doc.title + ',"';
+    result += " <em>" + doc.journaltitle + "</em> ";
+    result += doc.volume + ", no. " + doc.issue;
+
+    // Could do "proper" date formatting via d3.time.format() instead
+    result += " (" + MONTHS[doc.month - 1] + " " + doc.year + "): ";
+    result += doc.pagerange;
+
+    result = result.replace(/_/g,",");
+    result = result.replace(/\t/g,"");
+
+    return result;
+};
+
+var doc_uri = function(m,d) {
+    return "http://dx.doi.org"
+        + VIS.uri_proxy
+        + "/"
+        + m.meta[d].doi;
+};
+
+// -- rankers
+//    -------
+
+var top_words = function(m,t,n) {
+    w = m.tw[t].keys().sort(function(j,k) {
+        return d3.descending(m.tw[t].get(j),m.tw[t].get(k));
+    });
+
+    return w.slice(0,n);
 };
 
 var word_topics = function(m,word) {
@@ -160,7 +200,7 @@ var topic_view = function(m,t) {
             frac = weight / m.doc_len[d];
             return weight.toString() + " ("
                 + VIS.float_format(frac) + ") "
-                + m.cites[d];
+                + cite_doc(m,d);
         })
         .on("click",function (d) {
             doc_view(m,d);
@@ -224,11 +264,11 @@ var doc_view = function(m,doc) {
     view = d3.select("div#doc_view");
 
     view.select("#doc_view h2")
-        .html(m.cites[doc]);
+        .html(cite_doc(m,doc));
 
     view.select("p#doc_remark")
         .html("<a href="
-                + m.uris[doc]
+                + doc_uri(m,doc)
                 + ">View on jstor</a>");
 
     as = view.select("div#doc_topics")
@@ -313,7 +353,8 @@ var VIS = {
     overview_ready: false,
     float_format: function(x) {
         return d3.round(x,3);
-    }
+    },
+    uri_proxy: ".proxy.libraries.rutgers.edu"
 };
 
 var hide_views = function() {
@@ -357,7 +398,7 @@ var setup_vis = function(m) {
 };
 
 var read_files = function(ready) {
-    var m,process_keys,process_files;
+    var m,process_keys,access_meta,process_files;
 
     // initialize model object
     m = Model();
@@ -382,13 +423,35 @@ var read_files = function(ready) {
         }
     };
 
+    access_meta = function(d) {
+        //id,doi,title,author,journaltitle,volume,issue,
+        //pubdate,pagerange,publisher,type,reviewed-work
+        var a_str = d.author.trim();
+
+        // could do fancier date parsing via:
+        // var date = new Date(d.pubdate.trim());
+
+        return {
+            authors: a_str==="" ? [] : a_str.split("\t"),
+            title: d.title.trim(),
+            journaltitle: d.journaltitle.trim(),
+            volume: d.volume.trim(),
+            issue: d.issue.trim(),
+            year: +d.pubdate.substr(0,4),
+            month: +d.pubdate.substr(5,2),
+            pagerange: d.pagerange.trim()
+                .replace(/^p?p\. /,"")
+                .replace(/-/g,"–"),
+            doi: d.doi.trim()
+        };
+    };
+
     // this callback handles the loaded file data
     process_files = function(error,     // file error d3.csv/d3.text
                              m_meta,    // model_meta.json data
                              keys_dummy,// keys already eaten up by process_keys
                              dt_text,   // dt.csv as a string
-                             cites,     // cites.txt as a string
-                             uris) {    // uris.txt as a string
+                             meta) {    // meta.csv processed into a list
 
         // explanatory info about the model 
         m.model_meta = m_meta;
@@ -410,15 +473,10 @@ var read_files = function(ready) {
         // precalculate doc lengths
         m.doc_len = m.dt.map(function(d) { return d3.sum(d); });
 
-        m.cites = cites.trim().split("\n");
+        m.meta = meta;
 
-        console.log("Read cites.txt: " + m.cites.length
+        console.log("Read meta.csv: " + meta.length
             + " citations");
-
-        m.uris = uris.trim().split("\n");
-
-        console.log("Read uris.txt: " + m.uris.length
-            + " URIs");
 
         ready(m); // where the program actually starts
     };
@@ -428,8 +486,7 @@ var read_files = function(ready) {
         .defer(d3.json,"data/model_meta.json")
         .defer(d3.csv,"data/keys.csv",process_keys)
         .defer(d3.text,"data/dt.csv")
-        .defer(d3.text,"data/cites.txt")
-        .defer(d3.text,"data/uris.txt")
+        .defer(d3.csv,"data/meta.csv",access_meta)
         .await(process_files); // process_files calls ready(m) when done
 };
         
