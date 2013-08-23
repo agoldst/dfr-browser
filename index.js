@@ -343,6 +343,10 @@ var setup_vis = function(m) {
             overview(m);
         });
 
+    // TODO setup bibliography link
+    //
+    // TODO navigation history
+
     // load model information and stick it in page header elements
 
     d3.select("header h1")
@@ -352,81 +356,88 @@ var setup_vis = function(m) {
 
 };
 
-var read_files = function(ready_callback) {
-    var m;
+var read_files = function(ready) {
+    var m,process_keys,process_files;
 
+    // initialize model object
     m = Model();
 
-    // read some explanatory info about the model
-    d3.json("data/model_meta.json",function (d) {
-        m.model_meta = d;
+    // This "accessor" eats up the rows of keys.csv and returns nothing.
+    // It loads the topic-words (but only N most probable) as d3.maps()s
+    process_keys = function(d) {
+        var t;
+        
+        t = +d.topic - 1;   // topics indexed from 1 in keys.csv
 
-        console.log("Read model_meta.json");
+        if(!m.tw[t]) {
+            m.tw[t] = d3.map();
+        }
+        m.tw[t].set(d.word,+d.weight);
+        // TODO should precalculate ranks here...? or save memory?
 
-        // read topic-words (but only N most probable) as d3.maps()s
-        d3.csv("data/keys.csv",
-            function(d) {   // d3.csv accessor
-                
-                t = +d.topic - 1;   // topics indexed from 1 in keys.csv
+        // read topic alpha value
 
-                if(!m.tw[t]) {
-                    m.tw[t] = d3.map();
-                }
-                m.tw[t].set(d.word,+d.weight);
-                // TODO should precalculate ranks here...? or save memory?
+        if(m.alpha[t]===undefined) {
+            m.alpha[t] = parseFloat(d.alpha);
+        }
+    };
 
-                // read topic alpha value
+    // this callback handles the loaded file data
+    process_files = function(error,     // file error d3.csv/d3.text
+                             m_meta,    // model_meta.json data
+                             keys_dummy,// keys already eaten up by process_keys
+                             dt_text,   // dt.csv as a string
+                             cites,     // cites.txt as a string
+                             uris) {    // uris.txt as a string
 
-                if(m.alpha[t]===undefined) {
-                    m.alpha[t] = parseFloat(d.alpha);
-                }
-            },
-            function(d) {   // d3.csv callback
-                // set topic count
-                m.n = m.tw.length;
+        // explanatory info about the model 
+        m.model_meta = m_meta;
 
-                // set count of number of top words given
-                m.n_top_words = m.tw[0].keys().length;
+        // set topic count
+        m.n = m.tw.length;
 
-                console.log("Read keys.csv: " + m.n + " topics");
+        // set count of number of top words given
+        m.n_top_words = m.tw[0].keys().length;
 
-                // read doc-topics
-                d3.text("data/dt.csv",function (dt_text) {
-                    m.dt = d3.csv.parseRows(dt_text,function(row,j) {
-                        return row.map(function (x) { return +x; });
-                    });
+        console.log("Read keys.csv: " + m.n + " topics");
 
-                    console.log("Read dt.csv: " + m.dt.length + " docs");
+        m.dt = d3.csv.parseRows(dt_text,function(row,j) {
+            return row.map(function (x) { return +x; });
+        });
 
-                    // precalculate doc lengths
-                    m.doc_len = m.dt.map(function(d) { return d3.sum(d); });
+        console.log("Read dt.csv: " + m.dt.length + " docs");
 
-                    d3.text("data/cites.txt",function (cites_text) {
-                        m.cites = cites_text.trim().split("\n");
+        // precalculate doc lengths
+        m.doc_len = m.dt.map(function(d) { return d3.sum(d); });
 
-                        console.log("Read cites.txt: " + m.cites.length
-                            + " citations");
+        m.cites = cites.trim().split("\n");
 
-                        d3.text("data/uris.txt",function (uris_text) {
-                            m.uris = uris_text.trim().split("\n");
+        console.log("Read cites.txt: " + m.cites.length
+            + " citations");
 
-                            console.log("Read uris.txt: " + m.uris.length
-                                + " URIs");
-                            return ready_callback(m);
-                        });
-                    });
-                }); // d3.text("data/dt.csv",...
+        m.uris = uris.trim().split("\n");
 
-            }); // d3.csv("data/keys.csv",...
-    }); // d3.json("data/model_meta.json",...
-}; // read_files()
+        console.log("Read uris.txt: " + m.uris.length
+            + " URIs");
 
+        ready(m); // where the program actually starts
+    };
 
+    // actually load the files and call the callback
+    queue()
+        .defer(d3.json,"data/model_meta.json")
+        .defer(d3.csv,"data/keys.csv",process_keys)
+        .defer(d3.text,"data/dt.csv")
+        .defer(d3.text,"data/cites.txt")
+        .defer(d3.text,"data/uris.txt")
+        .await(process_files); // process_files calls ready(m) when done
+};
+        
 // main
 // ----
 
 var main = function() {
-    read_files(function(model) {
+    read_files(function(model) { // callback, invoked when model is loaded in 
         setup_vis(model);
         overview(model);
     });
