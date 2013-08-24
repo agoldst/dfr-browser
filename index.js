@@ -5,7 +5,7 @@ var VIS;
 
 // model specification
 // -------------------
-var Model = function () {
+var model = function () {
     return {
         tw: [],     // array of d3.map()s
         dt: [],     // docs in rows, topic counts in columns
@@ -23,17 +23,17 @@ var Model = function () {
 // -- stringifiers
 //    ------------
 
-var topic_label = function (m,t,n) {
+var topic_label = function (m, t, n) {
     var label;
 
     label = d3.format("03d")(t + 1); // user-facing index is 1-based
     label += " ";
-    label += top_words(m,t,VIS.overview_words).join(" ");
+    label += top_words(m, t, n).join(" ");
     return label;
 };
 
-var cite_doc = function (m,d) {
-    var doc,result;
+var cite_doc = function (m, d) {
+    var doc, result;
 
     doc = m.meta[d];
     result = doc.authors.length > 0
@@ -49,13 +49,13 @@ var cite_doc = function (m,d) {
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange;
 
-    result = result.replace(/_/g,",");
-    result = result.replace(/\t/g,"");
+    result = result.replace(/_/g, ",");
+    result = result.replace(/\t/g, "");
 
     return result;
 };
 
-var doc_uri = function (m,d) {
+var doc_uri = function (m, d) {
     return "http://dx.doi.org"
         + VIS.uri_proxy
         + "/"
@@ -65,40 +65,40 @@ var doc_uri = function (m,d) {
 // -- rankers
 //    -------
 
-var top_words = function (m,t,n) {
+var top_words = function (m, t, n) {
     var w;
-    w = m.tw[t].keys().sort(function (j,k) {
-        return d3.descending(m.tw[t].get(j),m.tw[t].get(k));
+    w = m.tw[t].keys().sort(function (j, k) {
+        return d3.descending(m.tw[t].get(j), m.tw[t].get(k));
     });
 
-    return w.slice(0,n);
+    return w.slice(0, n);
 };
 
-var word_topics = function (m,word) {
-    var result,score,t,row,rank,word_wt;
+var word_topics = function (m, word) {
+    var t, row, rank, word_wt,
+        result = [];
 
-    result = [];
-    for (t = 0;t < m.n;t += 1) {
+    for (t = 0; t < m.n; t += 1) {
         row = m.tw[t];
         if (row.has(word)) {
             rank = 0;
             word_wt = row.get(word);
 
-            row.forEach(function (w,wt) {
+            row.forEach(function (w, wt) {
                 if (wt > word_wt) {
                     rank += 1;
                 }
             });
 
             // zero-based rank = (# of words strictly greater than word)
-            result.push([t,rank]);
+            result.push([t, rank]);
         }
     }
     return result;
 };
 
-var top_docs = function (m,t,n) {
-    var docs,wts,wt,insert,i,
+var top_docs = function (m, t, n) {
+    var docs, wts, wt, insert, i,
         weight;
 
     // naive document ranking: just by the proportion of words assigned to t 
@@ -110,18 +110,18 @@ var top_docs = function (m,t,n) {
     // initial guess
     docs = d3.range(n);
     wts = docs.map(weight);
-    docs.sort(function (a,b) {
-        return d3.ascending(wts[a],wts[b]);
+    docs.sort(function (a, b) {
+        return d3.ascending(wts[a], wts[b]);
     });
     wts = docs.map(function (d) { return wts[d]; });
 
-    for (i = n;i < m.dt.length;i += 1) {
+    for (i = n; i < m.dt.length; i += 1) {
         wt = weight(i);
-        insert = d3.bisectLeft(wts,wt);
-        if(insert > 0) {
-            docs.splice(insert,0,i);
+        insert = d3.bisectLeft(wts, wt);
+        if (insert > 0) {
+            docs.splice(insert, 0, i);
             docs.shift();
-            wts.splice(insert,0,wt);
+            wts.splice(insert, 0, wt);
             wts.shift();
         }
     }
@@ -130,33 +130,35 @@ var top_docs = function (m,t,n) {
 };
 
 // TODO user faster "top N" algorithm as in top_docs ?
-var doc_topics = function (m,d,n) {
+var doc_topics = function (m, d, n) {
     return d3.range(m.n)
-        .sort(function (a,b) {
-            return d3.descending(m.dt[d][a],m.dt[d][b]);
+        .sort(function (a, b) {
+            return d3.descending(m.dt[d][a], m.dt[d][b]);
         })
-        .slice(0,n);
+        .slice(0, n);
 };
 
 var bib_sort = function (m) {
     var result = {
-        headings: [],
-        docs: []
-    },
+            headings: [],
+            docs: []
+        },
         docs = d3.range(m.meta.length),
-        dec,i,last,
-        cur_dec = undefined,
+        dec,
+        i,
+        last,
+        cur_dec,
         partition = [];
 
     // TODO other sorting / sectioning than date / decade
 
-    docs = docs.sort(function (a,b) {
-        return d3.ascending(+m.meta[a].date,+m.meta[b].date);
+    docs = docs.sort(function (a, b) {
+        return d3.ascending(+m.meta[a].date, +m.meta[b].date);
     });
 
-    for (i = 0;i < docs.length;i += 1) {
+    for (i = 0; i < docs.length; i += 1) {
         dec = Math.floor(m.meta[docs[i]].date.getFullYear() / 10);
-        if(dec !== cur_dec) {
+        if (dec !== cur_dec) {
             partition.push(i);
             result.headings.push(dec.toString() + "0s");
             cur_dec = dec;
@@ -165,8 +167,8 @@ var bib_sort = function (m) {
     partition.shift(); // correct for "0" always getting added at the start
     partition.push(docs.length); // make sure we get the tail 
 
-    for (i = 0,last = 0;i < partition.length;i += 1) {
-        result.docs.push(docs.slice(last,partition[i]));
+    for (i = 0, last = 0; i < partition.length; i += 1) {
+        result.docs.push(docs.slice(last, partition[i]));
         last = partition[i];
     }
 
@@ -177,7 +179,7 @@ var bib_sort = function (m) {
 // Principal view-generating functions
 // -----------------------------------
 
-var topic_view = function (m,t) {
+var topic_view = function (m, t) {
     var view, as, docs;
 
     console.log("View for topic " + (t + 1));
@@ -190,7 +192,7 @@ var topic_view = function (m,t) {
     // -------------------------
 
     view.select("h2")
-        .text(topic_label(m,t,VIS.overview_words));
+        .text(topic_label(m, t, VIS.overview_words));
 
     view.select("p#topic_remark")
         .text("α = " + VIS.float_format(m.alpha[t]));
@@ -198,7 +200,7 @@ var topic_view = function (m,t) {
 
     as = view.select("div#topic_words")
         .selectAll("a")
-        .data(top_words(m,t,m.n_top_words));
+        .data(top_words(m, t, m.n_top_words));
 
     as.enter()
         .append("a");
@@ -206,19 +208,19 @@ var topic_view = function (m,t) {
     as.exit().remove();
 
     as
-        .attr("href","#")
+        .attr("href", "#")
         .text(function (w) {
-                return m.tw[t].get(w) + " " + w;
-        }) 
-        .on("click",function (w) {
-            word_view(m,w);
+            return m.tw[t].get(w) + " " + w;
+        })
+        .on("click", function (w) {
+            word_view(m, w);
         });
 
 
     // get top articles
     // ----------------
 
-    docs = top_docs(m,t,VIS.topic_view_docs);
+    docs = top_docs(m, t, VIS.topic_view_docs);
 
     as = view.select("div#topic_docs")
         .selectAll("a")
@@ -232,28 +234,28 @@ var topic_view = function (m,t) {
     as
         .attr({ href: "#" })
         .html(function (d) {
-            var weight,frac;
+            var weight, frac;
 
-            weight = m.dt[d][t]; 
+            weight = m.dt[d][t];
             frac = weight / m.doc_len[d];
             return weight.toString() + " ("
                 + VIS.float_format(frac) + ") "
-                + cite_doc(m,d);
+                + cite_doc(m, d);
         })
-        .on("click",function (d) {
-            doc_view(m,d);
-        })
+        .on("click", function (d) {
+            doc_view(m, d);
+        });
 
 
     // ready
-    view.classed("hidden",false);
+    view.classed("hidden", false);
 
     // TODO visualize word and doc weights as lengths
     // (later: time graph)
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-var word_view = function (m,word) {
+var word_view = function (m, word) {
     var view, as, topics;
 
     console.log("View for word " + word);
@@ -265,9 +267,9 @@ var word_view = function (m,word) {
     view.select("h2")
         .text(word);
 
-    topics = word_topics(m,word);
-    topics = topics.sort(function (a,b) {
-        return d3.ascending(a[1],b[1]);
+    topics = word_topics(m, word);
+    topics = topics.sort(function (a, b) {
+        return d3.ascending(a[1], b[1]);
     });
     as = view.selectAll("a")
         .data(topics);
@@ -278,21 +280,20 @@ var word_view = function (m,word) {
     as
         .text(function (d) {
             return "Ranked " + (d[1] + 1) // user-facing rank is 1-based
-                + " in " + topic_label(m,d[0],VIS.overview_words);
+                + " in " + topic_label(m, d[0], VIS.overview_words);
         })
         .attr({ href: "#" })
-        .on("click",function (d) {
-            topic_view(m,d[0]);
+        .on("click", function (d) {
+            topic_view(m, d[0]);
         });
 
-        
     // ready
-    view.classed("hidden",false);
+    view.classed("hidden", false);
 
     // (later: time graph)
 };
 
-var doc_view = function (m,doc) {
+var doc_view = function (m, doc) {
     var view, as;
 
     console.log("View for doc " + doc);
@@ -302,19 +303,19 @@ var doc_view = function (m,doc) {
     view = d3.select("div#doc_view");
 
     view.select("#doc_view h2")
-        .html(cite_doc(m,doc));
+        .html(cite_doc(m, doc));
 
     view.select("p#doc_remark")
         .html(m.doc_len[doc] + " tokens. "
                 + "<a href="
-                + doc_uri(m,doc)
+                + doc_uri(m, doc)
                 + ">View "
                 + m.meta[doc].doi
                 + " on JSTOR</a>");
 
     as = view.select("div#doc_topics")
         .selectAll("a")
-        .data(doc_topics(m,doc,VIS.doc_view_topics));
+        .data(doc_topics(m, doc, VIS.doc_view_topics));
 
     as.enter().append("a");
     as.exit().remove();
@@ -325,23 +326,23 @@ var doc_view = function (m,doc) {
             score = m.dt[doc][t];
             label = score.toString();
             label += " (" + VIS.float_format(score / m.doc_len[doc]) + ") ";
-            label += topic_label(m,t,VIS.overview_words);
+            label += topic_label(m, t, VIS.overview_words);
             return label;
         })
-        .on("click",function (t) {
-            topic_view(m,t);
+        .on("click", function (t) {
+            topic_view(m, t);
         });
 
     // TODO visualize topic proportions as rectangles at the very least
 
     // ready 
-    view.classed("hidden",false);
+    view.classed("hidden", false);
 
     // (later: nearby documents)
 };
 
 var bib_view = function (m) {
-    var ordering,view,nav_as,headings,as;
+    var ordering, view, nav_as, sections, headings, as;
 
     hide_views();
 
@@ -349,7 +350,7 @@ var bib_view = function (m) {
 
     view = d3.select("div#bib_view");
 
-    if(!VIS.bib_ready) {
+    if (!VIS.bib_ready) {
         ordering = bib_sort(m);
 
         nav_as = view.select("nav")
@@ -360,7 +361,7 @@ var bib_view = function (m) {
         nav_as.exit().remove();
 
         nav_as
-            .attr("href",function (h) { return "#" + h; })
+            .attr("href", function (h) { return "#" + h; })
             .text(function (h) { return h; });
 
         sections = view.select("div#bib_main")
@@ -376,51 +377,51 @@ var bib_view = function (m) {
         headings = sections.selectAll("h2");
 
         headings
-            .attr("id",function (h) {
+            .attr("id", function (h) {
                 return h;
             })
             .text(function (h) { return h; });
 
         as = sections
             .selectAll("a")
-            .data(function (h,i) {
+            .data(function (h, i) {
                 return ordering.docs[i];
             });
-            
+
         as.enter().append("a");
         as.exit().remove();
 
         // TODO list topic as well as coloring bib entry
 
         as
-            .attr("href","#")
-            .style("background-color",function (d) {
-                return VIS.topic_scale(doc_topics(m,d,1));
+            .attr("href", "#")
+            .style("background-color", function (d) {
+                return VIS.topic_scale(doc_topics(m, d, 1));
             })
             .html(function (d) {
-                return cite_doc(m,d);
+                return cite_doc(m, d);
             })
-            .on("click",function (d) {
-                doc_view(m,d);
+            .on("click", function (d) {
+                doc_view(m, d);
             });
 
         VIS.bib_ready = true;
     }
 
     // ready
-    view.classed("hidden",false);
+    view.classed("hidden", false);
 };
 
 
 
 var overview = function (m) {
-    var ps;
+    var as;
 
     hide_views();
 
     console.log("Overview");
 
-    if(!VIS.overview_ready) {
+    if (!VIS.overview_ready) {
 
         as = d3.select("div#overview")
             .selectAll("a")
@@ -432,23 +433,23 @@ var overview = function (m) {
 
         as.text(function (t) {
             var label;
-            
-            label = topic_label(m,t,VIS.overview_words);
+
+            label = topic_label(m, t, VIS.overview_words);
             label += " (α = " + VIS.float_format(m.alpha[t]) + ")";
             return label;
         });
 
-        as.attr("href","#");
+        as.attr("href", "#");
 
-        as.on("click",function (t) {
-            topic_view(m,t);
+        as.on("click", function (t) {
+            topic_view(m, t);
         });
 
         VIS.overview_ready = true;
     }
 
     d3.select("div#overview")
-        .classed("hidden",false);
+        .classed("hidden", false);
 
     // TODO visualize alphas
     // (later: word clouds)
@@ -458,19 +459,19 @@ var overview = function (m) {
 
 
 var hide_views = function () {
-    var views,selector;
+    var views, selector, i;
     views = [
         "overview",
         "topic_view",
         "doc_view",
         "word_view",
-        "bib_view" 
+        "bib_view"
     ];
 
-    for (i = 0;i < views.length;i += 1) {
+    for (i = 0; i < views.length; i += 1) {
         selector = "div#" + views[i];
         d3.select(selector)
-            .classed("hidden",true);
+            .classed("hidden", true);
     }
 };
 
@@ -487,9 +488,8 @@ var setup_vis = function (m) {
         topic_view_words: 50,
         topic_view_docs: 20,
         doc_view_topics: 10,
-        overview_ready: false,
         float_format: function (x) {
-            return d3.round(x,3);
+            return d3.round(x, 3);
         },
         cite_date_format: d3.time.format("%B %Y"),
         uri_proxy: ".proxy.libraries.rutgers.edu",
@@ -499,12 +499,12 @@ var setup_vis = function (m) {
     // Make overview link clickable
 
     d3.select("a#overview_link")
-        .on("click",function () {
+        .on("click", function () {
             overview(m);
         });
 
     d3.select("a#bib_link")
-        .on("click",function () {
+        .on("click", function () {
             bib_view(m);
         });
 
@@ -522,33 +522,33 @@ var setup_vis = function (m) {
     VIS.topic_scale = d3.scale.ordinal()
         .domain(d3.range(m.n))
         .range(d3.range(m.n).map(function (t) {
-            return d3.hsl(360 * t / m.n,0.5,0.8).toString();
+            return d3.hsl(360 * t / m.n, 0.5, 0.8).toString();
         }));
 
 };
 
 var read_files = function (ready) {
-    var m,process_keys,access_meta,process_files;
+    var m, process_keys, access_meta, process_files;
 
     // initialize model object
-    m = Model();
+    m = model();
 
     // This "accessor" eats up the rows of keys.csv and returns nothing.
     // It loads the topic-words (but only N most probable) as d3.maps()s
     process_keys = function (d) {
         var t;
-        
+
         t = +d.topic - 1;   // topics indexed from 1 in keys.csv
 
-        if(!m.tw[t]) {
+        if (!m.tw[t]) {
             m.tw[t] = d3.map();
         }
-        m.tw[t].set(d.word,+d.weight);
+        m.tw[t].set(d.word, +d.weight);
         // TODO should precalculate ranks here...? or save memory?
 
         // read topic alpha value
 
-        if(m.alpha[t]===undefined) {
+        if (m.alpha[t] === undefined) {
             m.alpha[t] = parseFloat(d.alpha);
         }
     };
@@ -556,19 +556,19 @@ var read_files = function (ready) {
     access_meta = function (d) {
         //id,doi,title,author,journaltitle,volume,issue,
         //pubdate,pagerange,publisher,type,reviewed-work
-        var a_str = d.author.trim();
-        var date = new Date(d.pubdate.trim());
+        var a_str = d.author.trim(),
+            date = new Date(d.pubdate.trim());
 
         return {
-            authors: a_str==="" ? [] : a_str.split("\t"),
+            authors: a_str === "" ? [] : a_str.split("\t"),
             title: d.title.trim(),
             journaltitle: d.journaltitle.trim(),
             volume: d.volume.trim(),
             issue: d.issue.trim(),
             date: date,
             pagerange: d.pagerange.trim()
-                .replace(/^p?p\. /,"")
-                .replace(/-/g,"–"),
+                .replace(/^p?p\. /, "")
+                .replace(/-/g, "–"),
             doi: d.doi.trim()
         };
     };
@@ -591,7 +591,7 @@ var read_files = function (ready) {
 
         console.log("Read keys.csv: " + m.n + " topics");
 
-        m.dt = d3.csv.parseRows(dt_text,function (row,j) {
+        m.dt = d3.csv.parseRows(dt_text, function (row, j) {
             return row.map(function (x) { return +x; });
         });
 
@@ -610,23 +610,24 @@ var read_files = function (ready) {
 
     // actually load the files and call the callback
     queue()
-        .defer(d3.json,"data/model_meta.json")
-        .defer(d3.csv,"data/keys.csv",process_keys)
-        .defer(d3.text,"data/dt.csv")
-        .defer(d3.csv,"data/meta.csv",access_meta)
+        .defer(d3.json, "data/model_meta.json")
+        .defer(d3.csv, "data/keys.csv", process_keys)
+        .defer(d3.text, "data/dt.csv")
+        .defer(d3.csv, "data/meta.csv", access_meta)
         .await(process_files); // process_files calls ready(m) when done
 };
-        
+
 // main
 // ----
 
 var main = function () {
-    read_files(function (model) { // callback, invoked when model is loaded in 
-        setup_vis(model);
-        overview(model);
+    read_files(function (m) { // callback, invoked when model is loaded in 
+        setup_vis(m);
+        overview(m);
     });
 };
 
 // execution
 
 main();
+
