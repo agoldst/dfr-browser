@@ -1,4 +1,4 @@
-# requires metadata.R
+# requires metadata.R: change path as needed
 source("~/Developer/dfr-analysis/metadata.R")
 
 prepare_data <- function(dfr_dirs,
