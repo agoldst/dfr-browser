@@ -3,9 +3,31 @@
 /* declaration of global object (initialized in setup_vis) */
 var VIS;
 
+/* declaration of functions */
+
+var model,          // model specification
+    top_words,      // rankers and sorters
+    word_topics,
+    top_docs,
+    doc_topics,
+    bib_sort,
+    topic_label,    // stringifiers
+    cite_doc,
+    doc_uri,
+    hide_views,     // view generation
+    topic_view,
+    word_view,
+    doc_view,
+    bib_view,
+    overview,
+    setup_vis,      // initialization
+    read_files,
+    main;           // main program
+
 // model specification
 // -------------------
-var model = function () {
+
+model = function () {
     return {
         tw: [],     // array of d3.map()s
         dt: [],     // docs in rows, topic counts in columns
@@ -20,52 +42,10 @@ var model = function () {
 // utility functions
 // -----------------
 
-// -- stringifiers
-//    ------------
-
-var topic_label = function (m, t, n) {
-    var label;
-
-    label = d3.format("03d")(t + 1); // user-facing index is 1-based
-    label += " ";
-    label += top_words(m, t, n).join(" ");
-    return label;
-};
-
-var cite_doc = function (m, d) {
-    var doc, result;
-
-    doc = m.meta[d];
-    result = doc.authors.length > 0
-        ? doc.authors.join(" and ")
-        : "[Anon]";
-
-    result += ", ";
-    result += '"' + doc.title + ',"';
-    result += " <em>" + doc.journaltitle + "</em> ";
-    result += doc.volume + ", no. " + doc.issue;
-
-    // Could do "proper" date formatting via d3.time.format() instead
-    result += " (" + VIS.cite_date_format(doc.date) + "): ";
-    result += doc.pagerange;
-
-    result = result.replace(/_/g, ",");
-    result = result.replace(/\t/g, "");
-
-    return result;
-};
-
-var doc_uri = function (m, d) {
-    return "http://dx.doi.org"
-        + VIS.uri_proxy
-        + "/"
-        + m.meta[d].doi;
-};
-
 // -- rankers
 //    -------
 
-var top_words = function (m, t, n) {
+top_words = function (m, t, n) {
     var w;
     w = m.tw[t].keys().sort(function (j, k) {
         return d3.descending(m.tw[t].get(j), m.tw[t].get(k));
@@ -74,30 +54,28 @@ var top_words = function (m, t, n) {
     return w.slice(0, n);
 };
 
-var word_topics = function (m, word) {
-    var t, row, rank, word_wt,
-        result = [];
+word_topics = function (m, word) {
+    var t, row, word_wt,
+        result = [],
+        calc_rank = function (row) {
+            // zero-based rank = (# of words strictly greater than word)
+            return row.values().reduce(function (acc, cur) {
+                return cur > word_wt ? acc + 1 : acc;
+            },
+                0);
+        };
 
     for (t = 0; t < m.n; t += 1) {
         row = m.tw[t];
         if (row.has(word)) {
-            rank = 0;
             word_wt = row.get(word);
-
-            row.forEach(function (w, wt) {
-                if (wt > word_wt) {
-                    rank += 1;
-                }
-            });
-
-            // zero-based rank = (# of words strictly greater than word)
-            result.push([t, rank]);
+            result.push([t, calc_rank(row)]);
         }
     }
     return result;
 };
 
-var top_docs = function (m, t, n) {
+top_docs = function (m, t, n) {
     var docs, wts, wt, insert, i,
         weight;
 
@@ -130,7 +108,7 @@ var top_docs = function (m, t, n) {
 };
 
 // TODO user faster "top N" algorithm as in top_docs ?
-var doc_topics = function (m, d, n) {
+doc_topics = function (m, d, n) {
     return d3.range(m.n)
         .sort(function (a, b) {
             return d3.descending(m.dt[d][a], m.dt[d][b]);
@@ -138,7 +116,7 @@ var doc_topics = function (m, d, n) {
         .slice(0, n);
 };
 
-var bib_sort = function (m) {
+bib_sort = function (m) {
     var result = {
             headings: [],
             docs: []
@@ -175,11 +153,70 @@ var bib_sort = function (m) {
     return result;
 };
 
+// -- stringifiers
+//    ------------
+
+topic_label = function (m, t, n) {
+    var label;
+
+    label = d3.format("03d")(t + 1); // user-facing index is 1-based
+    label += " ";
+    label += top_words(m, t, n).join(" ");
+    return label;
+};
+
+cite_doc = function (m, d) {
+    var doc, result;
+
+    doc = m.meta[d];
+    result = doc.authors.length > 0
+        ? doc.authors.join(" and ")
+        : "[Anon]";
+
+    result += ", ";
+    result += '"' + doc.title + ',"';
+    result += " <em>" + doc.journaltitle + "</em> ";
+    result += doc.volume + ", no. " + doc.issue;
+
+    // Could do "proper" date formatting via d3.time.format() instead
+    result += " (" + VIS.cite_date_format(doc.date) + "): ";
+    result += doc.pagerange;
+
+    result = result.replace(/_/g, ",");
+    result = result.replace(/\t/g, "");
+
+    return result;
+};
+
+doc_uri = function (m, d) {
+    return "http://dx.doi.org"
+        + VIS.uri_proxy
+        + "/"
+        + m.meta[d].doi;
+};
+
 
 // Principal view-generating functions
 // -----------------------------------
 
-var topic_view = function (m, t) {
+hide_views = function () {
+    var views, selector, i;
+    views = [
+        "overview",
+        "topic_view",
+        "doc_view",
+        "word_view",
+        "bib_view"
+    ];
+
+    for (i = 0; i < views.length; i += 1) {
+        selector = "div#" + views[i];
+        d3.select(selector)
+            .classed("hidden", true);
+    }
+};
+
+topic_view = function (m, t) {
     var view, as, docs;
 
     console.log("View for topic " + (t + 1));
@@ -255,7 +292,7 @@ var topic_view = function (m, t) {
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-var word_view = function (m, word) {
+word_view = function (m, word) {
     var view, as, topics;
 
     console.log("View for word " + word);
@@ -293,7 +330,7 @@ var word_view = function (m, word) {
     // (later: time graph)
 };
 
-var doc_view = function (m, doc) {
+doc_view = function (m, doc) {
     var view, as;
 
     console.log("View for doc " + doc);
@@ -341,7 +378,7 @@ var doc_view = function (m, doc) {
     // (later: nearby documents)
 };
 
-var bib_view = function (m) {
+bib_view = function (m) {
     var ordering, view, nav_as, sections, headings, as;
 
     hide_views();
@@ -414,7 +451,7 @@ var bib_view = function (m) {
 
 
 
-var overview = function (m) {
+overview = function (m) {
     var as;
 
     hide_views();
@@ -458,28 +495,11 @@ var overview = function (m) {
 };
 
 
-var hide_views = function () {
-    var views, selector, i;
-    views = [
-        "overview",
-        "topic_view",
-        "doc_view",
-        "word_view",
-        "bib_view"
-    ];
-
-    for (i = 0; i < views.length; i += 1) {
-        selector = "div#" + views[i];
-        d3.select(selector)
-            .classed("hidden", true);
-    }
-};
-
 
 // initialization
 // --------------
 
-var setup_vis = function (m) {
+setup_vis = function (m) {
     // set visualization parameters on the global object VIS
     VIS = {
         overview_ready: false,
@@ -527,7 +547,7 @@ var setup_vis = function (m) {
 
 };
 
-var read_files = function (ready) {
+read_files = function (ready) {
     var m, process_keys, access_meta, process_files;
 
     // initialize model object
@@ -620,7 +640,7 @@ var read_files = function (ready) {
 // main
 // ----
 
-var main = function () {
+main = function () {
     read_files(function (m) { // callback, invoked when model is loaded in 
         setup_vis(m);
         overview(m);
