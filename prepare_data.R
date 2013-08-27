@@ -5,6 +5,7 @@ prepare_data <- function(dfr_dirs,
                          out_dir="data",
                          doc_topics="data/doc_topics.csv") {
                          
+    message("Checking for the presence of keys.csv")
     keyfile <- file.path(out_dir,"keys.csv")
     if(file.exists(keyfile)) {
         message(keyfile," ok");
@@ -12,6 +13,8 @@ prepare_data <- function(dfr_dirs,
     else {
         warning(keyfile," is missing.")
     }
+
+    message("Preparing doc-topic matrix file")
 
     dt_out <- file.path(out_dir,"dt.csv")
     if(file.exists(doc_topics)) {
@@ -30,6 +33,8 @@ prepare_data <- function(dfr_dirs,
         warning(doc_topics," is missing.");
     }
 
+    message("Preparing metadata file")
+
     metadata <- read_metadata(file.path(dfr_dirs,"citations.CSV"))
 
     if(nrow(metadata) > 0) {
@@ -46,6 +51,16 @@ prepare_data <- function(dfr_dirs,
     else {
         warning("Unable to read metadata.")
     }
+
+    message("Checking for model-meta JSON file...")
+    mmfile <- file.path(out_dir,"model_meta.json")
+    if(file.exists(mmfile)) {
+        message(mmfile," ok")
+    }
+    else {
+        message(mmfile," is missing. Create it by hand (see the README)")
+    }
+
 }
 
 # no file-writing code executed until you invoke prepare_data()
