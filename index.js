@@ -643,6 +643,9 @@ read_files = function (ready) {
 main = function () {
     read_files(function (m) { // callback, invoked when model is loaded in 
         setup_vis(m);
+        // TODO instead of overview, check window.location.hash
+        // and load that view
+        // TODO also set the location.hash, so browser history can work
         overview(m);
     });
 };
