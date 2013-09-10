@@ -6,52 +6,77 @@
   <title>Topic Model Browser</title>
   <script type="text/javascript" src="lib/d3.v3.min.js"></script>
   <script type="text/javascript" src="lib/queue.v1.min.js"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+
   <link rel="stylesheet" href="index.css" type="text/css" /> 
 </head>
 
 <body>
-  <header>
-    <h1>Loading...</h1>
+  <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="brand" id="model_title" href="#">Loading...</a>
+        <div class="nav-collapse collapse">
+          <ul class="nav">
+            <li><a class="active" id="overview_link" href="#">Overview</a></li>
+            <li><a id="bib_link" href="#">Bibliography</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+  </div>
+
+<div class="container">
+
+  <div id="overview" class="hidden">
     <div id="meta_info">
     </div>
-  </header>
+    <div id="overview_topic_list">
+    </div>
+  </div>
 
-  <nav>
-    <p>
-      <a id="overview_link" href="#">Overview</a>
-      <a id="bib_link" href="#">Bibliography</a>
-    </p>
-  </nav>
-
-  <section>
-    <div id="overview" class="hidden"></div>
-    <div id="topic_view" class="hidden">
-      <h2></h2>
-      <p id="topic_remark"></p>
-      <div id="topic_words">
+  <div id="topic_view" class="hidden">
+    <h2></h2>
+    <p id="topic_remark"></p>
+    <div class="row">
+      <div id="topic_words" class="span3">
         <h3>Most probable words</h3>
       </div>
-      <div id="topic_docs">
+      <div id="topic_docs" class="span9">
         <h3>Documents with largest proportion</h3>
       </div>
-    </div>
-    <div id="doc_view" class="hidden">
-      <h2></h2>
-      <p id="doc_remark"></p>
-      <div id="doc_topics"></div>
-    </div>
-    <div id="word_view" class="hidden">
-      <h2></h2>
-    </div>
-    <div id="bib_view">
-      <nav></nav>
-      <div id="bib_main"></div>
-    </div>
-  
-  </section>
+  </div>
+  </div>
 
-  <script type="text/javascript" src="index.js">
-  </script>
+  <div id="doc_view" class="hidden row">
+    <h2></h2>
+    <p id="doc_remark"></p>
+    <div id="doc_topics"></div>
+  </div>
+
+  <div id="word_view" class="hidden row">
+    <h2></h2>
+  </div>
+
+  <div id="bib_view">
+    <nav class="row"></nav>
+    <div id="bib_main" class="row"></div>
+  </div>
+  
+
+</div> <!-- /container -->
+
+<script src="js/jquery-2.0.3.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="index.js"></script>
+
 
 </body>
 

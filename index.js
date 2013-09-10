@@ -460,7 +460,7 @@ overview = function (m) {
 
     if (!VIS.overview_ready) {
 
-        as = d3.select("div#overview")
+        as = d3.select("div#overview_topic_list")
             .selectAll("a")
             .data(d3.range(m.n));
 
@@ -532,7 +532,7 @@ setup_vis = function (m) {
 
     // load model information and stick it in page header elements
 
-    d3.select("header h1")
+    d3.select("#model_title")
         .text(m.model_meta.title);
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);

@@ -1,4 +1,7 @@
-/* TODO how about some actual layout and style? */
+/* head clearance for bootstrap navbar */
+body {
+    padding-top: 60px;
+}
 
 .hidden {
     display: none;
@@ -27,20 +30,10 @@ a:visited {
 
 /* topic_view */
 
-div#topic_words {
-    position: absolute;
-    width: 20%;
-}
-
-div#topic_docs {
-    float: right;
-    width: 80%;
-}
-
 #topic_words a {
     display: block;
-    font-size: 0.75em;
-    line-height: 1em;
+    font-size: 1em;
+    line-height: 1.5em;
 }
 
 #topic_docs a {
