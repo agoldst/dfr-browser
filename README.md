@@ -20,11 +20,9 @@ This looks for document metadata under each of the elements of `dfr_dirs` and ou
 }
 ```
 
-2. Download copies of [d3.v3.min.js](http://d3js.org/d3.v3.min.js) and [queue.v1.min.js](http://d3js.org/queue.v1.min.js) into `lib`.
+2. Launch a web server in the `browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text` and kindred functions).
 
-3. Launch a web server in the `browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`.
-
-4. Navigate to the home page.
+3. Navigate to the home page, `http://localhost:8888`, in your favorite browser.
 
 ## What it does
 
