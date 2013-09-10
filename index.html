@@ -24,9 +24,10 @@
         </button>
         <a class="brand" id="model_title" href="#">Loading...</a>
         <div class="nav-collapse collapse">
-          <ul class="nav">
+          <ul id="nav_main" class="nav">
             <li><a class="active" id="overview_link" href="#">Overview</a></li>
-            <li><a id="bib_link" href="#">Bibliography</a></li>
+            <li><a id="bib_link" href="#bib">Bibliography</a></li>
+            <li><a id="about_link" href="#about">About</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -36,10 +37,15 @@
 <div class="container">
 
   <div id="overview" class="hidden">
-    <div id="meta_info">
-    </div>
     <div id="overview_topic_list">
     </div>
+  </div>
+
+  <div id="about_view" class="hidden">
+    <h2>About this model</h2>
+    <div id="meta_info"></div>
+    <h2>About this browser interface</h2>
+    <p>A simple JSTOR-DfR topic model browser by <a href="http://andrewgoldstone.com">Andrew Goldstone</a>. Source available on <a href="http://github.com/dfr-analysis/tree/master/browser/">github</a>. Made using <a href="http://d3js.org">d3.js</a> and <a href="http://getbootstrap.com/">Bootstrap</a>.</p>
   </div>
 
   <div id="topic_view" class="hidden">

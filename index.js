@@ -203,6 +203,7 @@ hide_views = function () {
     var views, selector, i;
     views = [
         "overview",
+        "about_view",
         "topic_view",
         "doc_view",
         "word_view",
@@ -428,13 +429,10 @@ bib_view = function (m) {
         as.enter().append("a");
         as.exit().remove();
 
-        // TODO list topic as well as coloring bib entry
+        // TODO list topics in bib entry?
 
         as
             .attr("href", "#")
-            .style("background-color", function (d) {
-                return VIS.topic_scale(doc_topics(m, d, 1));
-            })
             .html(function (d) {
                 return cite_doc(m, d);
             })
@@ -516,11 +514,18 @@ setup_vis = function (m) {
         topic_scale: undefined // color scale
     };
 
-    // Make overview link clickable
+    // Make ul#nav_main links clickable
 
     d3.select("a#overview_link")
         .on("click", function () {
             overview(m);
+        });
+
+    d3.select("a#about_link")
+        .on("click", function () {
+            hide_views();
+            d3.select("div#about_view")
+                .classed("hidden",false);
         });
 
     d3.select("a#bib_link")
@@ -533,7 +538,10 @@ setup_vis = function (m) {
     // load model information and stick it in page header elements
 
     d3.select("#model_title")
-        .text(m.model_meta.title);
+        .text(m.model_meta.title)
+        .on("click",function () {
+            overview(m);
+        });
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);
 
