@@ -12,14 +12,16 @@ var model,          // model specification
     doc_topics,
     bib_sort,
     topic_label,    // stringifiers
+    topic_link,
     cite_doc,
     doc_uri,
-    hide_views,     // view generation
-    topic_view,
+    topic_view,     // view generation
     word_view,
     doc_view,
     bib_view,
-    overview,
+    about_view,
+    model_view,
+    view_refresh,
     setup_vis,      // initialization
     read_files,
     main;           // main program
@@ -165,6 +167,10 @@ topic_label = function (m, t, n) {
     return label;
 };
 
+topic_link = function(t) {
+    return "#/topic/" + (t + 1);
+};
+
 cite_doc = function (m, d) {
     var doc, result;
 
@@ -199,30 +205,14 @@ doc_uri = function (m, d) {
 // Principal view-generating functions
 // -----------------------------------
 
-hide_views = function () {
-    var views, selector, i;
-    views = [
-        "overview",
-        "about_view",
-        "topic_view",
-        "doc_view",
-        "word_view",
-        "bib_view"
-    ];
-
-    for (i = 0; i < views.length; i += 1) {
-        selector = "div#" + views[i];
-        d3.select(selector)
-            .classed("hidden", true);
-    }
-};
-
 topic_view = function (m, t) {
     var view, as, docs;
 
     console.log("View for topic " + (t + 1));
-
-    hide_views();
+    if (t < 0 || t > m.n) {
+        console.log("Invalid topic t = " + t);
+        return false;
+    }
 
     view = d3.select("div#topic_view");
 
@@ -246,12 +236,11 @@ topic_view = function (m, t) {
     as.exit().remove();
 
     as
-        .attr("href", "#")
+        .attr("href", function (w) {
+            return "#/word/" + w;
+        })
         .text(function (w) {
             return m.tw[t].get(w) + " " + w;
-        })
-        .on("click", function (w) {
-            word_view(m, w);
         });
 
 
@@ -270,7 +259,9 @@ topic_view = function (m, t) {
     as.exit().remove();
 
     as
-        .attr({ href: "#" })
+        .attr("href", function (d) {
+            return "#/doc/" + d;
+        })
         .html(function (d) {
             var weight, frac;
 
@@ -279,15 +270,10 @@ topic_view = function (m, t) {
             return weight.toString() + " ("
                 + VIS.float_format(frac) + ") "
                 + cite_doc(m, d);
-        })
-        .on("click", function (d) {
-            doc_view(m, d);
         });
 
 
-    // ready
-    view.classed("hidden", false);
-
+    return true;
     // TODO visualize word and doc weights as lengths
     // (later: time graph)
     // (later: nearby topics by J-S div or cor on log probs)
@@ -297,8 +283,6 @@ word_view = function (m, word) {
     var view, as, topics;
 
     console.log("View for word " + word);
-
-    hide_views();
 
     view = d3.select("div#word_view");
 
@@ -320,14 +304,11 @@ word_view = function (m, word) {
             return "Ranked " + (d[1] + 1) // user-facing rank is 1-based
                 + " in " + topic_label(m, d[0], VIS.overview_words);
         })
-        .attr({ href: "#" })
-        .on("click", function (d) {
-            topic_view(m, d[0]);
+        .attr("href", function (d) {
+            return topic_link(d[0]);
         });
 
-    // ready
-    view.classed("hidden", false);
-
+    return true;
     // (later: time graph)
 };
 
@@ -336,7 +317,10 @@ doc_view = function (m, doc) {
 
     console.log("View for doc " + doc);
 
-    hide_views();
+    if(doc < 0 || doc >= m.dt.length) {
+        console.log("Invalid doc id: " + doc);
+        return false;
+    }
 
     view = d3.select("div#doc_view");
 
@@ -358,7 +342,7 @@ doc_view = function (m, doc) {
     as.enter().append("a");
     as.exit().remove();
     as
-        .attr({ href: "#"})
+        .attr("href",topic_link)
         .text(function (t) {
             var label, score;
             score = m.dt[doc][t];
@@ -366,23 +350,16 @@ doc_view = function (m, doc) {
             label += " (" + VIS.float_format(score / m.doc_len[doc]) + ") ";
             label += topic_label(m, t, VIS.overview_words);
             return label;
-        })
-        .on("click", function (t) {
-            topic_view(m, t);
         });
 
+    return true;
     // TODO visualize topic proportions as rectangles at the very least
-
-    // ready 
-    view.classed("hidden", false);
 
     // (later: nearby documents)
 };
 
 bib_view = function (m) {
     var ordering, view, nav_as, sections, headings, as;
-
-    hide_views();
 
     console.log("Bibliography view");
 
@@ -398,8 +375,14 @@ bib_view = function (m) {
         nav_as.enter().append("a");
         nav_as.exit().remove();
 
+        // TODO fix page-jumping #links
+        /*
         nav_as
             .attr("href", function (h) { return "#" + h; })
+            .text(function (h) { return h; });
+        */
+        nav_as
+            .attr("href", "#/bib")
             .text(function (h) { return h; });
 
         sections = view.select("div#bib_main")
@@ -432,31 +415,31 @@ bib_view = function (m) {
         // TODO list topics in bib entry?
 
         as
-            .attr("href", "#")
+            .attr("href", function(d) {
+                return "#/doc/" + d;
+            })
             .html(function (d) {
                 return cite_doc(m, d);
-            })
-            .on("click", function (d) {
-                doc_view(m, d);
             });
 
         VIS.bib_ready = true;
     }
 
     // ready
-    view.classed("hidden", false);
+    return true;
+};
+
+about_view = function (m) {
+    return true;
 };
 
 
-
-overview = function (m) {
+model_view = function (m) {
     var as;
-
-    hide_views();
 
     console.log("Overview");
 
-    if (!VIS.overview_ready) {
+    if (!VIS.model_view_ready) {
 
         as = d3.select("div#overview_topic_list")
             .selectAll("a")
@@ -474,17 +457,12 @@ overview = function (m) {
             return label;
         });
 
-        as.attr("href", "#");
+        as.attr("href",topic_link);
 
-        as.on("click", function (t) {
-            topic_view(m, t);
-        });
-
-        VIS.overview_ready = true;
+        VIS.model_view_ready = true;
     }
 
-    d3.select("div#overview")
-        .classed("hidden", false);
+    return true;
 
     // TODO visualize alphas
     // (later: word clouds)
@@ -492,6 +470,58 @@ overview = function (m) {
     // (later: multi-dimensional scaling projection showing topic clusters)
 };
 
+view_refresh = function (m,v) {
+    var view_parsed, param, success;
+
+    view_parsed = v.split("/");
+    param = view_parsed[2];
+
+    if(VIS.cur_view !== undefined) {
+        VIS.cur_view.classed("hidden",true);
+    }
+
+    switch(view_parsed[1]) {
+        case undefined:
+            view_parsed[1] = "model";
+        case "model":
+            success = model_view(m);
+            break;
+        case "about":
+            success = about_view(m);
+            break;
+        case "bib":
+            success = bib_view(m);
+            break;
+        case "topic":
+            param = +param - 1;
+            success = topic_view(m,param);
+            break;
+        case "word":
+            success = word_view(m,param);
+            break;
+        case "doc":
+            param = +param;
+            success = doc_view(m,param);
+            break; 
+        default:
+            success = false;
+            break; 
+    };
+
+    if(success) {
+        VIS.cur_view = d3.select("div#" + view_parsed[1] + "_view");
+    }
+    else {
+        if(VIS.cur_view === undefined) {
+            // fall back on model_view
+            VIS.cur_view = d3.select("div#model_view");
+            model_view(m);
+        }
+    }
+
+
+    VIS.cur_view.classed("hidden",false);
+};
 
 
 // initialization
@@ -500,7 +530,7 @@ overview = function (m) {
 setup_vis = function (m) {
     // set visualization parameters on the global object VIS
     VIS = {
-        overview_ready: false,
+        model_view_ready: false,
         bib_ready: false,
         overview_words: 15,     // TODO set these parameters interactively
         topic_view_words: 50,
@@ -514,34 +544,16 @@ setup_vis = function (m) {
         topic_scale: undefined // color scale
     };
 
-    // Make ul#nav_main links clickable
+    // hashchange handler
 
-    d3.select("a#overview_link")
-        .on("click", function () {
-            overview(m);
-        });
-
-    d3.select("a#about_link")
-        .on("click", function () {
-            hide_views();
-            d3.select("div#about_view")
-                .classed("hidden",false);
-        });
-
-    d3.select("a#bib_link")
-        .on("click", function () {
-            bib_view(m);
-        });
-
-    // TODO navigation history
-
+    window.onhashchange = function () {
+        view_refresh(m,window.location.hash);
+    };
+    
     // load model information and stick it in page header elements
 
     d3.select("#model_title")
-        .text(m.model_meta.title)
-        .on("click",function () {
-            overview(m);
-        });
+        .text(m.model_meta.title);
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);
 
@@ -651,10 +663,7 @@ read_files = function (ready) {
 main = function () {
     read_files(function (m) { // callback, invoked when model is loaded in 
         setup_vis(m);
-        // TODO instead of overview, check window.location.hash
-        // and load that view
-        // TODO also set the location.hash, so browser history can work
-        overview(m);
+        view_refresh(m,window.location.hash);
     });
 };
 
