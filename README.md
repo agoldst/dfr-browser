@@ -9,14 +9,16 @@ prepare_data(dfr_dirs,"data",path_to_doc_topics)
 ```
 
 This looks for document metadata under each of the elements of `dfr_dirs` and outputs the necessary files into the folder `data`, where the browser looks for them. The browser needs the following:
-    a. `dt.csv`: headerless matrix with the i,j cell giving the number of words in document i allocated to topic j. Generated from `doc_topics.csv`.
-    c. `keys.csv`: output of `weighted_keys_frame()`. Copy `keys.csv`.
-    d. `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`. Generated from DfR `citations.CSV` files.
-    b. `model_meta.json`: unlike the others, not automatically generated. This holds information about the model, for display in the browser. Currently I use only:
-```
+
+- `dt.csv`: headerless matrix with the i,j cell giving the number of words in document i allocated to topic j. Generated from `doc_topics.csv`.
+- `keys.csv`: output of `weighted_keys_frame()`. Copy `keys.csv`.
+- `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`. Generated from DfR `citations.CSV` files.
+- `model_meta.json`: unlike the others, not automatically generated. This holds information about the model, for display in the browser. Currently I use only: 
+
+```json
 {
-    "title": "Model title",
-    "meta_info": "<p>About the model...<p>"
+  "title": "Model title",
+  "meta_info": "<p>About the model...<p>"
 }
 ```
 
