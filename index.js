@@ -329,9 +329,9 @@ doc_view = function (m, doc) {
 
     view.select("p#doc_remark")
         .html(m.doc_len[doc] + " tokens. "
-                + "<a href="
+                + '<a class ="external" href="'
                 + doc_uri(m, doc)
-                + ">View "
+                + '">View '
                 + m.meta[doc].doi
                 + " on JSTOR</a>");
 

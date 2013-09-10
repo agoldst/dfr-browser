@@ -20,6 +20,14 @@ a:visited {
     color: black;
 }
 
+a.external {
+    color: blue;
+}
+
+a.external:visited {
+    color: purple;
+}
+
 /* footer--currently unused */
 footer {
     background-color: rgb(245,245,245);
