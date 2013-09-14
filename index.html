@@ -44,8 +44,15 @@
 <div class="container">
 
   <div id="model_view" class="hidden">
-    <div id="overview_topic_list">
-    </div>
+    <table class="table table-condensed" id="model_topics">
+      <thead>
+        <th>Topic</th>
+        <th>Top words</th>
+        <th>α</th>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
   </div>
 
   <div id="about_view" class="hidden">
@@ -60,22 +67,62 @@
     <p id="topic_remark"></p>
     <div class="row">
       <div id="topic_words" class="span3">
-        <h3>Most probable words</h3>
+        <h3>Top words</h3>
+        <table class="table table-condensed" id="topic_words">
+          <thead>
+            <th>Word</th>
+            <th>Weight</th>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
       </div>
-      <div id="topic_docs" class="span9">
-        <h3>Documents with largest proportion</h3>
+      <div class="span9">
+        <img id="topic_plot" src="" />
+        <div>
+          <h3>Documents with largest proportion</h3>
+          <table class="table table-condensed" id="topic_docs">
+            <thead>
+              <th>Document</th>
+              <th>%</th>
+              <th>Weight</th>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
       </div>
-  </div>
+    </div>
   </div>
 
   <div id="doc_view" class="hidden">
     <h2></h2>
     <p id="doc_remark"></p>
-    <div id="doc_topics"></div>
+    <table class="table table-condensed" id="doc_topics">
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Tokens</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
   </div>
 
   <div id="word_view" class="hidden">
     <h2></h2>
+    <table class="table table-condensed" id="word_topics">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Topic</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
   </div>
 
   <div id="bib_view" class="hidden">

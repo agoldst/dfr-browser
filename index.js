@@ -161,7 +161,7 @@ bib_sort = function (m) {
 topic_label = function (m, t, n) {
     var label;
 
-    label = d3.format("03d")(t + 1); // user-facing index is 1-based
+    label = String(t + 1); // user-facing index is 1-based
     label += " ";
     label += top_words(m, t, n).join(" ");
     return label;
@@ -184,7 +184,6 @@ cite_doc = function (m, d) {
     result += " <em>" + doc.journaltitle + "</em> ";
     result += doc.volume + ", no. " + doc.issue;
 
-    // Could do "proper" date formatting via d3.time.format() instead
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange;
 
@@ -206,7 +205,7 @@ doc_uri = function (m, d) {
 // -----------------------------------
 
 topic_view = function (m, t) {
-    var view, as, docs;
+    var view, trs_w, trs_d;
 
     console.log("View for topic " + (t + 1));
 
@@ -231,61 +230,81 @@ topic_view = function (m, t) {
         .text("α = " + VIS.float_format(m.alpha[t]));
 
 
-    as = view.select("div#topic_words")
-        .selectAll("a")
+    trs_w = view.select("table#topic_words tbody")
+        .selectAll("tr")
         .data(top_words(m, t, m.n_top_words));
 
-    as.enter()
-        .append("a");
+    trs_w.enter().append("tr");
+    trs_w.exit().remove();
 
-    as.exit().remove();
+    // clear rows
+    trs_w.selectAll("td").remove();
 
-    as
+    trs_w
+        .append("td").append("a")
         .attr("href", function (w) {
             return "#/word/" + w;
         })
-        .text(function (w) {
-            return m.tw[t].get(w) + " " + w;
+        .text(function (w) { return w; });
+
+    trs_w
+        .append("td")
+        .text(function(w) {
+            return m.tw[t].get(w);
         });
 
 
     // get top articles
     // ----------------
 
-    docs = top_docs(m, t, VIS.topic_view_docs);
+    trs_d = view.select("table#topic_docs tbody")
+        .selectAll("tr")
+        .data(top_docs(m, t, VIS.topic_view_docs));
 
-    as = view.select("div#topic_docs")
-        .selectAll("a")
-        .data(docs);
+    trs_d.enter().append("tr");
+    trs_d.exit().remove();
 
-    as.enter()
-        .append("a");
+    // clear rows
+    trs_d.selectAll("td").remove();
 
-    as.exit().remove();
-
-    as
+    trs_d
+        .append("td").append("a")
         .attr("href", function (d) {
             return "#/doc/" + d;
         })
         .html(function (d) {
-            var weight, frac;
+            return cite_doc(m, d);
+        });
 
-            weight = m.dt[d][t];
-            frac = weight / m.doc_len[d];
-            return weight.toString() + " ("
-                + VIS.float_format(frac) + ") "
-                + cite_doc(m, d);
+    trs_d
+        .append("td")
+        .text(function(d) {
+            return VIS.percent_format(m.dt[d][t] / m.doc_len[d]);
+        });
+
+    trs_d
+        .append("td")
+        .text(function(d) {
+            return m.dt[d][t];
         });
 
 
+    // Plot topic over time
+    // --------------------
+
+    // Set image link
+    // (later: native d3 time graph)
+    d3.select("#topic_plot")
+        .attr("src","topic_plot/" + d3.format("03d")(t + 1) + ".png")
+        .attr("title","yearly proportion of topic " + (t + 1));
+
     return true;
     // TODO visualize word and doc weights as lengths
-    // (later: time graph)
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
 word_view = function (m, word) {
-    var view, as, topics;
+    var view, trs, topics;
 
     console.log("View for word " + word);
     if(word === undefined) {
@@ -304,16 +323,26 @@ word_view = function (m, word) {
 
     // TODO alert if topics.length == 0
 
-    as = view.selectAll("a")
+    trs = view.select("table#word_topics tbody")
+        .selectAll("tr")
         .data(topics);
 
-    as.enter().append("a");
-    as.exit().remove();
+    trs.enter().append("tr");
+    trs.exit().remove();
 
-    as
+    // clear rows
+    trs.selectAll("td").remove();
+
+    trs
+        .append("td")
         .text(function (d) {
-            return "Ranked " + (d[1] + 1) // user-facing rank is 1-based
-                + " in " + topic_label(m, d[0], VIS.overview_words);
+            return d[1] + 1; // user-facing rank is 1-based
+        });
+    
+    trs
+        .append("td").append("a")
+        .text(function (d) {
+            return topic_label(m, d[0], VIS.overview_words);
         })
         .attr("href", function (d) {
             return topic_link(d[0]);
@@ -324,7 +353,7 @@ word_view = function (m, word) {
 };
 
 doc_view = function (m, doc) {
-    var view, as;
+    var view, trs;
 
     console.log("View for doc " + doc);
 
@@ -350,22 +379,31 @@ doc_view = function (m, doc) {
                 + m.meta[doc].doi
                 + " on JSTOR</a>");
 
-    as = view.select("div#doc_topics")
-        .selectAll("a")
+    trs = view.select("table#doc_topics tbody")
+        .selectAll("tr")
         .data(doc_topics(m, doc, VIS.doc_view_topics));
 
-    as.enter().append("a");
-    as.exit().remove();
-    as
-        .attr("href",topic_link)
-        .text(function (t) {
-            var label, score;
-            score = m.dt[doc][t];
-            label = score.toString();
-            label += " (" + VIS.float_format(score / m.doc_len[doc]) + ") ";
-            label += topic_label(m, t, VIS.overview_words);
-            return label;
-        });
+    trs.enter().append("tr");
+    trs.exit().remove();
+
+    // clear rows
+    trs.selectAll("td").remove();
+    trs
+        .append("td").append("a")
+            .attr("href",topic_link)
+            .text(function (t) {
+                return topic_label(m, t, VIS.overview_words);
+            });
+    trs
+        .append("td")
+            .text(function(t) {
+                return m.dt[doc][t];
+            });
+    trs
+        .append("td")
+            .text(function(t) {
+                return VIS.percent_format(m.dt[doc][t] / m.doc_len[doc]);
+            });
 
     return true;
     // TODO visualize topic proportions as rectangles at the very least
@@ -451,29 +489,39 @@ about_view = function (m) {
 
 
 model_view = function (m) {
-    var as;
+    var trs;
 
     console.log("Overview");
 
     if (!VIS.model_view_ready) {
 
-        as = d3.select("div#overview_topic_list")
-            .selectAll("a")
+        trs = d3.select("table#model_topics tbody")
+            .selectAll("tr")
             .data(d3.range(m.n));
 
-        as.enter().append("a");
+        // clear rows
+        trs.selectAll("td").remove();
 
-        as.exit().remove();
+        trs.enter().append("tr"); 
+        trs.exit().remove();
 
-        as.text(function (t) {
-            var label;
+        trs
+            .append("td").append("a")
+                .text(function (t) { return t + 1; }) // sigh
+                .attr("href",topic_link);
 
-            label = topic_label(m, t, VIS.overview_words);
-            label += " (α = " + VIS.float_format(m.alpha[t]) + ")";
-            return label;
-        });
+        trs
+            .append("td").append("a")
+                .text(function (t) {
+                    return top_words(m, t, VIS.overview_words).join(" ");
+                })
+                .attr("href",topic_link);
 
-        as.attr("href",topic_link);
+        trs
+            .append("td")
+            .text(function(t) {
+                return VIS.float_format(m.alpha[t]);
+            });
 
         VIS.model_view_ready = true;
     }
@@ -559,6 +607,9 @@ setup_vis = function (m) {
         doc_view_topics: 10,
         float_format: function (x) {
             return d3.round(x, 3);
+        },
+        percent_format: function (x) {
+            return d3.round(x * 100, 1);
         },
         cite_date_format: d3.time.format("%B %Y"),
         uri_proxy: ".proxy.libraries.rutgers.edu",

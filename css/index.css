@@ -28,6 +28,11 @@ a.external:visited {
     color: purple;
 }
 
+/* tables */
+table a {
+    display: inline;
+}
+
 /* footer--currently unused */
 footer {
     background-color: rgb(245,245,245);
@@ -37,38 +42,15 @@ footer {
 
 /* model_view aka overview */
 
-#model_view a {
-    display: block;
-    line-height: 1.5em;
-}
-
-
 /* topic_view */
 
 #topic_words a {
-    display: block;
     font-size: 1em;
-    line-height: 1.5em;
-}
-
-#topic_docs a {
-    display: block;
-    line-height: 1.5em;
 }
 
 /* word_view */
 
-#word_view a {
-    display: block;
-    line-height: 1.5em;
-}
-
 /* doc_view */
-
-#doc_view #doc_topics a {
-    display: block;
-    line-height: 1.5em;
-}
 
 /* bib_view */
 
