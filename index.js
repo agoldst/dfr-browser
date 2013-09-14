@@ -209,6 +209,11 @@ topic_view = function (m, t) {
     var view, as, docs;
 
     console.log("View for topic " + (t + 1));
+
+    if(!isFinite(t)) {
+        return false;
+    }
+
     if (t < 0 || t > m.n) {
         console.log("Invalid topic t = " + t);
         return false;
@@ -283,6 +288,9 @@ word_view = function (m, word) {
     var view, as, topics;
 
     console.log("View for word " + word);
+    if(word === undefined) {
+        return false;
+    }
 
     view = d3.select("div#word_view");
 
@@ -293,6 +301,9 @@ word_view = function (m, word) {
     topics = topics.sort(function (a, b) {
         return d3.ascending(a[1], b[1]);
     });
+
+    // TODO alert if topics.length == 0
+
     as = view.selectAll("a")
         .data(topics);
 
@@ -316,6 +327,10 @@ doc_view = function (m, doc) {
     var view, as;
 
     console.log("View for doc " + doc);
+
+    if(!isFinite(doc)) {
+        return false;
+    }
 
     if(doc < 0 || doc >= m.dt.length) {
         console.log("Invalid doc id: " + doc);
@@ -376,6 +391,7 @@ bib_view = function (m) {
         nav_as.exit().remove();
 
         // TODO fix page-jumping #links
+        // TODO use bootstrap accordions?
         /*
         nav_as
             .attr("href", function (h) { return "#" + h; })
@@ -493,13 +509,18 @@ view_refresh = function (m,v) {
             success = bib_view(m);
             break;
         case "topic":
+            // TODO interactive specification of param if missing
+            // to support raw #/topic links
             param = +param - 1;
             success = topic_view(m,param);
             break;
         case "word":
+            // TODO support raw #/word links w/ no param
             success = word_view(m,param);
             break;
         case "doc":
+            // TODO support raw #/doc links w/ no param
+            // (incl. toggle active state on navbar)
             param = +param;
             success = doc_view(m,param);
             break; 
@@ -557,14 +578,17 @@ setup_vis = function (m) {
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);
 
-    // scales
 
+    /*
     VIS.topic_scale = d3.scale.ordinal()
         .domain(d3.range(m.n))
         .range(d3.range(m.n).map(function (t) {
             return d3.hsl(360 * t / m.n, 0.5, 0.8).toString();
         }));
+    */
 
+    // TODO settings controls
+    
 };
 
 read_files = function (ready) {
