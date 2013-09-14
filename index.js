@@ -21,6 +21,7 @@ var model,          // model specification
     bib_view,
     about_view,
     model_view,
+    stringify_model_view,
     view_refresh,
     setup_vis,      // initialization
     read_files,
@@ -30,14 +31,17 @@ var model,          // model specification
 // -------------------
 
 model = function () {
-    return {
+    var result = {
         tw: [],     // array of d3.map()s
         dt: [],     // docs in rows, topic counts in columns
         alpha: [],  // alpha value for topics
         meta: [],   // document citations
         n: 0,
-        n_top_words: 0
+        n_top_words: 0,
+        preprocessed: false
     };
+
+    return result;
 };
 
 
@@ -534,6 +538,22 @@ model_view = function (m) {
     // (later: multi-dimensional scaling projection showing topic clusters)
 };
 
+stringify_model_view = function (m) {
+    var tw, m_out = m;
+
+    m_out.preprocessed = true;
+
+    // a very wasteful { "key": blargh, "value": blargh } format
+    m_out.tw = m.tw.map(function (x) { return x.entries(); });
+
+    d3.selectAll("body div").remove();
+    d3.select("body")
+        .append("textarea")
+        .text(JSON.stringify(m_out));
+
+    return true;
+}
+
 view_refresh = function (m,v) {
     var view_parsed, param, success;
 
@@ -572,6 +592,10 @@ view_refresh = function (m,v) {
             param = +param;
             success = doc_view(m,param);
             break; 
+        case "stringify_model":
+            // special case for this kludgepage. Doesn't change the cur_view
+            success = stringify_model_view(m);
+            return; 
         default:
             success = false;
             break; 
@@ -647,6 +671,31 @@ read_files = function (ready) {
 
     // initialize model object
     m = model();
+
+    // look for preprocessed data...
+    if(document.getElementById("m__DATA__")) {
+        m = JSON.parse(document.getElementById("m__DATA__").innerHTML); 
+
+        // reconstruct d3.map()s 
+        m.tw = m.tw.map(function (entries) {
+            var result = d3.map();
+            entries.map(function (kv) {
+                result.set(kv.key,kv.value);
+            });
+            return result;
+        });
+
+        // reconstruct Date fields
+        m.meta = m.meta.map(function (row) {
+            var result = row;
+            result.date = new Date(row.date);
+            return result;
+        })
+        ready(m);
+        return;
+    }
+
+    // ...otherwise, load from files:
 
     // This "accessor" eats up the rows of keys.csv and returns nothing.
     // It loads the topic-words (but only N most probable) as d3.maps()s

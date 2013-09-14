@@ -38,6 +38,10 @@ Needed: more interactive adjustment of parameters.
 
 Eventually I will add fuller visualizations, especially of topic frequencies over time. Some pre-generation in R is necessary for that.
 
+## The downloadable version
+
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off a user's filesystem. Follow the instructions in the comments in `insert_model.py`.
+
 ## The polished options
 
 This is just something I hacked together. Here are more serious model-browsing projects.
