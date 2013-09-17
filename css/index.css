@@ -48,6 +48,33 @@ footer {
     font-size: 1em;
 }
 
+/* topic_plot */
+
+.axis path, .axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+/* horizontal grid lines */
+.axis .minor line {
+    stroke: #ddd;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+/* hide line on y axis */
+.axis.y path.domain {
+    display: none;
+}
+
+rect.topic_proportion {
+    fill: black;
+}
+
 /* word_view */
 
 /* doc_view */

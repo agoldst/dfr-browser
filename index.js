@@ -11,11 +11,14 @@ var model,          // model specification
     top_docs,
     doc_topics,
     bib_sort,
+    yearly_range,
+    topic_yearly,
     topic_label,    // stringifiers
     topic_link,
     cite_doc,
     doc_uri,
     topic_view,     // view generation
+    plot_topic_yearly,
     word_view,
     doc_view,
     bib_view,
@@ -24,6 +27,7 @@ var model,          // model specification
     stringify_model_view,
     view_refresh,
     setup_vis,      // initialization
+    plot_svg,
     read_files,
     main;           // main program
 
@@ -159,6 +163,69 @@ bib_sort = function (m) {
     return result;
 };
 
+yearly_range = function (m) {
+    var result;
+
+    // TODO factor out memoization
+
+    // memoize using VIS to store result
+    if (VIS.yearly_range !== undefined) {
+        return VIS.yearly_range;
+    }
+
+    result = d3.extent(m.meta, function (row) {
+        return row.date.getFullYear();
+    });
+
+    VIS.yearly_range = result;
+    return result;
+};
+
+topic_yearly = function (m) {
+    var counts, totals, result, i, y, t;
+
+    // memoize using VIS to store result
+    if (VIS.topic_yearly !== undefined) {
+        return VIS.topic_yearly;
+    }
+
+    counts = d3.map();
+    totals = d3.map();
+    result = d3.map();
+
+    for (i = 0; i < m.dt.length; i += 1) {
+        y = m.meta[i].date.getFullYear();
+        if (!counts.has(y)) {
+            counts.set(y, []);
+        }
+        if (!totals.has(y)) {
+            totals.set(y, 0);
+        }
+
+        for (t = 0; t < m.n; t += 1) {
+            if(counts.get(y)[t]) {
+                counts.get(y)[t] += m.dt[i][t];
+            } else {
+                counts.get(y)[t] = m.dt[i][t];
+            }
+            totals.set(y, totals.get(y) + m.dt[i][t]);
+        }
+    }
+
+    // divide through
+    counts.forEach(function (y, wts) {
+        result.set(y, wts.map(function (w) {
+            return w / totals.get(y);
+        }));
+    });
+
+    // memoize if this is the first time through
+    VIS.topic_yearly = result;
+    return result;
+};
+
+
+
 // -- stringifiers
 //    ------------
 
@@ -171,7 +238,7 @@ topic_label = function (m, t, n) {
     return label;
 };
 
-topic_link = function(t) {
+topic_link = function (t) {
     return "#/topic/" + (t + 1);
 };
 
@@ -209,11 +276,12 @@ doc_uri = function (m, d) {
 // -----------------------------------
 
 topic_view = function (m, t) {
-    var view, trs_w, trs_d;
+    var view, trs_w, trs_d,
+        img;
 
     console.log("View for topic " + (t + 1));
 
-    if(!isFinite(t)) {
+    if (!isFinite(t)) {
         return false;
     }
 
@@ -253,7 +321,7 @@ topic_view = function (m, t) {
 
     trs_w
         .append("td")
-        .text(function(w) {
+        .text(function (w) {
             return m.tw[t].get(w);
         });
 
@@ -282,13 +350,13 @@ topic_view = function (m, t) {
 
     trs_d
         .append("td")
-        .text(function(d) {
+        .text(function (d) {
             return VIS.percent_format(m.dt[d][t] / m.doc_len[d]);
         });
 
     trs_d
         .append("td")
-        .text(function(d) {
+        .text(function (d) {
             return m.dt[d][t];
         });
 
@@ -296,22 +364,115 @@ topic_view = function (m, t) {
     // Plot topic over time
     // --------------------
 
-    // Set image link
-    // (later: native d3 time graph)
-    d3.select("#topic_plot")
-        .attr("src","topic_plot/" + d3.format("03d")(t + 1) + ".png")
-        .attr("title","yearly proportion of topic " + (t + 1));
+    if (VIS.prefab_plots) {
+        // Set image link
+        img = d3.select("#topic_plot img");
+        if(img.empty()) {
+            img = d3.select("#topic_plot").append("img"); 
+        }
+
+        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
+            .attr("title", "yearly proportion of topic " + (t + 1));
+    }
+    else {
+        plot_topic_yearly(m,t);
+    }
 
     return true;
     // TODO visualize word and doc weights as lengths
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
+plot_topic_yearly = function(m, t) {
+    var year_seq, series = [],
+        w, scale_x, scale_y,
+        rects, axis_x, axis_y, 
+        svg = plot_svg();
+
+    year_seq = topic_yearly(m).keys().sort();
+    series = year_seq.map(function (y) {
+            return [new Date(+y,0,1), topic_yearly(m).get(y)[t]];
+        });
+
+    scale_x = d3.time.scale()
+        .domain([series[0][0],
+                d3.time.day.offset(series[series.length - 1][0],
+                    VIS.plot.bar_width)])
+        .range([0, VIS.plot.w]);
+        //.nice();
+
+    w = scale_x(d3.time.day.offset(series[0][0],VIS.plot.bar_width)) -
+        scale_x(series[0][0]);
+
+
+    scale_y = d3.scale.linear()
+        .domain([0, d3.max(series, function (d) {
+            return d[1];
+        })])
+        .range([VIS.plot.h, 0])
+        .nice();
+
+    // axes
+    // ----
+
+    // clear
+    svg.selectAll("g.axis").remove();
+
+    // x axis
+    svg.append("g")
+        .classed("axis",true)
+        .classed("x",true)
+        .attr("transform","translate(0," + VIS.plot.h + ")")
+        .call(d3.svg.axis()
+            .scale(scale_x)
+            .orient("bottom")
+            .ticks(d3.time.years,VIS.plot.ticks));
+
+    // y axis
+    svg.append("g")
+        .classed("axis",true)
+        .classed("y",true)
+        .call(d3.svg.axis()
+            .scale(scale_y)
+            .orient("left")
+            .tickSize(-VIS.plot.w)
+            .outerTickSize(0)
+            .tickFormat(VIS.percent_format)
+            .ticks(VIS.plot.ticks));
+
+    svg.selectAll("g.axis.y g").filter(function(d) { return d; })
+        .classed("minor", true);
+
+    // bars
+    // ----
+
+    // clear
+    svg.selectAll("rect.topic_proportion").remove();
+
+    rects = svg.selectAll("rect")
+        .data(series);
+
+    rects.enter().append("rect");
+
+    rects.classed("topic_proportion",true)
+        .attr("x", function (d) {
+            return scale_x(d[0]);
+        })
+        .attr("y", function (d) {
+            return scale_y(d[1]);
+        })
+        .attr("width",w)
+        .attr("height", function (d) {
+            return VIS.plot.h - scale_y(d[1]);
+        });
+};
+
+
 word_view = function (m, word) {
     var view, trs, topics;
 
     console.log("View for word " + word);
-    if(word === undefined) {
+    if (word === undefined) {
         return false;
     }
 
@@ -337,14 +498,12 @@ word_view = function (m, word) {
     // clear rows
     trs.selectAll("td").remove();
 
-    trs
-        .append("td")
+    trs.append("td")
         .text(function (d) {
             return d[1] + 1; // user-facing rank is 1-based
         });
-    
-    trs
-        .append("td").append("a")
+
+    trs.append("td").append("a")
         .text(function (d) {
             return topic_label(m, d[0], VIS.overview_words);
         })
@@ -361,11 +520,11 @@ doc_view = function (m, doc) {
 
     console.log("View for doc " + doc);
 
-    if(!isFinite(doc)) {
+    if (!isFinite(doc)) {
         return false;
     }
 
-    if(doc < 0 || doc >= m.dt.length) {
+    if (doc < 0 || doc >= m.dt.length) {
         console.log("Invalid doc id: " + doc);
         return false;
     }
@@ -392,22 +551,20 @@ doc_view = function (m, doc) {
 
     // clear rows
     trs.selectAll("td").remove();
-    trs
-        .append("td").append("a")
-            .attr("href",topic_link)
-            .text(function (t) {
-                return topic_label(m, t, VIS.overview_words);
-            });
-    trs
-        .append("td")
-            .text(function(t) {
-                return m.dt[doc][t];
-            });
-    trs
-        .append("td")
-            .text(function(t) {
-                return VIS.percent_format(m.dt[doc][t] / m.doc_len[doc]);
-            });
+
+    trs.append("td").append("a")
+        .attr("href", topic_link)
+        .text(function (t) {
+            return topic_label(m, t, VIS.overview_words);
+        });
+    trs.append("td")
+        .text(function (t) {
+            return m.dt[doc][t];
+        });
+    trs.append("td")
+        .text(function (t) {
+            return VIS.percent_format(m.dt[doc][t] / m.doc_len[doc]);
+        });
 
     return true;
     // TODO visualize topic proportions as rectangles at the very least
@@ -425,6 +582,9 @@ bib_view = function (m) {
     if (!VIS.bib_ready) {
         ordering = bib_sort(m);
 
+        // TODO fix page-jumping #links
+        // TODO use bootstrap accordions?
+        /*
         nav_as = view.select("nav")
             .selectAll("a")
             .data(ordering.headings);
@@ -432,17 +592,13 @@ bib_view = function (m) {
         nav_as.enter().append("a");
         nav_as.exit().remove();
 
-        // TODO fix page-jumping #links
-        // TODO use bootstrap accordions?
-        /*
         nav_as
             .attr("href", function (h) { return "#" + h; })
             .text(function (h) { return h; });
-        */
         nav_as
             .attr("href", "#/bib")
             .text(function (h) { return h; });
-
+        */
         sections = view.select("div#bib_main")
             .selectAll("section")
             .data(ordering.headings);
@@ -473,7 +629,7 @@ bib_view = function (m) {
         // TODO list topics in bib entry?
 
         as
-            .attr("href", function(d) {
+            .attr("href", function (d) {
                 return "#/doc/" + d;
             })
             .html(function (d) {
@@ -506,24 +662,21 @@ model_view = function (m) {
         // clear rows
         trs.selectAll("td").remove();
 
-        trs.enter().append("tr"); 
+        trs.enter().append("tr");
         trs.exit().remove();
 
-        trs
-            .append("td").append("a")
-                .text(function (t) { return t + 1; }) // sigh
-                .attr("href",topic_link);
+        trs.append("td").append("a")
+            .text(function (t) { return t + 1; }) // sigh
+            .attr("href", topic_link);
 
-        trs
-            .append("td").append("a")
-                .text(function (t) {
-                    return top_words(m, t, VIS.overview_words).join(" ");
-                })
-                .attr("href",topic_link);
+        trs.append("td").append("a")
+            .text(function (t) {
+                return top_words(m, t, VIS.overview_words).join(" ");
+            })
+            .attr("href", topic_link);
 
-        trs
-            .append("td")
-            .text(function(t) {
+        trs.append("td")
+            .text(function (t) {
                 return VIS.float_format(m.alpha[t]);
             });
 
@@ -539,7 +692,7 @@ model_view = function (m) {
 };
 
 stringify_model_view = function (m) {
-    var tw, m_out = m;
+    var m_out = m;
 
     m_out.preprocessed = true;
 
@@ -552,21 +705,23 @@ stringify_model_view = function (m) {
         .text(JSON.stringify(m_out));
 
     return true;
-}
+};
 
-view_refresh = function (m,v) {
+view_refresh = function (m, v) {
     var view_parsed, param, success;
 
     view_parsed = v.split("/");
     param = view_parsed[2];
 
-    if(VIS.cur_view !== undefined) {
-        VIS.cur_view.classed("hidden",true);
+    if (VIS.cur_view !== undefined) {
+        VIS.cur_view.classed("hidden", true);
     }
 
-    switch(view_parsed[1]) {
+    switch (view_parsed[1]) {
         case undefined:
             view_parsed[1] = "model";
+            success = model_view(m);
+            break;
         case "model":
             success = model_view(m);
             break;
@@ -580,40 +735,38 @@ view_refresh = function (m,v) {
             // TODO interactive specification of param if missing
             // to support raw #/topic links
             param = +param - 1;
-            success = topic_view(m,param);
+            success = topic_view(m, param);
             break;
         case "word":
             // TODO support raw #/word links w/ no param
-            success = word_view(m,param);
+            success = word_view(m, param);
             break;
         case "doc":
             // TODO support raw #/doc links w/ no param
             // (incl. toggle active state on navbar)
             param = +param;
-            success = doc_view(m,param);
-            break; 
+            success = doc_view(m, param);
+            break;
         case "stringify_model":
             // special case for this kludgepage. Doesn't change the cur_view
             success = stringify_model_view(m);
-            return; 
+            return;
         default:
             success = false;
-            break; 
-    };
-
-    if(success) {
-        VIS.cur_view = d3.select("div#" + view_parsed[1] + "_view");
+            break;
     }
-    else {
-        if(VIS.cur_view === undefined) {
+
+    if (success) {
+        VIS.cur_view = d3.select("div#" + view_parsed[1] + "_view");
+    } else {
+        if (VIS.cur_view === undefined) {
             // fall back on model_view
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
         }
     }
 
-
-    VIS.cur_view.classed("hidden",false);
+    VIS.cur_view.classed("hidden", false);
 };
 
 
@@ -632,20 +785,30 @@ setup_vis = function (m) {
         float_format: function (x) {
             return d3.round(x, 3);
         },
-        percent_format: function (x) {
-            return d3.round(x * 100, 1);
-        },
+        percent_format: d3.format(".1%"),
         cite_date_format: d3.time.format("%B %Y"),
         uri_proxy: ".proxy.libraries.rutgers.edu",
-        topic_scale: undefined // color scale
+        prefab_plots: true, // use SVG or look for image files for plots?
+        plot: {
+            w: 640, // TODO hardcoding = bad
+            h: 300,
+            m: {
+                left: 40,
+                right: 20,
+                top: 20,
+                bottom: 20
+            },
+            bar_width: 300, // in days!
+            ticks: 10 // applied to both x and y axes
+        }
     };
 
     // hashchange handler
 
     window.onhashchange = function () {
-        view_refresh(m,window.location.hash);
+        view_refresh(m, window.location.hash);
     };
-    
+
     // load model information and stick it in page header elements
 
     d3.select("#model_title")
@@ -653,17 +816,27 @@ setup_vis = function (m) {
     d3.select("div#meta_info")
         .html(m.model_meta.meta_info);
 
-
-    /*
-    VIS.topic_scale = d3.scale.ordinal()
-        .domain(d3.range(m.n))
-        .range(d3.range(m.n).map(function (t) {
-            return d3.hsl(360 * t / m.n, 0.5, 0.8).toString();
-        }));
-    */
-
     // TODO settings controls
     
+};
+
+plot_svg = function () {
+    if(VIS.svg) {
+        return VIS.svg;
+    }
+
+    // mbostock margin convention
+    // http://bl.ocks.org/mbostock/3019563
+    VIS.svg = d3.select("div#topic_plot")
+        .append("svg")
+            .attr("width", VIS.plot.w + VIS.plot.m.left + VIS.plot.m.right)
+            .attr("height", VIS.plot.h + VIS.plot.m.top + VIS.plot.m.bottom)
+        // g element passes on xform to all contained elements
+        .append("g")
+            .attr("transform",
+                  "translate(" + VIS.plot.m.left + "," + VIS.plot.m.top + ")");
+
+    return VIS.svg;
 };
 
 read_files = function (ready) {
@@ -673,14 +846,14 @@ read_files = function (ready) {
     m = model();
 
     // look for preprocessed data...
-    if(document.getElementById("m__DATA__")) {
-        m = JSON.parse(document.getElementById("m__DATA__").innerHTML); 
+    if (document.getElementById("m__DATA__")) {
+        m = JSON.parse(document.getElementById("m__DATA__").innerHTML);
 
         // reconstruct d3.map()s 
         m.tw = m.tw.map(function (entries) {
             var result = d3.map();
             entries.map(function (kv) {
-                result.set(kv.key,kv.value);
+                result.set(kv.key, kv.value);
             });
             return result;
         });
@@ -690,7 +863,7 @@ read_files = function (ready) {
             var result = row;
             result.date = new Date(row.date);
             return result;
-        })
+        });
         ready(m);
         return;
     }
@@ -787,7 +960,7 @@ read_files = function (ready) {
 main = function () {
     read_files(function (m) { // callback, invoked when model is loaded in 
         setup_vis(m);
-        view_refresh(m,window.location.hash);
+        view_refresh(m, window.location.hash);
     });
 };
 
