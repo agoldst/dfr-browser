@@ -13,12 +13,24 @@ This looks for document metadata under each of the elements of `dfr_dirs` and ou
 - `dt.csv`: headerless matrix with the i,j cell giving the number of words in document i allocated to topic j. Generated from `doc_topics.csv`.
 - `keys.csv`: output of `weighted_keys_frame()`. Copy `keys.csv`.
 - `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`. Generated from DfR `citations.CSV` files.
-- `model_meta.json`: unlike the others, not automatically generated. This holds information about the model, for display in the browser. Currently I use only: 
+- `model_meta.json`: unlike the others, not automatically generated. This holds information about the model, for display in the browser. You need only: 
 
 ```json
 {
   "title": "Model title",
   "meta_info": "<p>About the model...<p>"
+}
+```
+
+You can also override some aspects of the visualization by adding a `VIS` object here with properties whose names correspond to those of the `VIS` object in the program. For example, to generate plots of topics over time on the fly instead of looking for pregenerated files, try:
+
+```json
+{
+  "title": "Model title",
+  "meta_info": "<p>About the model...<p>",
+  "VIS": {
+    "prefab_plots": false
+  }
 }
 ```
 

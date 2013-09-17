@@ -803,6 +803,17 @@ setup_vis = function (m) {
         }
     };
 
+    // preferences stashed in model_meta
+
+    if (m.model_meta.VIS) {
+        for (key in m.model_meta.VIS) {
+            if (m.model_meta.VIS.hasOwnProperty(key)
+                    && typeof(m.model_meta.VIS[key] !== 'function')) {
+                VIS[key] = m.model_meta.VIS[key];
+            }
+        }
+    }
+
     // hashchange handler
 
     window.onhashchange = function () {
