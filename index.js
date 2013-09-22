@@ -128,6 +128,8 @@ doc_topics = function (m, d, n) {
 };
 
 doc_sort_key = function (m, i) {
+    // TODO shouldn't really combine sort key and extracting the first letter
+    // also, this fails when author name ends with Jr, 2nd, (xxx), etc.
     if (m.meta[i].authors.length > 0) {
         names = m.meta[i].authors[0].split(" ");
         return names[names.length - 1][0].toUpperCase(); // N.B. casefolding
@@ -292,20 +294,35 @@ topic_link = function (t) {
 };
 
 cite_doc = function (m, d) {
-    var doc, result;
+    var doc, lead, result;
 
     doc = m.meta[d];
-    result = doc.authors.length > 0
-        ? doc.authors.join(" and ")
-        : "[Anon]";
+    // TODO factor out sort-name extraction (to use with doc_sort_key too)
+    // fails on Jr., 2nd, etc.
+    if(doc.authors.length > 0) {
+        lead = doc.authors[0].split(" ");
+        result = lead.pop() + ", ";
+        result += lead.join(" ");
+        if(doc.authors.length > 1) {
+            if(doc.authors.length > 2) {
+                result += ", ";
+                result += doc.authors
+                    .slice(1,doc.authors.length - 1)
+                    .join(", ");
+            }
+            result += ", and " + doc.authors[doc.authors.length - 1];
+        }
+    } else {
+            result = "[Anon]";
+    }
 
-    result += ", ";
-    result += '"' + doc.title + ',"';
+    result += ". ";
+    result += '"' + doc.title + '."';
     result += " <em>" + doc.journaltitle + "</em> ";
     result += doc.volume + ", no. " + doc.issue;
 
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
-    result += doc.pagerange;
+    result += doc.pagerange + ".";
 
     result = result.replace(/_/g, ",");
     result = result.replace(/\t/g, "");
