@@ -22,11 +22,10 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="brand" id="model_title" href="#">Loading...</a>
         <div class="nav-collapse collapse">
           <ul id="nav_main" class="nav">
-            <li><a class="active" href="#">Overview</a></li>
-            <li><a href="#/bib">Bibliography</a></li>
+            <li id="nav_model"><a href="#">Overview</a></li>
+            <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
             <!-- TODO support these -->
             <!--
             <li><a href="#/topic">Topic</a></li>
@@ -34,7 +33,7 @@
             <li><a href="#/word">Word</a></li>
             <li><a href="#/settings">Settings</a></li>
             -->
-            <li><a href="#/about">About</a></li>
+            <li id="nav_about"><a href="#/about">About</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
@@ -44,6 +43,7 @@
 <div class="container">
 
   <div id="model_view" class="hidden">
+    <h1 id="model_title">Loading...</h1>
     <table class="table table-condensed" id="model_topics">
       <thead>
         <th>Topic</th>

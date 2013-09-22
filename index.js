@@ -773,7 +773,7 @@ stringify_model_view = function (m) {
     return true;
 };
 
-view_refresh = function (m, v) {
+view_refresh = function (m, v, init) {
     var view_parsed, param, success;
 
     view_parsed = v.split("/");
@@ -832,6 +832,14 @@ view_refresh = function (m, v) {
         }
     }
 
+    // ensure highlighting of nav link
+    d3.selectAll("li.active").classed("active",false);
+    d3.select("li#nav_" + view_parsed[1]).classed("active",true);
+
+    if (init) {
+        // TODO any special on-init behavior
+    }
+
     VIS.cur_view.classed("hidden", false);
 };
 
@@ -887,7 +895,7 @@ setup_vis = function (m) {
     // hashchange handler
 
     window.onhashchange = function () {
-        view_refresh(m, window.location.hash);
+        view_refresh(m, window.location.hash, false);
     };
 
     // load model information and stick it in page header elements
@@ -1041,7 +1049,7 @@ read_files = function (ready) {
 main = function () {
     read_files(function (m) { // callback, invoked when model is loaded in 
         setup_vis(m);
-        view_refresh(m, window.location.hash);
+        view_refresh(m, window.location.hash, true);
     });
 };
 
