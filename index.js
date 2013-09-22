@@ -10,6 +10,7 @@ var model,          // model specification
     word_topics,
     top_docs,
     doc_topics,
+    doc_sort_key,
     bib_sort,
     yearly_range,
     topic_yearly,
@@ -126,37 +127,85 @@ doc_topics = function (m, d, n) {
         .slice(0, n);
 };
 
-bib_sort = function (m) {
+doc_sort_key = function (m, i) {
+    if (m.meta[i].authors.length > 0) {
+        names = m.meta[i].authors[0].split(" ");
+        return names[names.length - 1][0].toUpperCase(); // N.B. casefolding
+    } else {
+        return "[Anon]";
+    }
+};
+
+bib_sort = function (m,major,minor) {
     var result = {
             headings: [],
             docs: []
         },
         docs = d3.range(m.meta.length),
-        dec,
-        i,
-        last,
-        cur_dec,
+        major_sort, major_split, minor_sort,
+        major, cur_major,
+        i, last,
         partition = [];
 
-    // TODO other sorting / sectioning than date / decade
+    if (major === "decade") {
+        major_split = function (i) {
+            return Math.floor(m.meta[i].date.getFullYear() / 10).toString() +
+                "0s";
+        };
 
-    docs = docs.sort(function (a, b) {
-        return d3.ascending(+m.meta[a].date, +m.meta[b].date);
-    });
+        major_sort = function (a, b) {
+            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+        };
+    } else if (major === "year") {
+        major_split = function (i) {
+            return m.meta[i].date.getFullYear();
+        };
 
+        major_sort = function (a, b) {
+            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+        };
+    } else {
+        if (major !== "alpha") {
+            console.log("Unknown bib_sort: " + major + "; defaulting to alpha")
+        }
+        // alphabetical
+        major_split = function (i) {
+            return doc_sort_key(m, i);
+        };
+        major_sort = function (a, b) {
+            return d3.ascending(doc_sort_key(m, a), doc_sort_key(m, b));
+        };
+    }
+
+
+    if (minor === "date") {
+        minor_sort = function(a, b) {
+            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+        };
+    } else  {
+        if (minor !== "alpha") {
+            console.log("Unknown bib_sort: " + minor + "; defaulting to alpha")
+        }
+        // alphabetical
+        minor_sort = function (a, b) {
+            return d3.ascending(doc_sort_key(m, a), doc_sort_key(m, b));
+        };
+    }
+
+    docs = docs.sort(major_sort);
     for (i = 0; i < docs.length; i += 1) {
-        dec = Math.floor(m.meta[docs[i]].date.getFullYear() / 10);
-        if (dec !== cur_dec) {
+        major = major_split(docs[i]);
+        if (major !== cur_major) {
             partition.push(i);
-            result.headings.push(dec.toString() + "0s");
-            cur_dec = dec;
+            result.headings.push(major);
+            cur_major = major;
         }
     }
     partition.shift(); // correct for "0" always getting added at the start
     partition.push(docs.length); // make sure we get the tail 
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
-        result.docs.push(docs.slice(last, partition[i]));
+        result.docs.push(docs.slice(last, partition[i]).sort(minor_sort));
         last = partition[i];
     }
 
@@ -580,7 +629,7 @@ bib_view = function (m) {
     view = d3.select("div#bib_view");
 
     if (!VIS.bib_ready) {
-        ordering = bib_sort(m);
+        ordering = bib_sort(m, VIS.bib_sort.major, VIS.bib_sort.minor);
 
         // TODO fix page-jumping #links
         // TODO use bootstrap accordions?
@@ -778,6 +827,10 @@ setup_vis = function (m) {
     VIS = {
         model_view_ready: false,
         bib_ready: false,
+        bib_sort: {
+            major: "year",
+            minor: "alpha"
+        },
         overview_words: 15,     // TODO set these parameters interactively
         topic_view_words: 50,
         topic_view_docs: 20,
