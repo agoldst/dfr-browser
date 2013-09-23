@@ -95,3 +95,10 @@ rect.topic_proportion {
 #bib_view #bib_main a {
     color: black;
 }
+
+/* about_view */
+
+#about_view div#about_browser {
+    padding-top: 5ex;
+    font-style: italic;
+}
