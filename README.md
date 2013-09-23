@@ -1,19 +1,13 @@
 # A simple model browser
 
-These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of the topic model in a web browser. To set up, you will need the "weighted keys" `keys.csv` file and the `doc_topics.csv` document-topic file written out by `topics_rmallet.R`.
+These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix. My functions that produce these are in `dfr-analysis/topics_rmallet.R`.
 
-1. Source `prepare_data.R`. Then call:
+The browser looks for the following files in `data/`:
 
-```
-prepare_data(dfr_dirs,"data",path_to_doc_topics)
-```
-
-This looks for document metadata under each of the elements of `dfr_dirs` and outputs the necessary files into the folder `data`, where the browser looks for them. The browser needs the following:
-
-- `dt.csv`: headerless matrix with the i,j cell giving the number of words in document i allocated to topic j. Generated from `doc_topics.csv`.
-- `keys.csv`: output of `weighted_keys_frame()`. Copy `keys.csv`.
-- `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`. Generated from DfR `citations.CSV` files.
-- `model_meta.json`: unlike the others, not automatically generated. This holds information about the model, for display in the browser. You need only: 
+- `dt.csv`: headerless matrix in CSV format, with the i,j cell giving the number of words in document i allocated to topic j. 
+- `keys.csv`: CSV file, with header, with columns `topic,alpha,word,weight`.
+- `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`, with fields identical to those in DfR `citations.CSV` files.
+- `model_meta.json`: unlike the others, write this by hand. This holds information about the model, for display in the browser. You need only: 
 
 ```json
 {
@@ -22,7 +16,7 @@ This looks for document metadata under each of the elements of `dfr_dirs` and ou
 }
 ```
 
-You can also override some aspects of the visualization by adding a `VIS` object here with properties whose names correspond to those of the `VIS` object in the program. For example, to generate plots of topics over time on the fly instead of looking for pregenerated files, try:
+You can also override some aspects of the visualization by adding a `VIS` object here with properties whose names correspond to those of the `VIS` object in the program (in `index.js:setup_vis()`). For example, to generate plots of topics over time on the fly instead of looking for pregenerated files, try:
 
 ```json
 {
@@ -34,25 +28,39 @@ You can also override some aspects of the visualization by adding a `VIS` object
 }
 ```
 
-2. Launch a web server in the `browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text` and kindred functions).
+## Using the browser
 
-3. Navigate to the home page, `http://localhost:8888`, in your favorite browser.
+1. Once the files are in place in a `data/` subdirectory, launch a web server in the `dfr-browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text` and kindred functions).
+
+3. Navigate to the home page, `http://localhost:8888`, in your favorite web browser.
+
+## Generating the datafiles
+
+[dfr-analysis](http://github.com/agoldst/dfr-analysis) supplies functions (in `topics_rmallet.R`) to create data frames which you can save as `keys.csv` and `doc_topics.csv`.
+
+Create `dfr-browser/data` and copy `keys.csv` into it. Create `model_meta.json` as described above. Then, in R:
+
+```R
+source("prepare_data.R")
+dfr_dirs <- ...# directories containing citations.CSV files
+doc_topics <- ...# doc_topics filename
+prepare_data(dfr_dirs,"data",doc_topics)
+```
+
 
 ## What it does
 
-Currently, this provides very minimal views of topics, documents, and word types as specified in the model. There are no visualizations, just lists of "top" words and documents in topics, "top" topics in documents, and "top" topics for words. There is also a "bibliography" view of all your documents in chronological order.
+Currently, this provides very minimal views of topics, documents, and word types as specified in the model. There are no visualizations, just lists of "top" words and documents in topics, "top" topics in documents, and "top" topics for words. There is also a "bibliography" view of all your documents.
 
 The ranking calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally, but I'm not sure I'd throw it up on a web server.
 
 ## What it should do
 
-Needed: more interactive adjustment of parameters.
-
-Eventually I will add fuller visualizations, especially of topic frequencies over time. Some pre-generation in R is necessary for that.
+Needed: more interactive adjustment of parameters. More speed and asychronous loading jazz. And eventually I will add fuller visualizations....
 
 ## The downloadable version
 
-If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off a user's filesystem. Follow the instructions in the comments in `insert_model.py`.
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off a user's filesystem. Follow the instructions in the comments in `insert_model.py`, then use `./make_standalone.sh`.
 
 ## The polished options
 
