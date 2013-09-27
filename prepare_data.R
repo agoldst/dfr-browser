@@ -1,3 +1,7 @@
+library(plyr)
+library(stringr)
+library(Matrix)
+
 # copied from github/agoldst/dfr-analysis/metadata.R
 
 read_metadata <- function(filenames,...) {
@@ -29,65 +33,123 @@ read_metadata <- function(filenames,...) {
     result
 }
 
+write_zip <- function(writer,file_base,file_ext=".json",no_zip=F) {
+    if(no_zip) {
+        f_out <- str_c(file_base,file_ext)
+        writer(f_out)
+    }
+    else {
+        f_temp <- tempfile(file_base,fileext=file_ext)
+        writer(f_temp)
+        f_out <- str_c(file_base,file_ext,".zip")
+        if(file.exists(f_out)) {
+            message("Removing existing ",f_out)
+            unlink(f_out)
+        }
+        zip(f_out,f_temp,flags="-9Xj")
+        unlink(f_temp)
+    }
+    message("Saved ",f_out)
+}
 
 prepare_data <- function(dfr_dirs,
                          out_dir="data",
-                         doc_topics="data/doc_topics.csv") {
+                         doc_topics_file=file.path(out_dir,"doc_topics.csv"),
+                         keys_file=file.path(out_dir,"keys.csv")) {
                          
-    message("Checking for the presence of keys.csv")
-    keyfile <- file.path(out_dir,"keys.csv")
-    if(file.exists(keyfile)) {
-        message(keyfile," ok");
+    if(!file.exists(out_dir)) {
+        dir.create(out_dir)
+    }
+    if(file.exists(keys_file)) {
+
+        wkf <- read.csv(keys_file,as.is=T)
+        tw <- ddply(wkf,.(topic),
+                    summarize,
+                    words=str_c(word[order(weight,decreasing=T)],
+                                collapse='","'),
+                    weights=str_c(sort(weight,decreasing=T),collapse=","),
+                    alpha=unique(alpha))
+        tw$words <- str_c('"',tw$words,'"')
+        tw <- tw[order(tw$topic),]
+        json <- str_c('{"alpha":[',
+                            str_c(tw$alpha,collapse=","),
+                            '],"tw":[')
+
+        json <- str_c(json,
+                      str_c('{"words":[',
+                            tw$words,
+                            '],"weights":[',
+                            tw$weights,
+                            ']}',
+                            collapse=","),
+                      ']}')
+
+        tw_file <- file.path(out_dir,"tw.json")
+        writeLines(json,tw_file)
+        message("Wrote ",tw_file)
     }
     else {
-        warning(keyfile," is missing.")
+        warning(keys_file," is missing.")
     }
 
-    message("Preparing doc-topic matrix file")
+    message("Preparing doc-topic sparse matrix file")
 
-    dt_out <- file.path(out_dir,"dt.csv")
-    if(file.exists(doc_topics)) {
-        dtframe <- read.csv(doc_topics,as.is=T)
+    dt_out <- file.path(out_dir,"dt.json")
+    if(file.exists(doc_topics_file)) {
+        dtframe <- read.csv(doc_topics_file,as.is=T)
 
         ids <- dtframe$id
-        write.table(subset(dtframe,select=-id),
-                    dt_out,
-                    sep=",",
-                    col.names=F,
-                    row.names=F)
+        dtm <- Matrix(as.matrix(subset(dtframe,select=-id)),sparse=T)
 
-        message("Saved ",dt_out)
+        # could compress much more aggressively considering that weights are 
+        # integers, so could be stored as binary data rather than ASCII
+
+        json <- str_c('{"i":[',
+                      str_c(dtm@i,collapse=","),
+                      '],"p":[',
+                      str_c(dtm@p,collapse=","),
+                      '],"x":[',
+                      str_c(dtm@x,collapse=","),
+                      ']}')
+        write_zip(function (f) { writeLines(json,f) },
+                  file.path(out_dir,"dt"),".json",no_zip=T)
     }
     else {
-        warning(doc_topics," is missing.");
+        warning(doc_topics_file," is missing.");
     }
 
     message("Preparing metadata file")
 
     metadata <- read_metadata(file.path(dfr_dirs,"citations.CSV"))
 
-    if(nrow(metadata) > 0) {
+    if(length(metadata) > 0 && nrow(metadata) > 0 && exists("ids")) {
         i_md <- match(ids,metadata$id)
         metadata <- metadata[i_md,]
 
-        meta_out <- file.path(out_dir,"meta.csv")
-        write.table(metadata,meta_out,
-                    quote=T,sep=",",
-                    col.names=T,row.names=F,
-                    qmethod="double")   # d3.csv expects RFC 4180 compliance
-        message("Saved ",meta_out)
+        # throw out unneeded columns [doi === id]
+        drops <- match(c("publisher","reviewed.work","doi"),names(metadata))
+        metadata <- metadata[,-drops]
+
+        write_zip(function (f) {
+            write.table(metadata,f,
+                        quote=T,sep=",",
+                        col.names=F,row.names=F,
+                        # d3.csv.* expects RFC 4180 compliance
+                        qmethod="double")},
+                    file.path(out_dir,"meta"),
+                    ".csv",no_zip=T)
     }
     else {
         warning("Unable to read metadata.")
     }
 
-    message("Checking for model-meta JSON file...")
-    mmfile <- file.path(out_dir,"model_meta.json")
-    if(file.exists(mmfile)) {
-        message(mmfile," ok")
+    message("Checking for info JSON file...")
+    info_file <- file.path(out_dir,"info.json")
+    if(file.exists(info_file)) {
+        message(info_file," ok")
     }
     else {
-        message(mmfile," is missing. Create it by hand (see the README)")
+        message(info_file," is missing. Create it by hand (see the README)")
     }
 
 }

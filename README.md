@@ -1,13 +1,12 @@
 # A simple model browser
 
-These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix. My functions that produce these are in `dfr-analysis/topics_rmallet.R`.
+These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix. 
 
-The browser looks for the following files in `data/`:
+## Generating the datafiles
 
-- `dt.csv`: headerless matrix in CSV format, with the i,j cell giving the number of words in document i allocated to topic j. 
-- `keys.csv`: CSV file, with header, with columns `topic,alpha,word,weight`.
-- `meta.csv`: rows of document metadata, assumed to be in the same order as `dt.csv`, with fields identical to those in DfR `citations.CSV` files.
-- `model_meta.json`: unlike the others, write this by hand. This holds information about the model, for display in the browser. You need only: 
+[dfr-analysis](http://github.com/agoldst/dfr-analysis) supplies functions (in `topics_rmallet.R`) to create data frames which you can save as `keys.csv` and `doc_topics.csv`.
+
+`info.json` must be written by hand. You need only:
 
 ```json
 {
@@ -28,27 +27,39 @@ You can also override some aspects of the visualization by adding a `VIS` object
 }
 ```
 
-## Using the browser
+For the remaining files, I provide an R script to transform them into the formats needed by the javascript code.
 
-1. Once the files are in place in a `data/` subdirectory, launch a web server in the `dfr-browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text` and kindred functions).
-
-3. Navigate to the home page, `http://localhost:8888`, in your favorite web browser.
-
-## Generating the datafiles
-
-[dfr-analysis](http://github.com/agoldst/dfr-analysis) supplies functions (in `topics_rmallet.R`) to create data frames which you can save as `keys.csv` and `doc_topics.csv`.
-
-Create `dfr-browser/data` and copy `keys.csv` into it. Create `model_meta.json` as described above. Then, in R:
-
-```R
+```r
 source("prepare_data.R")
 dfr_dirs <- ...# directories containing citations.CSV files
-doc_topics <- ...# doc_topics filename
-prepare_data(dfr_dirs,"data",doc_topics)
+doc_topics <- ...# doc topics filename
+keys <- ...# weighted keys frame filename
+prepare_data(dfr_dirs,"data",doc_topics,keys)
 ```
 
+## Using the browser
 
-## What it does
+1. Once the files are in place in a `data/` subdirectory, launch a web server in the `dfr-browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text`).
+
+2. Navigate to the home page, `http://localhost:8888`, in your favorite web browser. You can also go directly to one of the other views of the model using URLs:
+
+- `/#/topic/<k>` where *<k>* is the 1-based topic number
+- `/#/word/<word>` where *<word>* is a topic key word
+- `/#/doc/<k>` where *<k>* is the internal document id (not so handy)
+- `/#/bib` for the bibliography view
+
+### (More detail on those files)
+
+The browser looks for the following files in `data/`:
+
+- `dt.csv`: headerless matrix in CSV format, with the i,j cell giving weight of topic j in document i.
+- `tw.json`: a JSON object with `alpha`, a vector of alpha values for each topic, and `tw`, a vector of `{ words, weights }` objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).
+- `meta.csv`: headerless CSV of document metadata, with rows in the same order as `dt.csv`, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
+- `info.json`: a JSON object with `title`, `meta_info`, and optionally `VIS` members.
+
+
+
+# What it does
 
 Currently, this provides very minimal views of topics, documents, and word types as specified in the model. There are no visualizations, just lists of "top" words and documents in topics, "top" topics in documents, and "top" topics for words. There is also a "bibliography" view of all your documents.
 
