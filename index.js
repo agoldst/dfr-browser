@@ -1,7 +1,37 @@
 /*global d3, queue */
 
 /* declaration of global object (initialized in setup_vis) */
-var VIS;
+var VIS = {
+    loaded: { }, // which data already loaded?
+    ready: { }, // which viz already generated?
+    bib_sort: {
+        major: "year",
+        minor: "alpha"
+    },
+    overview_words: 15,     // TODO set these parameters interactively
+    topic_view_words: 50,
+    topic_view_docs: 20,
+    doc_view_topics: 10,
+    float_format: function (x) {
+        return d3.round(x, 3);
+    },
+    percent_format: d3.format(".1%"),
+    cite_date_format: d3.time.format("%B %Y"),
+    uri_proxy: ".proxy.libraries.rutgers.edu",
+    prefab_plots: true, // use SVG or look for image files for plots?
+    plot: {
+        w: 640, // TODO hardcoding = bad
+        h: 300,
+        m: {
+            left: 40,
+            right: 20,
+            top: 20,
+            bottom: 20
+        },
+        bar_width: 300, // in days!
+        ticks: 10 // applied to both x and y axes
+    }
+};
 
 /* declaration of functions */
 
@@ -12,8 +42,6 @@ var model,          // model specification
     doc_topics,
     doc_sort_key,
     bib_sort,
-    yearly_range,
-    topic_yearly,
     topic_label,    // stringifiers
     topic_link,
     cite_doc,
@@ -25,8 +53,8 @@ var model,          // model specification
     bib_view,
     about_view,
     model_view,
-    stringify_model_view,
     view_refresh,
+    view_loading,
     setup_vis,      // initialization
     plot_svg,
     read_files,
@@ -34,19 +62,237 @@ var model,          // model specification
 
 // model specification
 // -------------------
+// data stored internally as follows:
+// tw: array of d3.map()s keyed to words as strings
+// dt: docs in rows, topic counts in columns
+// alpha: alpha values for topics
+// meta: array of objects holding document citations
 
-model = function () {
-    var result = {
-        tw: [],     // array of d3.map()s
-        dt: [],     // docs in rows, topic counts in columns
-        alpha: [],  // alpha value for topics
-        meta: [],   // document citations
-        n: 0,
-        n_top_words: 0,
-        preprocessed: false
+model = function (spec) {
+    var my = spec || { }, // private members
+        that = { }, // resultant object
+        // methods
+        info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
+        yearly_topic,
+        set_dt, set_tw, set_meta;
+
+
+    info = function (model_meta) {
+        if (model_meta) {
+            my.info = model_meta;
+        } 
+        return my.info;
     };
+    that.info = info;
 
-    return result;
+    dt = function (d, t) {
+        if (!my.dt) {
+            return undefined;
+        } else if (d === undefined ) {
+            return my.dt;
+        } else if (t === undefined) {
+            return my.dt[d].map(function (x) {
+                return x || 0;
+            });
+        } else {
+            return my.dt[d][t] || 0;
+        }
+    };
+    that.dt = dt;
+
+    n_docs = function () {
+        if (my.dt) {
+            return my.dt.length;
+        } else if (my.meta) {
+            return my.meta.length;
+        } else {
+            return undefined;
+        }
+    };
+    that.n_docs = n_docs;
+
+    doc_len = function (d) {
+        if (!my.doc_len) {
+            my.doc_len = [];
+        }
+        if(!my.doc_len[d]) {
+            my.doc_len[d] = d3.sum(this.dt(d));
+        }
+        return my.doc_len[d];
+    };
+    that.doc_len = doc_len;
+
+    tw = function (t, word) {
+        if (!my.tw) {
+            return undefined;
+        } else if (t === undefined) {
+            return my.tw;
+        } else if (word === undefined) {
+            return my.tw[t];
+        } else {
+            return my.tw[t].get(word);
+        }
+    };
+    that.tw = tw;
+
+    n = function () {
+        return my.n;
+    };
+    that.n = n;
+
+    n_top_words = function () {
+        if (!this.tw()) {
+            return undefined;
+        } else {
+            return my.tw[0].keys().length;
+        }
+    };
+    that.n_top_words = n_top_words;
+
+    alpha = function (t) {
+        if (!my.alpha) {
+            return undefined;
+        }
+        return isFinite(t) ? my.alpha[t] : my.alpha;
+    };
+    that.alpha = alpha;
+
+    meta = function (d) {
+        if (!my.meta) {
+            return undefined;
+        }
+        return isFinite(d) ? my.meta[d] : my.meta;
+    };
+    that.meta = meta;
+
+    yearly_topic = function () {
+        var counts, totals, result, i, y, t;
+
+        // cached? 
+        if (my.yearly_topic) {
+            return my.yearly_topic;
+        }
+        if (!this.dt() || !this.meta()) {
+            return undefined;
+        }
+
+
+        counts = d3.map();
+        totals = d3.map();
+        result = d3.map();
+
+        for (i = 0; i < this.n_docs(); i += 1) {
+            y = this.meta(i).date.getFullYear();
+            if (!counts.has(y)) {
+                counts.set(y, []);
+            }
+            if (!totals.has(y)) {
+                totals.set(y, 0);
+            }
+
+            for (t = 0; t < this.n(); t += 1) {
+                if(counts.get(y)[t]) {
+                    counts.get(y)[t] += this.dt(i, t);
+                } else {
+                    counts.get(y)[t] = this.dt(i, t);
+                }
+                totals.set(y, totals.get(y) + this.dt(i, t));
+            }
+        }
+
+        // divide through
+        counts.forEach(function (y, wts) {
+            result.set(y, wts.map(function (w) {
+                return w / totals.get(y);
+            }));
+        });
+
+        // cache if this is the first time through
+        my.yearly_topic = result;
+        return result;
+    };
+    that.yearly_topic = yearly_topic;
+
+    set_tw = function (tw_s) {
+        var parsed;
+
+        if (typeof(tw_s) !== 'string') {
+            return;
+        }
+
+        parsed = JSON.parse(tw_s);
+        my.alpha = parsed.alpha;
+        my.tw = parsed.tw.map(function (topic) {
+            var result = d3.map();
+            topic.words.map(function (w, j) {
+                result.set(w,topic.weights[j]);
+            });
+            return result;
+        });
+
+        if (!my.n) {
+            my.n = my.alpha.length;
+        }
+    };
+    that.set_tw = set_tw;
+
+    set_dt = function (dt_s) {
+        var parsed,
+            j, i, row;
+
+        if (typeof(dt_s) !== 'string') {
+            return;
+        }
+
+        my.dt = [];
+        parsed = JSON.parse(dt_s);
+        // unroll sparse matrix
+        // column indices = rep(seq_along(diff(p)),diff(p))
+        for (j = 0; j < parsed.p.length - 1; j += 1) {
+            for (i = parsed.p[j]; i < parsed.p[j + 1]; i += 1) {
+                row = parsed.i[i];
+                if (!my.dt[row]) {
+                    my.dt[row] = [];
+                }
+
+                my.dt[row][j] = parsed.x[i];
+            }
+        }
+
+        if (!my.n) {
+            my.n = parsed.p.length - 1;
+        }
+    };
+    that.set_dt = set_dt;
+
+    set_meta = function (meta_s) {
+        if (typeof(meta_s) !== 'string') {
+            return;
+        }
+        my.meta = d3.csv.parseRows(meta_s, function (d, j) {
+        // no header, but this is the column order:
+        // 0  1     2      3            4      5     6       7      
+        // id,title,author,journaltitle,volume,issue,pubdate,pagerange
+            var a_str = d[2].trim(), // author
+                date = new Date(d[6].trim()); // pubdate
+
+            return {
+                doi: d[0].trim(), // id
+                title: d[1].trim(),
+                authors: a_str === "" ? [] : a_str.split("\t"),
+                journaltitle: d[3].trim(),
+                volume: d[4].trim(),
+                issue: d[5].trim(),
+                date: date, // pubdate
+                pagerange: d[7].trim()
+                    .replace(/^p?p\. /, "")
+                    .replace(/-/g, "–")
+            };
+        });
+    };
+    that.set_meta = set_meta;
+
+    return that;
 };
 
 
@@ -58,8 +304,8 @@ model = function () {
 
 top_words = function (m, t, n) {
     var w;
-    w = m.tw[t].keys().sort(function (j, k) {
-        return d3.descending(m.tw[t].get(j), m.tw[t].get(k));
+    w = m.tw(t).keys().sort(function (j, k) {
+        return d3.descending(m.tw(t, j), m.tw(t, k));
     });
 
     return w.slice(0, n);
@@ -76,8 +322,8 @@ word_topics = function (m, word) {
                 0);
         };
 
-    for (t = 0; t < m.n; t += 1) {
-        row = m.tw[t];
+    for (t = 0; t < m.n(); t += 1) {
+        row = m.tw(t);
         if (row.has(word)) {
             word_wt = row.get(word);
             result.push([t, calc_rank(row)]);
@@ -94,7 +340,7 @@ top_docs = function (m, t, n) {
     // which does *not* necessarily give the docs where t is most salient
 
     weight = function (d) {
-        return m.dt[d][t] / m.doc_len[d];
+        return m.dt(d,t) / m.doc_len(d);
     };
     // initial guess
     docs = d3.range(n);
@@ -104,7 +350,7 @@ top_docs = function (m, t, n) {
     });
     wts = docs.map(function (d) { return wts[d]; });
 
-    for (i = n; i < m.dt.length; i += 1) {
+    for (i = n; i < m.n_docs(); i += 1) {
         wt = weight(i);
         insert = d3.bisectLeft(wts, wt);
         if (insert > 0) {
@@ -120,55 +366,56 @@ top_docs = function (m, t, n) {
 
 // TODO user faster "top N" algorithm as in top_docs ?
 doc_topics = function (m, d, n) {
-    return d3.range(m.n)
+    return d3.range(m.n())
         .sort(function (a, b) {
-            return d3.descending(m.dt[d][a], m.dt[d][b]);
+            return d3.descending(m.dt(d, a), m.dt(d, b));
         })
         .slice(0, n);
 };
 
 doc_sort_key = function (m, i) {
+    var names;
     // TODO shouldn't really combine sort key and extracting the first letter
     // also, this fails when author name ends with Jr, 2nd, (xxx), etc.
-    if (m.meta[i].authors.length > 0) {
-        names = m.meta[i].authors[0].split(" ");
+    if (m.meta(i).authors.length > 0) {
+        names = m.meta(i).authors[0].split(" ");
         return names[names.length - 1][0].toUpperCase(); // N.B. casefolding
     } else {
         return "[Anon]";
     }
 };
 
-bib_sort = function (m,major,minor) {
+bib_sort = function (m, major, minor) {
     var result = {
             headings: [],
             docs: []
         },
-        docs = d3.range(m.meta.length),
+        docs = d3.range(m.n_docs()),
         major_sort, major_split, minor_sort,
-        major, cur_major,
+        major_key, cur_major,
         i, last,
         partition = [];
 
     if (major === "decade") {
         major_split = function (i) {
-            return Math.floor(m.meta[i].date.getFullYear() / 10).toString() +
+            return Math.floor(m.meta(i).date.getFullYear() / 10).toString() +
                 "0s";
         };
 
         major_sort = function (a, b) {
-            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
         };
     } else if (major === "year") {
         major_split = function (i) {
-            return m.meta[i].date.getFullYear();
+            return m.meta(i).date.getFullYear();
         };
 
         major_sort = function (a, b) {
-            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
         };
     } else {
         if (major !== "alpha") {
-            console.log("Unknown bib_sort: " + major + "; defaulting to alpha")
+            console.log("Unknown bib_sort: " + major + "; defaulting to alpha");
         }
         // alphabetical
         major_split = function (i) {
@@ -182,11 +429,11 @@ bib_sort = function (m,major,minor) {
 
     if (minor === "date") {
         minor_sort = function(a, b) {
-            return d3.ascending(+m.meta[a].date, +m.meta[b].date);
+            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
         };
     } else  {
         if (minor !== "alpha") {
-            console.log("Unknown bib_sort: " + minor + "; defaulting to alpha")
+            console.log("Unknown bib_sort: " + minor + "; defaulting to alpha");
         }
         // alphabetical
         minor_sort = function (a, b) {
@@ -196,11 +443,11 @@ bib_sort = function (m,major,minor) {
 
     docs = docs.sort(major_sort);
     for (i = 0; i < docs.length; i += 1) {
-        major = major_split(docs[i]);
-        if (major !== cur_major) {
+        major_key = major_split(docs[i]);
+        if (major_key !== cur_major) {
             partition.push(i);
-            result.headings.push(major);
-            cur_major = major;
+            result.headings.push(major_key);
+            cur_major = major_key;
         }
     }
     partition.shift(); // correct for "0" always getting added at the start
@@ -211,67 +458,6 @@ bib_sort = function (m,major,minor) {
         last = partition[i];
     }
 
-    return result;
-};
-
-yearly_range = function (m) {
-    var result;
-
-    // TODO factor out memoization
-
-    // memoize using VIS to store result
-    if (VIS.yearly_range !== undefined) {
-        return VIS.yearly_range;
-    }
-
-    result = d3.extent(m.meta, function (row) {
-        return row.date.getFullYear();
-    });
-
-    VIS.yearly_range = result;
-    return result;
-};
-
-topic_yearly = function (m) {
-    var counts, totals, result, i, y, t;
-
-    // memoize using VIS to store result
-    if (VIS.topic_yearly !== undefined) {
-        return VIS.topic_yearly;
-    }
-
-    counts = d3.map();
-    totals = d3.map();
-    result = d3.map();
-
-    for (i = 0; i < m.dt.length; i += 1) {
-        y = m.meta[i].date.getFullYear();
-        if (!counts.has(y)) {
-            counts.set(y, []);
-        }
-        if (!totals.has(y)) {
-            totals.set(y, 0);
-        }
-
-        for (t = 0; t < m.n; t += 1) {
-            if(counts.get(y)[t]) {
-                counts.get(y)[t] += m.dt[i][t];
-            } else {
-                counts.get(y)[t] = m.dt[i][t];
-            }
-            totals.set(y, totals.get(y) + m.dt[i][t]);
-        }
-    }
-
-    // divide through
-    counts.forEach(function (y, wts) {
-        result.set(y, wts.map(function (w) {
-            return w / totals.get(y);
-        }));
-    });
-
-    // memoize if this is the first time through
-    VIS.topic_yearly = result;
     return result;
 };
 
@@ -296,7 +482,7 @@ topic_link = function (t) {
 cite_doc = function (m, d) {
     var doc, lead, result;
 
-    doc = m.meta[d];
+    doc = m.meta(d);
     // TODO factor out sort-name extraction (to use with doc_sort_key too)
     // fails on Jr., 2nd, etc.
     if(doc.authors.length > 0) {
@@ -334,7 +520,7 @@ doc_uri = function (m, d) {
     return "http://dx.doi.org"
         + VIS.uri_proxy
         + "/"
-        + m.meta[d].doi;
+        + m.meta(d).doi;
 };
 
 
@@ -342,106 +528,118 @@ doc_uri = function (m, d) {
 // -----------------------------------
 
 topic_view = function (m, t) {
-    var view, trs_w, trs_d,
-        img;
+    var view = d3.select("div#topic_view"),
+        render;
 
-    console.log("View for topic " + (t + 1));
+    render = function () {
+        var trs_w, trs_d, img;
 
-    if (!isFinite(t)) {
-        return false;
-    }
+        // get top words and weights
+        // -------------------------
 
-    if (t < 0 || t > m.n) {
-        console.log("Invalid topic t = " + t);
-        return false;
-    }
+        view.select("h2")
+            .text(topic_label(m, t, VIS.overview_words));
 
-    view = d3.select("div#topic_view");
-
-    // get top words and weights
-    // -------------------------
-
-    view.select("h2")
-        .text(topic_label(m, t, VIS.overview_words));
-
-    view.select("p#topic_remark")
-        .text("α = " + VIS.float_format(m.alpha[t]));
+        view.select("p#topic_remark")
+            .text("α = " + VIS.float_format(m.alpha(t)));
 
 
-    trs_w = view.select("table#topic_words tbody")
-        .selectAll("tr")
-        .data(top_words(m, t, m.n_top_words));
+        trs_w = view.select("table#topic_words tbody")
+            .selectAll("tr")
+            .data(top_words(m, t, m.n_top_words()));
 
-    trs_w.enter().append("tr");
-    trs_w.exit().remove();
+        trs_w.enter().append("tr");
+        trs_w.exit().remove();
 
-    // clear rows
-    trs_w.selectAll("td").remove();
+        // clear rows
+        trs_w.selectAll("td").remove();
 
-    trs_w
-        .append("td").append("a")
-        .attr("href", function (w) {
-            return "#/word/" + w;
-        })
-        .text(function (w) { return w; });
+        trs_w
+            .append("td").append("a")
+            .attr("href", function (w) {
+                return "#/word/" + w;
+            })
+            .text(function (w) { return w; });
 
-    trs_w
-        .append("td")
-        .text(function (w) {
-            return m.tw[t].get(w);
-        });
-
-
-    // get top articles
-    // ----------------
-
-    trs_d = view.select("table#topic_docs tbody")
-        .selectAll("tr")
-        .data(top_docs(m, t, VIS.topic_view_docs));
-
-    trs_d.enter().append("tr");
-    trs_d.exit().remove();
-
-    // clear rows
-    trs_d.selectAll("td").remove();
-
-    trs_d
-        .append("td").append("a")
-        .attr("href", function (d) {
-            return "#/doc/" + d;
-        })
-        .html(function (d) {
-            return cite_doc(m, d);
-        });
-
-    trs_d
-        .append("td")
-        .text(function (d) {
-            return VIS.percent_format(m.dt[d][t] / m.doc_len[d]);
-        });
-
-    trs_d
-        .append("td")
-        .text(function (d) {
-            return m.dt[d][t];
-        });
+        trs_w
+            .append("td")
+            .text(function (w) {
+                return m.tw(t,w);
+            });
 
 
-    // Plot topic over time
-    // --------------------
+        // get top articles
+        // ----------------
 
-    if (VIS.prefab_plots) {
-        // Set image link
-        img = d3.select("#topic_plot img");
-        if(img.empty()) {
-            img = d3.select("#topic_plot").append("img"); 
+        trs_d = view.select("table#topic_docs tbody")
+            .selectAll("tr")
+            .data(top_docs(m, t, VIS.topic_view_docs));
+
+        trs_d.enter().append("tr");
+        trs_d.exit().remove();
+
+        // clear rows
+        trs_d.selectAll("td").remove();
+
+        trs_d
+            .append("td").append("a")
+            .attr("href", function (d) {
+                return "#/doc/" + d;
+            })
+            .html(function (d) {
+                return cite_doc(m, d);
+            });
+
+        trs_d
+            .append("td")
+            .text(function (d) {
+                return VIS.percent_format(m.dt(d, t) / m.doc_len(d));
+            });
+
+        trs_d
+            .append("td")
+            .text(function (d) {
+                return m.dt(d, t);
+            });
+
+
+        // Plot topic over time
+        // --------------------
+
+        if (VIS.prefab_plots) {
+            // Set image link
+            img = d3.select("#topic_plot img");
+            if(img.empty()) {
+                img = d3.select("#topic_plot").append("img"); 
+            }
+
+            img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
+                .attr("title", "yearly proportion of topic " + (t + 1));
         }
+        else {
+            plot_topic_yearly(m, t);
+        }
+    };
 
-        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
-            .attr("title", "yearly proportion of topic " + (t + 1));
+    if (m.meta() && m.dt() && m.tw()) {
+        render();
+        view.classed("hidden",false);
     }
     else {
-        plot_topic_yearly(m,t);
+        view_loading(true);
+        // TODO load pieces asynchronously instead of awaiting all three
+        queue()
+            .defer(load_data,"meta.csv")
+            .defer(load_data,"dt.json")
+            .defer(load_data,"tw.json")
+            .await(function (error, meta_s, dt_s, tw_s) {
+                m.set_meta(meta_s);
+                m.set_dt(dt_s);
+                m.set_tw(tw_s);
+                render();
+                view_loading(false);
+                view.classed("hidden",false);
+            });
     }
 
     return true;
@@ -455,9 +653,9 @@ plot_topic_yearly = function(m, t) {
         rects, axis_x, axis_y, 
         svg = plot_svg();
 
-    year_seq = topic_yearly(m).keys().sort();
+    year_seq = m.yearly_topic().keys().sort();
     series = year_seq.map(function (y) {
-            return [new Date(+y,0,1), topic_yearly(m).get(y)[t]];
+            return [new Date(+y, 0, 1), m.yearly_topic().get(y)[t]];
         });
 
     scale_x = d3.time.scale()
@@ -535,103 +733,129 @@ plot_topic_yearly = function(m, t) {
 
 
 word_view = function (m, word) {
-    var view, trs, topics;
+    var view = d3.select("div#word_view"),
+        render;
 
-    console.log("View for word " + word);
     if (word === undefined) {
         return false;
     }
 
-    view = d3.select("div#word_view");
+    render = function () {
+        var trs, topics;
 
-    view.select("h2")
-        .text(word);
+        view.select("h2")
+            .text(word);
 
-    topics = word_topics(m, word);
-    topics = topics.sort(function (a, b) {
-        return d3.ascending(a[1], b[1]);
-    });
-
-    // TODO alert if topics.length == 0
-
-    trs = view.select("table#word_topics tbody")
-        .selectAll("tr")
-        .data(topics);
-
-    trs.enter().append("tr");
-    trs.exit().remove();
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    trs.append("td")
-        .text(function (d) {
-            return d[1] + 1; // user-facing rank is 1-based
+        topics = word_topics(m, word);
+        topics = topics.sort(function (a, b) {
+            return d3.ascending(a[1], b[1]);
         });
 
-    trs.append("td").append("a")
-        .text(function (d) {
-            return topic_label(m, d[0], VIS.overview_words);
-        })
-        .attr("href", function (d) {
-            return topic_link(d[0]);
-        });
+        // TODO alert if topics.length == 0
 
+        trs = view.select("table#word_topics tbody")
+            .selectAll("tr")
+            .data(topics);
+
+        trs.enter().append("tr");
+        trs.exit().remove();
+
+        // clear rows
+        trs.selectAll("td").remove();
+
+        trs.append("td")
+            .text(function (d) {
+                return d[1] + 1; // user-facing rank is 1-based
+            });
+
+        trs.append("td").append("a")
+            .text(function (d) {
+                return topic_label(m, d[0], VIS.overview_words);
+            })
+            .attr("href", function (d) {
+                return topic_link(d[0]);
+            });
+    };
+
+    if (m.tw()) {
+        render();
+        view.classed("hidden",false);
+    } else {
+        view_loading(true);
+        load_data("tw.json", function (error, s) {
+            m.set_tw(s);
+            render();
+            view_loading(false);
+            view.classed("hidden",false);
+        });
+    }
     return true;
+
     // (later: time graph)
 };
 
 doc_view = function (m, doc) {
-    var view, trs;
+    var view = d3.select("div#doc_view"),
+        render;
 
-    console.log("View for doc " + doc);
+    render = function () {
+        var trs;
+        view.select("#doc_view h2")
+            .html(cite_doc(m, doc));
 
-    if (!isFinite(doc)) {
-        return false;
+        view.select("p#doc_remark")
+            .html(m.doc_len(doc) + " tokens. "
+                    + '<a class ="external" href="'
+                    + doc_uri(m, doc)
+                    + '">View '
+                    + m.meta(doc).doi
+                    + " on JSTOR</a>");
+
+        trs = view.select("table#doc_topics tbody")
+            .selectAll("tr")
+            .data(doc_topics(m, doc, VIS.doc_view_topics));
+
+        trs.enter().append("tr");
+        trs.exit().remove();
+
+        // clear rows
+        trs.selectAll("td").remove();
+
+        trs.append("td").append("a")
+            .attr("href", topic_link)
+            .text(function (t) {
+                return topic_label(m, t, VIS.overview_words);
+            });
+        trs.append("td")
+            .text(function (t) {
+                return m.dt(doc, t);
+            });
+        trs.append("td")
+            .text(function (t) {
+                return VIS.percent_format(m.dt(doc, t) / m.doc_len(doc));
+            });
+    };
+
+    if (m.meta() && m.dt() && m.tw()) {
+        render();
+        view.classed("hidden",false);
     }
-
-    if (doc < 0 || doc >= m.dt.length) {
-        console.log("Invalid doc id: " + doc);
-        return false;
+    else {
+        view_loading(true);
+        // TODO load pieces asynchronously instead of awaiting all three
+        queue()
+            .defer(load_data,"meta.csv")
+            .defer(load_data,"dt.json")
+            .defer(load_data,"tw.json")
+            .await(function (error, meta_s, dt_s, tw_s) {
+                m.set_meta(meta_s);
+                m.set_dt(dt_s);
+                m.set_tw(tw_s);
+                render();
+                view_loading(false);
+                view.classed("hidden",false);
+            });
     }
-
-    view = d3.select("div#doc_view");
-
-    view.select("#doc_view h2")
-        .html(cite_doc(m, doc));
-
-    view.select("p#doc_remark")
-        .html(m.doc_len[doc] + " tokens. "
-                + '<a class ="external" href="'
-                + doc_uri(m, doc)
-                + '">View '
-                + m.meta[doc].doi
-                + " on JSTOR</a>");
-
-    trs = view.select("table#doc_topics tbody")
-        .selectAll("tr")
-        .data(doc_topics(m, doc, VIS.doc_view_topics));
-
-    trs.enter().append("tr");
-    trs.exit().remove();
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    trs.append("td").append("a")
-        .attr("href", topic_link)
-        .text(function (t) {
-            return topic_label(m, t, VIS.overview_words);
-        });
-    trs.append("td")
-        .text(function (t) {
-            return m.dt[doc][t];
-        });
-    trs.append("td")
-        .text(function (t) {
-            return VIS.percent_format(m.dt[doc][t] / m.doc_len[doc]);
-        });
-
     return true;
     // TODO visualize topic proportions as rectangles at the very least
 
@@ -639,13 +863,16 @@ doc_view = function (m, doc) {
 };
 
 bib_view = function (m) {
-    var ordering, view, nav_as, sections, headings, as;
+    var view = d3.select("div#bib_view"),
+        render;
 
-    console.log("Bibliography view");
+    if (VIS.ready.bib) {
+        view.classed("hidden",false);
+        return true;
+    }
 
-    view = d3.select("div#bib_view");
-
-    if (!VIS.bib_ready) {
+    render = function () {
+        var ordering, nav_as, sections, headings, as;
         ordering = bib_sort(m, VIS.bib_sort.major, VIS.bib_sort.minor);
 
         // TODO fix page-jumping #links
@@ -702,28 +929,51 @@ bib_view = function (m) {
                 return cite_doc(m, d);
             });
 
-        VIS.bib_ready = true;
+        VIS.ready.bib = true;
+    };
+
+    if (m.meta()) {
+        render();
+        view.classed("hidden",false);
+    } else {
+        view_loading(true);
+        load_data("meta.csv",function (error, s) {
+            m.set_meta(s);
+            render();
+            view_loading(false);
+            view.classed("hidden",false);
+        });
     }
 
-    // ready
     return true;
 };
 
 about_view = function (m) {
+    if(!VIS.ready.about) {
+        d3.select("div#meta_info")
+            .html(m.info().meta_info);
+        VIS.ready.about = true;
+    }
+    d3.select("#about_view").classed("hidden", false);
     return true;
 };
 
 
 model_view = function (m) {
-    var trs;
+    var view = d3.select("#model_view"),
+        render;
 
-    console.log("Overview");
+    if (VIS.ready.model) {
+        view.classed("hidden", false);
+        return true;
+    }
 
-    if (!VIS.model_view_ready) {
+    render = function() {
+        var trs;
 
         trs = d3.select("table#model_topics tbody")
             .selectAll("tr")
-            .data(d3.range(m.n));
+            .data(d3.range(m.n()));
 
         // clear rows
         trs.selectAll("td").remove();
@@ -743,10 +993,23 @@ model_view = function (m) {
 
         trs.append("td")
             .text(function (t) {
-                return VIS.float_format(m.alpha[t]);
+                return VIS.float_format(m.alpha(t));
             });
 
-        VIS.model_view_ready = true;
+        VIS.ready.model = true;
+    };
+
+    if (m.tw()) {
+        render();
+        view.classed("hidden", false);
+    } else {
+        view_loading(true);
+        load_data("tw.json",function (error, s) {
+            m.set_tw(s);
+            render();
+            view_loading(false);
+            view.classed("hidden", false);
+        });
     }
 
     return true;
@@ -757,20 +1020,8 @@ model_view = function (m) {
     // (later: multi-dimensional scaling projection showing topic clusters)
 };
 
-stringify_model_view = function (m) {
-    var m_out = m;
-
-    m_out.preprocessed = true;
-
-    // a very wasteful { "key": blargh, "value": blargh } format
-    m_out.tw = m.tw.map(function (x) { return x.entries(); });
-
-    d3.selectAll("body div").remove();
-    d3.select("body")
-        .append("textarea")
-        .text(JSON.stringify(m_out));
-
-    return true;
+view_loading = function (flag) {
+    d3.select("div#loading").classed("hidden", !flag);
 };
 
 view_refresh = function (m, v, init) {
@@ -778,6 +1029,10 @@ view_refresh = function (m, v, init) {
 
     view_parsed = v.split("/");
     param = view_parsed[2];
+
+    if (init) {
+        view_loading(true);
+    }
 
     if (VIS.cur_view !== undefined) {
         VIS.cur_view.classed("hidden", true);
@@ -813,10 +1068,6 @@ view_refresh = function (m, v, init) {
             param = +param;
             success = doc_view(m, param);
             break;
-        case "stringify_model":
-            // special case for this kludgepage. Doesn't change the cur_view
-            success = stringify_model_view(m);
-            return;
         default:
             success = false;
             break;
@@ -829,6 +1080,8 @@ view_refresh = function (m, v, init) {
             // fall back on model_view
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
+        } else {
+            VIS.cur_view.classed("hidden",false);
         }
     }
 
@@ -837,60 +1090,38 @@ view_refresh = function (m, v, init) {
     d3.select("li#nav_" + view_parsed[1]).classed("active",true);
 
     if (init) {
-        // TODO any special on-init behavior
+        view_loading(false);
     }
 
-    VIS.cur_view.classed("hidden", false);
 };
 
 
 // initialization
 // --------------
 
+// global visualization setup
 setup_vis = function (m) {
-    // set visualization parameters on the global object VIS
-    VIS = {
-        model_view_ready: false,
-        bib_ready: false,
-        bib_sort: {
-            major: "year",
-            minor: "alpha"
-        },
-        overview_words: 15,     // TODO set these parameters interactively
-        topic_view_words: 50,
-        topic_view_docs: 20,
-        doc_view_topics: 10,
-        float_format: function (x) {
-            return d3.round(x, 3);
-        },
-        percent_format: d3.format(".1%"),
-        cite_date_format: d3.time.format("%B %Y"),
-        uri_proxy: ".proxy.libraries.rutgers.edu",
-        prefab_plots: true, // use SVG or look for image files for plots?
-        plot: {
-            w: 640, // TODO hardcoding = bad
-            h: 300,
-            m: {
-                left: 40,
-                right: 20,
-                top: 20,
-                bottom: 20
-            },
-            bar_width: 300, // in days!
-            ticks: 10 // applied to both x and y axes
-        }
-    };
+    var key;
 
-    // preferences stashed in model_meta
+    // ensure plot div has size
+    d3.select("div#topic_plot")
+        .attr("width", VIS.plot.w + VIS.plot.m.left + VIS.plot.m.right)
+        .attr("height", VIS.plot.h + VIS.plot.m.top + VIS.plot.m.bottom);
 
-    if (m.model_meta.VIS) {
-        for (key in m.model_meta.VIS) {
-            if (m.model_meta.VIS.hasOwnProperty(key)
-                    && typeof(m.model_meta.VIS[key] !== 'function')) {
-                VIS[key] = m.model_meta.VIS[key];
+    // load any preferences stashed in model info
+
+    if (m.info().VIS) {
+        for (key in m.info().VIS) {
+            if (m.info().VIS.hasOwnProperty(key)
+                    && typeof(m.info().VIS[key] !== 'function')) {
+                VIS[key] = m.info().VIS[key];
             }
         }
     }
+
+    // model title
+    d3.select("#model_title")
+        .text(m.info().title);
 
     // hashchange handler
 
@@ -898,12 +1129,6 @@ setup_vis = function (m) {
         view_refresh(m, window.location.hash, false);
     };
 
-    // load model information and stick it in page header elements
-
-    d3.select("#model_title")
-        .text(m.model_meta.title);
-    d3.select("div#meta_info")
-        .html(m.model_meta.meta_info);
 
     // TODO settings controls
     
@@ -928,126 +1153,38 @@ plot_svg = function () {
     return VIS.svg;
 };
 
-read_files = function (ready) {
-    var m, process_keys, access_meta, process_files;
+var load_data = function (target, callback) {
+    var target_stem = target.replace(/\..*$/, ""),
+        target_id;
 
-    // initialize model object
-    m = model();
-
-    // look for preprocessed data...
-    if (document.getElementById("m__DATA__")) {
-        m = JSON.parse(document.getElementById("m__DATA__").innerHTML);
-
-        // reconstruct d3.map()s 
-        m.tw = m.tw.map(function (entries) {
-            var result = d3.map();
-            entries.map(function (kv) {
-                result.set(kv.key, kv.value);
-            });
-            return result;
-        });
-
-        // reconstruct Date fields
-        m.meta = m.meta.map(function (row) {
-            var result = row;
-            result.date = new Date(row.date);
-            return result;
-        });
-        ready(m);
-        return;
+    if (VIS.loaded[target_stem]) {
+        return callback(undefined, undefined);
     }
-
-    // ...otherwise, load from files:
-
-    // This "accessor" eats up the rows of keys.csv and returns nothing.
-    // It loads the topic-words (but only N most probable) as d3.maps()s
-    process_keys = function (d) {
-        var t;
-
-        t = +d.topic - 1;   // topics indexed from 1 in keys.csv
-
-        if (!m.tw[t]) {
-            m.tw[t] = d3.map();
-        }
-        m.tw[t].set(d.word, +d.weight);
-        // TODO should precalculate ranks here...? or save memory?
-
-        // read topic alpha value
-
-        if (m.alpha[t] === undefined) {
-            m.alpha[t] = parseFloat(d.alpha);
-        }
-    };
-
-    access_meta = function (d) {
-        //id,doi,title,author,journaltitle,volume,issue,
-        //pubdate,pagerange,publisher,type,reviewed-work
-        var a_str = d.author.trim(),
-            date = new Date(d.pubdate.trim());
-
-        return {
-            authors: a_str === "" ? [] : a_str.split("\t"),
-            title: d.title.trim(),
-            journaltitle: d.journaltitle.trim(),
-            volume: d.volume.trim(),
-            issue: d.issue.trim(),
-            date: date,
-            pagerange: d.pagerange.trim()
-                .replace(/^p?p\. /, "")
-                .replace(/-/g, "–"),
-            doi: d.doi.trim()
-        };
-    };
-
-    // this callback handles the loaded file data
-    process_files = function (error,     // file error d3.csv/d3.text
-                              m_meta,    // model_meta.json data
-                              keys_dummy,// dummy: eaten up by process_keys
-                              dt_text,   // dt.csv as a string
-                              meta) {    // meta.csv processed into a list
-
-        // explanatory info about the model 
-        m.model_meta = m_meta;
-
-        // set topic count
-        m.n = m.tw.length;
-
-        // set count of number of top words given
-        m.n_top_words = m.tw[0].keys().length;
-
-        console.log("Read keys.csv: " + m.n + " topics");
-
-        m.dt = d3.csv.parseRows(dt_text, function (row, j) {
-            return row.map(function (x) { return +x; });
-        });
-
-        console.log("Read dt.csv: " + m.dt.length + " docs");
-
-        // precalculate doc lengths
-        m.doc_len = m.dt.map(function (d) { return d3.sum(d); });
-
-        m.meta = meta;
-
-        console.log("Read meta.csv: " + meta.length
-            + " citations");
-
-        ready(m); // where the program actually starts
-    };
-
-    // actually load the files and call the callback
-    queue()
-        .defer(d3.json, "data/model_meta.json")
-        .defer(d3.csv, "data/keys.csv", process_keys)
-        .defer(d3.text, "data/dt.csv")
-        .defer(d3.csv, "data/meta.csv", access_meta)
-        .await(process_files); // process_files calls ready(m) when done
+    
+    // preprocessed data available in DOM?
+    target_id = "m__DATA__" + target_stem;
+    if (document.getElementById(target_id)) {
+        VIS.loaded[target] = true;
+        return callback(undefined,
+                document.getElementById(target_id).innerHTML);
+    }
+    
+    // otherwise, we have to fetch it, and possibly unzip it
+    // TODO zipping...
+    return d3.text("data/" + target, function (error, s) {
+        VIS.loaded[target] = true;
+        return callback(error, s);
+    });
 };
+
 
 // main
 // ----
 
 main = function () {
-    read_files(function (m) { // callback, invoked when model is loaded in 
+    load_data("info.json",function (error, info_s) {
+        // callback, invoked when ready 
+        var m = model({ info: JSON.parse(info_s) });
         setup_vis(m);
         view_refresh(m, window.location.hash, true);
     });
