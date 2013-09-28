@@ -71,7 +71,10 @@ Needed: more interactive adjustment of parameters. More speed and asychronous lo
 
 ## The downloadable version
 
-If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off a user's filesystem. Follow the instructions in the comments in `insert_model.py`, then use `./make_standalone.sh`.
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`.
+
+To produce an all-in-one archive for sharing, use `make model.zip`.
+
 
 ## The polished options
 
