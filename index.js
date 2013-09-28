@@ -266,10 +266,16 @@ model = function (spec) {
     that.set_dt = set_dt;
 
     set_meta = function (meta_s) {
+        var s;
         if (typeof(meta_s) !== 'string') {
             return;
         }
-        my.meta = d3.csv.parseRows(meta_s, function (d, j) {
+
+        // strip blank "rows" at start or end
+        s = meta_s.replace(/^\n*/,"")
+            .replace(/\n*$/,"\n");
+
+        my.meta = d3.csv.parseRows(s, function (d, j) {
         // no header, but this is the column order:
         // 0  1     2      3            4      5     6       7      
         // id,title,author,journaltitle,volume,issue,pubdate,pagerange
