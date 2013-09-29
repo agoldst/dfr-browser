@@ -73,7 +73,7 @@ model = function (spec) {
         that = { }, // resultant object
         // methods
         info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
-        yearly_topic,
+        yearly_topic, topic_yearly, doc_year, yearly_total,
         set_dt, set_tw, set_meta;
 
 
@@ -91,12 +91,39 @@ model = function (spec) {
         } else if (d === undefined ) {
             return my.dt;
         } else if (t === undefined) {
-            return my.dt[d].map(function (x) {
-                return x || 0;
+            // TODO faster row slicing
+            return d3.range(this.n()).map(function (j) {
+                return this.dt(d, j);
             });
         } else {
-            return my.dt[d][t] || 0;
+            // TODO: jump by powers of two instead of by 1
+            for (n = my.dt.p[t]; n < my.dt.p[t + 1]; n += 1) {
+                if (my.dt.i[n] == d) {
+                    return my.dt.x[n];
+                }
+                else if (my.dt.i[n] > d) {
+                    return 0;
+                }
+            }
+            return 0;
         }
+    };
+    dt.row_sum = function (d) {
+        var result, t, n;
+        if (!my.dt) {
+            return undefined;
+        }
+        result = 0;
+        OUTER: for (t = 0; t < my.n; t += 1) {
+            INNER: for (n = my.dt.p[t]; n < my.dt.p[t + 1]; n += 1) { 
+                // TODO: jump by powers of two instead of by 1, use bitshift
+                if (my.dt.i[n] == d) {
+                    result += my.dt.x[n];
+                    break INNER;
+                }
+            }
+        }
+        return result;
     };
     that.dt = dt;
 
@@ -116,7 +143,7 @@ model = function (spec) {
             my.doc_len = [];
         }
         if(!my.doc_len[d]) {
-            my.doc_len[d] = d3.sum(this.dt(d));
+            my.doc_len[d] = this.dt.row_sum(d);
         }
         return my.doc_len[d];
     };
@@ -164,54 +191,78 @@ model = function (spec) {
         return isFinite(d) ? my.meta[d] : my.meta;
     };
     that.meta = meta;
+    
+    doc_year = function (d) {
+        if (!my.meta) {
+            return undefined;
+        }
+        if (!my.doc_year) {
+            my.doc_year = [];
+        }
+        if (my.doc_year[d] !== undefined) {
+            return my.doc_year[d];
+        } else {
+            my.doc_year[d] = meta(d).date.getFullYear();
+            return my.doc_year[d];
+        }
+    };
+    that.doc_year = doc_year;
 
-    yearly_topic = function () {
-        var counts, totals, result, i, y, t;
+    yearly_total = function (y) {
+        var result;
+        if (my.yearly_total) {
+            return my.yearly_total.get(y);
+        } else {
+            result = d3.map();
+            for (n = 0; n < my.dt.i.length; n += 1) {
+                y = this.doc_year(my.dt.i[n]);
+                if (result.has(y)) {
+                    result.set(y, result.get(y) + my.dt.x[n]);
+                }
+                else {
+                    result.set(y, my.dt.x[n]);
+                }
+            }
+            my.yearly_total = result;
+            return result.get(y);
+        }
+    }; 
+    that.yearly_total = yearly_total;
+
+    topic_yearly = function (t) {
+        var result, n, y;
 
         // cached? 
-        if (my.yearly_topic) {
-            return my.yearly_topic;
+        if (!my.topic_yearly) {
+            my.topic_yearly = [];
+        } else if (my.topic_yearly[t]) {
+            return my.topic_yearly[t];
         }
         if (!this.dt() || !this.meta()) {
             return undefined;
         }
 
-
-        counts = d3.map();
-        totals = d3.map();
         result = d3.map();
 
-        for (i = 0; i < this.n_docs(); i += 1) {
-            y = this.meta(i).date.getFullYear();
-            if (!counts.has(y)) {
-                counts.set(y, []);
-            }
-            if (!totals.has(y)) {
-                totals.set(y, 0);
-            }
-
-            for (t = 0; t < this.n(); t += 1) {
-                if(counts.get(y)[t]) {
-                    counts.get(y)[t] += this.dt(i, t);
-                } else {
-                    counts.get(y)[t] = this.dt(i, t);
-                }
-                totals.set(y, totals.get(y) + this.dt(i, t));
+        for (n = my.dt.p[t]; n < my.dt.p[t + 1]; n += 1) {
+            y = this.doc_year(my.dt.i[n]);
+            if (result.has(y)) {
+                result.set(y, result.get(y) + my.dt.x[n]);
+            } else {
+                result.set(y, my.dt.x[n]);
             }
         }
 
         // divide through
-        counts.forEach(function (y, wts) {
-            result.set(y, wts.map(function (w) {
-                return w / totals.get(y);
-            }));
+        result.forEach(function (y, w) {
+            result.set(y, w / that.yearly_total(y));
         });
 
         // cache if this is the first time through
-        my.yearly_topic = result;
+        my.topic_yearly[t] = result;
         return result;
     };
-    that.yearly_topic = yearly_topic;
+    that.topic_yearly = topic_yearly;
 
     set_tw = function (tw_s) {
         var parsed;
@@ -237,30 +288,12 @@ model = function (spec) {
     that.set_tw = set_tw;
 
     set_dt = function (dt_s) {
-        var parsed,
-            j, i, row;
-
         if (typeof(dt_s) !== 'string') {
             return;
         }
-
-        my.dt = [];
-        parsed = JSON.parse(dt_s);
-        // unroll sparse matrix
-        // column indices = rep(seq_along(diff(p)),diff(p))
-        for (j = 0; j < parsed.p.length - 1; j += 1) {
-            for (i = parsed.p[j]; i < parsed.p[j + 1]; i += 1) {
-                row = parsed.i[i];
-                if (!my.dt[row]) {
-                    my.dt[row] = [];
-                }
-
-                my.dt[row][j] = parsed.x[i];
-            }
-        }
-
+        my.dt = JSON.parse(dt_s);
         if (!my.n) {
-            my.n = parsed.p.length - 1;
+            my.n = my.dt.p.length - 1;
         }
     };
     that.set_dt = set_dt;
@@ -659,10 +692,9 @@ plot_topic_yearly = function(m, t) {
         rects, axis_x, axis_y, 
         svg = plot_svg();
 
-    year_seq = m.yearly_topic().keys().sort();
-    series = year_seq.map(function (y) {
-            return [new Date(+y, 0, 1), m.yearly_topic().get(y)[t]];
-        });
+    series = m.topic_yearly(t).keys().sort().map(function (y) {
+        return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
+    });
 
     scale_x = d3.time.scale()
         .domain([series[0][0],
