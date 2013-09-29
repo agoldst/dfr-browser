@@ -3,7 +3,7 @@
 # included_plots := $(wildcard topic_plot/*)
 included_plots := 
 
-test_small.html: insert_model.py
+model_test_small.html: insert_model.py
 	python insert_model.py \
 	    --info test_small/info.json \
 	    --tw test_small/tw.json \
@@ -11,7 +11,7 @@ test_small.html: insert_model.py
 	    --dt test_small/dt.json \
 	    index.html > $@
 
-test_big.html: insert_model.py
+model_test_big.html: insert_model.py
 	python insert_model.py \
 	    --info test_big/info.json \
 	    --tw test_big/tw.json \
@@ -33,4 +33,10 @@ model.zip: model.html
 lint:
 	jsl -conf jsl.conf
 
-.PHONY: lint
+prepare_small:
+	R -e 'source("prepare_data.R"); prepare_data("test_small","test_small")'
+
+prepare_big:
+	R -e 'source("prepare_data.R"); prepare_data(Sys.glob("test_big/*/"),"test_big")'
+
+.PHONY: lint prepare_small prepare_big
