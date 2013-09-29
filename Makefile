@@ -28,7 +28,7 @@ model.html: insert_model.py
 	    index.html > $@
 
 model.zip: model.html
-	zip $@ index.js model.html css/* lib/* $(included_plots)
+	zip $@ model.js index.js model.html css/* lib/* $(included_plots)
 
 lint:
 	jsl -conf jsl.conf
