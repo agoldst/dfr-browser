@@ -113,6 +113,12 @@ prepare_data <- function(dfr_dirs,
                       ']}')
         write_zip(function (f) { writeLines(json,f) },
                   file.path(out_dir,"dt"),".json",no_zip=T)
+
+        json <- str_c('{"doc_len":[',
+                      str_c(rowSums(dtm),collapse=","),
+                      ']}')
+        write_zip(function (f) { writeLines(json,f) },
+                  file.path(out_dir,"doc_len"),".json",no_zip=T)
     }
     else {
         warning(doc_topics_file," is missing.");

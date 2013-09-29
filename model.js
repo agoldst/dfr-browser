@@ -15,7 +15,7 @@ model = function (spec) {
         // methods
         info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
         yearly_topic, topic_yearly, doc_year, yearly_total,
-        set_dt, set_tw, set_meta;
+        set_dt, set_tw, set_meta, set_doc_len;
 
 
     info = function (model_meta) {
@@ -88,12 +88,18 @@ model = function (spec) {
 
     doc_len = function (d) {
         if (!my.doc_len) {
-            my.doc_len = [];
-        }
+            return undefined;
+            //my.doc_len = [];
+        } else if (d === undefined) {
+            return my.doc_len;
+        } else {
+        /*
         if(!my.doc_len[d]) {
             my.doc_len[d] = this.dt.row_sum(d);
         }
-        return my.doc_len[d];
+        */
+            return my.doc_len[d];
+        }
     };
     that.doc_len = doc_len;
 
@@ -278,6 +284,14 @@ model = function (spec) {
         });
     };
     that.set_meta = set_meta;
+
+    set_doc_len = function (s) {
+        if (typeof(s) !== 'string') {
+            return;
+        }
+        my.doc_len = JSON.parse(s).doc_len;
+    };
+    that.set_doc_len = set_doc_len;
 
     return that;
 };

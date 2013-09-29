@@ -316,7 +316,7 @@ topic_view = function (m, t) {
     var view = d3.select("div#topic_view"),
         trs_w, trs_d, img;
 
-    if (!m.meta() || !m.dt() || !m.tw()) {
+    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         // not ready yet; show loading message
         view_loading(true);
         return true;
@@ -558,7 +558,7 @@ doc_view = function (m, doc) {
     var view = d3.select("div#doc_view"),
         trs;
 
-    if (!m.meta() || !m.dt() || !m.tw()) {
+    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         view_loading(true);
         return true;
     }
@@ -611,19 +611,15 @@ bib_view = function (m) {
     var view = d3.select("div#bib_view"),
         ordering, nav_as, sections, headings, as;
 
-    console.log("bibliography view");
     if (VIS.ready.bib) {
-        console.log("ready.bib true");
         return true;
     }
 
     if (!m.meta()) {
-        console.log("meta missing");
         view_loading(true);
         return true;
     }
 
-    console.log("executing bib sort of " + m.n_docs() + " docs");
     ordering = bib_sort(m, VIS.bib_sort.major, VIS.bib_sort.minor);
 
     VIS.ordering = ordering;
@@ -920,6 +916,11 @@ main = function () {
         });
         load_data("tw.json", function (error, tw_s) {
             m.set_tw(tw_s);
+            view_refresh(m, window.location.hash);
+        });
+        load_data("doc_len.json", function (error, doc_len_s) {
+            m.set_doc_len(doc_len_s);
+            VIS.m = m;
             view_refresh(m, window.location.hash);
         });
 
