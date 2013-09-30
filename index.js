@@ -905,6 +905,9 @@ main = function () {
         var m = model({ info: JSON.parse(info_s) });
         setup_vis(m);
 
+        // FIXME testing only
+        VIS.m = m;
+
         // now launch remaining data loading; ask for a refresh when done
         load_data("meta.csv", function (error, meta_s) {
             m.set_meta(meta_s);

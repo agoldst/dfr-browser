@@ -27,26 +27,24 @@ model = function (spec) {
     that.info = info;
 
     dt = function (d, t) {
+        var p0, p;
         if (!my.dt) {
             return undefined;
         } else if (d === undefined ) {
             return my.dt;
         } else if (t === undefined) {
-            // TODO faster row slicing
             return d3.range(this.n()).map(function (j) {
                 return this.dt(d, j);
             });
         } else {
-            // TODO: jump by powers of two instead of by 1
-            for (n = my.dt.p[t]; n < my.dt.p[t + 1]; n += 1) {
-                if (my.dt.i[n] == d) {
-                    return my.dt.x[n];
-                }
-                else if (my.dt.i[n] > d) {
-                    return 0;
-                }
+            p0 = my.dt.p[t];
+            p = d3.bisectLeft(my.dt.i.slice(p0, my.dt.p[t + 1]),d);
+            if (my.dt.i[p + p0] === d) {
+                return my.dt.x[p + p0];
+            } else {
+                return 0;
             }
-            return 0;
+
         }
     };
     dt.row_sum = function (d) {
