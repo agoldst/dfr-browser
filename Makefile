@@ -3,6 +3,8 @@
 # included_plots := $(wildcard topic_plot/*)
 included_plots := 
 
+data_files := $(addprefix data/,info.json tw.json meta.csv dt.json doc_len.json)
+
 model_test_small.html: insert_model.py
 	python insert_model.py \
 	    --info test_small/info.json \
@@ -30,6 +32,11 @@ model.html: insert_model.py
 model.zip: model.html
 	zip $@ model.js index.js model.html css/* lib/* $(included_plots)
 
+live.zip: index.html
+	zip $@ model.js index.js index.html css/* lib/* \
+	    $(data_files) \
+	    $(included_plots)
+
 lint:
 	jsl -conf jsl.conf
 
@@ -38,5 +45,13 @@ prepare_small:
 
 prepare_big:
 	R -e 'source("prepare_data.R"); prepare_data(Sys.glob("test_big/*/"),"test_big")'
+
+select_small:
+	rm -f data
+	ln -s test_small data
+
+select_big:
+	rm -f data
+	ln -s test_big data
 
 .PHONY: lint prepare_small prepare_big
