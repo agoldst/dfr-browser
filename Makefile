@@ -7,33 +7,23 @@ data_files := $(addprefix data/,info.json tw.json meta.csv dt.json doc_len.json)
 
 no_zip = F
 
-model_test_small.html: insert_model.py
-	python insert_model.py \
-	    --info test_small/info.json \
-	    --tw test_small/tw.json \
-	    --meta test_small/meta.csv \
-	    --dt test_small/dt.json \
-	    index.html > $@
-
-model_test_big.html: insert_model.py
-	python insert_model.py \
-	    --info test_big/info.json \
-	    --tw test_big/tw.json \
-	    --meta test_big/meta.csv \
-	    --dt test_big/dt.json \
-	    index.html > $@
-
 model.html: insert_model.py
 	python insert_model.py \
 	    --info data/info.json \
 	    --tw data/tw.json \
 	    --meta data/meta.csv \
 	    --dt data/dt.json \
-	    index.html > $@
+	    index.html \
+	    | sed 's/js\/dfb.js/js\/dfb_nozip.js/' \
+	    | sed 's/<script.*jszip.*script>//' \
+	    > $@
 
-# TODO omit zips and JSZip sources
+model_js = $(filter-out dfb.js,$(wildcard js/*))
+model_lib = $(filter-out $(wildcard lib/*jszip*),$(wildcard lib/*))
+
 model.zip: model.html
-	zip $@ model.html js/* css/* lib/* $(included_plots)
+	rm -f $@
+	zip $@ model.html $(model_js) css/* $(model_lib) $(included_plots)
 
 lint:
 	jsl -conf jsl.conf
