@@ -3,16 +3,17 @@
 # included_plots := $(wildcard topic_plot/*)
 included_plots := 
 
-data_files := $(addprefix data/,info.json tw.json meta.csv dt.json doc_len.json)
+data_dir := data
+data_files := $(addprefix $(data_dir)/,info.json tw.json meta.csv dt.json doc_len.json)
 
 no_zip = F
 
 model.html: insert_model.py
 	python insert_model.py \
-	    --info data/info.json \
-	    --tw data/tw.json \
-	    --meta data/meta.csv \
-	    --dt data/dt.json \
+	    --info $(data_dir)/info.json \
+	    --tw $(data_dir)/tw.json \
+	    --meta $(data_dir)/meta.csv \
+	    --dt $(data_dir)/dt.json \
 	    index.html \
 	    | sed 's/js\/dfb.js/js\/dfb_nozip.js/' \
 	    | sed 's/<script.*jszip.*script>//' \
