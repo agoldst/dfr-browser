@@ -39,7 +39,7 @@ write_zip <- function(writer,file_base,file_ext=".json",no_zip=F) {
         writer(f_out)
     }
     else {
-        f_temp <- tempfile(file_base,fileext=file_ext)
+        f_temp <- file.path(tempdir(),str_c(basename(file_base),file_ext))
         writer(f_temp)
         f_out <- str_c(file_base,file_ext,".zip")
         if(file.exists(f_out)) {
@@ -55,7 +55,8 @@ write_zip <- function(writer,file_base,file_ext=".json",no_zip=F) {
 prepare_data <- function(dfr_dirs,
                          out_dir="data",
                          doc_topics_file=file.path(out_dir,"doc_topics.csv"),
-                         keys_file=file.path(out_dir,"keys.csv")) {
+                         keys_file=file.path(out_dir,"keys.csv"),
+                         no_zip=T) {
                          
     if(!file.exists(out_dir)) {
         dir.create(out_dir)
@@ -112,13 +113,13 @@ prepare_data <- function(dfr_dirs,
                       str_c(dtm@x,collapse=","),
                       ']}')
         write_zip(function (f) { writeLines(json,f) },
-                  file.path(out_dir,"dt"),".json",no_zip=T)
+                  file.path(out_dir,"dt"),".json",no_zip=no_zip)
 
         json <- str_c('{"doc_len":[',
                       str_c(rowSums(dtm),collapse=","),
                       ']}')
         write_zip(function (f) { writeLines(json,f) },
-                  file.path(out_dir,"doc_len"),".json",no_zip=T)
+                  file.path(out_dir,"doc_len"),".json",no_zip=no_zip)
     }
     else {
         warning(doc_topics_file," is missing.");
@@ -143,7 +144,7 @@ prepare_data <- function(dfr_dirs,
                         # d3.csv.* expects RFC 4180 compliance
                         qmethod="double")},
                     file.path(out_dir,"meta"),
-                    ".csv",no_zip=T)
+                    ".csv",no_zip=no_zip)
     }
     else {
         warning("Unable to read metadata.")

@@ -2,7 +2,6 @@
 
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
-    loaded: { }, // which data already loaded?
     ready: { }, // which viz already generated?
     bib_sort: {
         major: "year",
@@ -774,27 +773,32 @@ plot_svg = function () {
 };
 
 var load_data = function (target, callback) {
-    var target_stem = target.replace(/\..*$/, ""),
-        target_id;
+    var target_base = target.replace(/^.*\//, ""),
+        target_id = "m__DATA__" + target_base.replace(/\..*$/, "");
 
-    if (VIS.loaded[target_stem]) {
-        return callback(undefined, undefined);
-    }
-    
     // preprocessed data available in DOM?
-    target_id = "m__DATA__" + target_stem;
     if (document.getElementById(target_id)) {
-        VIS.loaded[target] = true;
         return callback(undefined,
                 document.getElementById(target_id).innerHTML);
     }
     
     // otherwise, we have to fetch it, and possibly unzip it
-    // TODO zipping...
-    return d3.text("data/" + target, function (error, s) {
-        VIS.loaded[target] = true;
-        return callback(error, s);
-    });
+    if (target.search(/\.zip$/) > 0) {
+        return d3.xhr(target)
+            .responseType("arraybuffer")
+            .get(function (error, response) {
+                var zip, text;
+                if (response.status == 200) {
+                    zip = new JSZip(response.response);
+                    text = zip.file(target_base.replace(/\.zip$/, "")).asText();
+                }
+                return callback(error, text);
+            });
+    } else {
+        return d3.text(target, function (error, s) {
+            return callback(error, s);
+        });
+    }
 };
 
 
@@ -802,28 +806,29 @@ var load_data = function (target, callback) {
 // ----
 
 main = function () {
-    load_data("info.json",function (error, info_s) {
+    load_data(dfb.files.info,function (error, info_s) {
         // callback, invoked when ready 
         var m = model({ info: JSON.parse(info_s) });
         setup_vis(m);
 
-        // FIXME testing only
+        // __DEV_ONLY__
         VIS.m = m;
+        // __END_DEV_ONLY__
 
         // now launch remaining data loading; ask for a refresh when done
-        load_data("meta.csv", function (error, meta_s) {
+        load_data(dfb.files.meta, function (error, meta_s) {
             m.set_meta(meta_s);
             view_refresh(m, window.location.hash);
         });
-        load_data("dt.json", function (error, dt_s) {
+        load_data(dfb.files.dt, function (error, dt_s) {
             m.set_dt(dt_s);
             view_refresh(m, window.location.hash);
         });
-        load_data("tw.json", function (error, tw_s) {
+        load_data(dfb.files.tw, function (error, tw_s) {
             m.set_tw(tw_s);
             view_refresh(m, window.location.hash);
         });
-        load_data("doc_len.json", function (error, doc_len_s) {
+        load_data(dfb.files.doc_len, function (error, doc_len_s) {
             m.set_doc_len(doc_len_s);
             VIS.m = m;
             view_refresh(m, window.location.hash);
