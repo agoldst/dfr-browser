@@ -31,15 +31,9 @@ model.html: insert_model.py
 	    --dt data/dt.json \
 	    index.html > $@
 
-# TODO new files
+# TODO omit zips and JSZip sources
 model.zip: model.html
-	zip $@ model.js index.js model.html css/* lib/* $(included_plots)
-
-# TODO new files
-live.zip: index.html
-	zip $@ model.js index.js index.html css/* lib/* \
-	    $(data_files) \
-	    $(included_plots)
+	zip $@ model.html js/* css/* lib/* $(included_plots)
 
 lint:
 	jsl -conf jsl.conf
@@ -58,4 +52,4 @@ select_big:
 	rm -f data
 	ln -s test_big data
 
-.PHONY: lint prepare_small prepare_big
+.PHONY: lint prepare_small prepare_big select_small select_big
