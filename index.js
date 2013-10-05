@@ -35,11 +35,7 @@ var VIS = {
 
 /* declaration of functions */
 
-var top_words,      // rankers and sorters
-    word_topics,
-    top_docs,
-    doc_topics,
-    doc_sort_key,
+var doc_sort_key,   // bibliography sorting
     bib_sort,
     topic_label,    // stringifiers
     topic_link,
@@ -60,103 +56,10 @@ var top_words,      // rankers and sorters
     main;           // main program
 
 
-
 // utility functions
 // -----------------
 
-// -- rankers
-//    -------
-
-top_words = function (m, t, n) {
-    var w;
-    w = m.tw(t).keys().sort(function (j, k) {
-        return d3.descending(m.tw(t, j), m.tw(t, k));
-    });
-
-    return w.slice(0, n);
-};
-
-word_topics = function (m, word) {
-    var t, row, word_wt,
-        result = [],
-        calc_rank = function (row) {
-            // zero-based rank = (# of words strictly greater than word)
-            return row.values().reduce(function (acc, cur) {
-                return cur > word_wt ? acc + 1 : acc;
-            },
-                0);
-        };
-
-    for (t = 0; t < m.n(); t += 1) {
-        row = m.tw(t);
-        if (row.has(word)) {
-            word_wt = row.get(word);
-            result.push([t, calc_rank(row)]);
-        }
-    }
-    return result;
-};
-
-top_docs = function (m, t, n) {
-    var docs, wts, wt, insert, i,
-        weight;
-
-    // naive document ranking: just by the proportion of words assigned to t 
-    // which does *not* necessarily give the docs where t is most salient
-
-    weight = function (d) {
-        return m.dt(d,t) / m.doc_len(d);
-    };
-    // initial guess
-    docs = d3.range(n);
-    wts = docs.map(weight);
-    docs.sort(function (a, b) {
-        return d3.ascending(wts[a], wts[b]);
-    });
-    wts = docs.map(function (d) { return wts[d]; });
-
-    for (i = n; i < m.n_docs(); i += 1) {
-        wt = weight(i);
-        insert = d3.bisectLeft(wts, wt);
-        if (insert > 0) {
-            docs.splice(insert, 0, i);
-            docs.shift();
-            wts.splice(insert, 0, wt);
-            wts.shift();
-        }
-    }
-
-    return docs.reverse(); // biggest first
-};
-
-// TODO user faster "top N" algorithm as in top_docs ?
-doc_topics = function (m, d, n) {
-    return d3.range(m.n())
-        .sort(function (a, b) {
-            return d3.descending(m.dt(d, a), m.dt(d, b));
-        })
-        .slice(0, n);
-};
-
-/*
-// h/t http://jsperf.com/code-review-1480
-function binary_search_iterative2(arr, ele) {
-  var beginning = 0, end = arr.length,
-      target;
-  while (true) {
-      target = ((beginning + end) >> 1);
-      if ((target === end || target === beginning) && arr[target] !== ele) {
-          return -1;
-      }
-      if (arr[target] > ele) {
-          end = target;
-      } else if (arr[target] < ele) {
-          beginning = target;
-      } else {
-          return target;
-      }
-  }
-} */
+// bibliography sorting
 
 doc_sort_key = function (m, i) {
     var names;
@@ -256,7 +159,7 @@ topic_label = function (m, t, n) {
 
     label = String(t + 1); // user-facing index is 1-based
     label += " ";
-    label += top_words(m, t, n).join(" ");
+    label += m.topic_words(t, n).join(" ");
     return label;
 };
 
@@ -337,7 +240,7 @@ topic_view = function (m, t) {
 
     trs_w = view.select("table#topic_words tbody")
         .selectAll("tr")
-        .data(top_words(m, t, m.n_top_words()));
+        .data(m.topic_words(t, m.n_top_words()));
 
     trs_w.enter().append("tr");
     trs_w.exit().remove();
@@ -364,7 +267,7 @@ topic_view = function (m, t) {
 
     trs_d = view.select("table#topic_docs tbody")
         .selectAll("tr")
-        .data(top_docs(m, t, VIS.topic_view_docs));
+        .data(m.topic_docs(t, VIS.topic_view_docs));
 
     trs_d.enter().append("tr");
     trs_d.exit().remove();
@@ -375,22 +278,22 @@ topic_view = function (m, t) {
     trs_d
         .append("td").append("a")
         .attr("href", function (d) {
-            return "#/doc/" + d;
+            return "#/doc/" + d.doc;
         })
         .html(function (d) {
-            return cite_doc(m, d);
+            return cite_doc(m, d.doc);
         });
 
     trs_d
         .append("td")
         .text(function (d) {
-            return VIS.percent_format(m.dt(d, t) / m.doc_len(d));
+            return VIS.percent_format(d.frac);
         });
 
     trs_d
         .append("td")
         .text(function (d) {
-            return m.dt(d, t);
+            return d.weight;
         });
 
 
@@ -518,10 +421,7 @@ word_view = function (m, word) {
     view.select("h2")
         .text(word);
 
-    topics = word_topics(m, word);
-    topics = topics.sort(function (a, b) {
-        return d3.ascending(a[1], b[1]);
-    });
+    topics = m.word_topics(word);
 
     // TODO alert if topics.length == 0
 
@@ -537,15 +437,15 @@ word_view = function (m, word) {
 
     trs.append("td")
         .text(function (d) {
-            return d[1] + 1; // user-facing rank is 1-based
+            return d.rank + 1; // user-facing rank is 1-based
         });
 
     trs.append("td").append("a")
         .text(function (d) {
-            return topic_label(m, d[0], VIS.overview_words);
+            return topic_label(m, d.topic, VIS.overview_words);
         })
         .attr("href", function (d) {
-            return topic_link(d[0]);
+            return topic_link(d.topic);
         });
 
     view_loading(false);
@@ -578,7 +478,7 @@ doc_view = function (m, doc) {
 
     trs = view.select("table#doc_topics tbody")
         .selectAll("tr")
-        .data(doc_topics(m, doc, VIS.doc_view_topics));
+        .data(m.doc_topics(doc, VIS.doc_view_topics));
 
     trs.enter().append("tr");
     trs.exit().remove();
@@ -587,17 +487,19 @@ doc_view = function (m, doc) {
     trs.selectAll("td").remove();
 
     trs.append("td").append("a")
-        .attr("href", topic_link)
+        .attr("href", function (t) {
+            return topic_link(t.topic);
+        })
         .text(function (t) {
-            return topic_label(m, t, VIS.overview_words);
+            return topic_label(m, t.topic, VIS.overview_words);
         });
     trs.append("td")
         .text(function (t) {
-            return m.dt(doc, t);
+            return t.weight;
         });
     trs.append("td")
         .text(function (t) {
-            return VIS.percent_format(m.dt(doc, t) / m.doc_len(doc));
+            return VIS.percent_format(t.weight / m.doc_len(doc));
         });
 
     view_loading(false);
@@ -726,7 +628,7 @@ model_view = function (m) {
 
     trs.append("td").append("a")
         .text(function (t) {
-            return top_words(m, t, VIS.overview_words).join(" ");
+            return m.topic_words(t, VIS.overview_words).join(" ");
         })
         .attr("href", topic_link);
 

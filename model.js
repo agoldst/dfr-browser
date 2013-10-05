@@ -1,4 +1,3 @@
-
 var model;
 
 // model specification
@@ -15,6 +14,7 @@ model = function (spec) {
         // methods
         info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
         yearly_topic, topic_yearly, doc_year, yearly_total,
+        topic_docs, topic_words, doc_topics, word_topics,
         set_dt, set_tw, set_meta, set_doc_len;
 
 
@@ -91,11 +91,11 @@ model = function (spec) {
         } else if (d === undefined) {
             return my.doc_len;
         } else {
-        /*
-        if(!my.doc_len[d]) {
-            my.doc_len[d] = this.dt.row_sum(d);
-        }
-        */
+            /*
+            if(!my.doc_len[d]) {
+                my.doc_len[d] = this.dt.row_sum(d);
+            }
+            */
             return my.doc_len[d];
         }
     };
@@ -215,6 +215,128 @@ model = function (spec) {
         return result;
     };
     that.topic_yearly = topic_yearly;
+
+    topic_docs = function (t, n) {
+        var p0 = my.dt.p[t],
+            p1 = my.dt.p[t + 1],
+            m = this,
+            docs, bisect, insert, i, result = [];
+        // naive document ranking, by the proportion of words assigned to t,
+        // which does *not* necessarily give the docs where t is most salient
+
+        // column slice
+        docs = d3.range(p0, p1).map(function (p) {
+            return {
+                doc: my.dt.i[p],
+                frac: my.dt.x[p] / m.doc_len(my.dt.i[p]),
+                weight: my.dt.x[p]
+            };
+        });
+
+        if (n >= docs.length) {
+            docs.sort(function (a, b) {
+                return d3.descending(a.frac, b.frac);
+            });
+            return docs;
+        }
+
+        // initial guess. simplifies the conditionals below to do it this way,
+        // and sorting n elements is no biggie
+        result = docs.slice(0, n).sort(function (a, b) {
+            return d3.ascending(a.frac, b.frac);
+        });
+
+        bisect = d3.bisector(function (d) { return d.frac; }).left;
+
+        for (i = n; i < docs.length; i += 1) {
+            insert = bisect(result, docs[i].frac);
+            if (insert > 0) {
+                result.splice(insert, 0, docs[i]);
+                result.shift();
+            } else if (result[0].frac === docs[i].frac) {
+                // insert = 0, tie
+                result.unshift(docs[i]);
+            }
+        }
+
+        // biggest first
+        return utils.shorten(result.reverse(), n, function (xs, i) {
+            return xs[i].frac;
+        });
+    };
+    that.topic_docs = topic_docs;
+
+    // unlike with docs, no reason to go to lengths to avoid sorting n_topics
+    // entries, since n_topics << n_docs. The expensive step is the row slice, 
+    // which we have to do anyway.
+    doc_topics = function (d, n) {
+        var m = this,
+            topics, i;
+        topics = d3.range(my.n)
+            .map(function (t) {
+                return {
+                    topic: t,
+                    weight: m.dt(d, t)
+                };
+            })
+            .filter(function (d) {
+                return d.weight > 0;
+            })
+            .sort(function (a, b) {
+                return d3.descending(a.weight, b.weight);
+            });
+
+
+        return utils.shorten(topics, n, function (topics, i) {
+            return topics[i].weight;
+        });
+    };
+    that.doc_topics = doc_topics;
+
+    topic_words = function (t, n) {
+        var n_words = n || this.n_top_words(),
+            m = this,
+            words = this.tw(t).entries(); // d3.map method
+        words.sort(function (w1, w2) {
+            return d3.descending(w1.value, w2.value);
+        });
+        return utils.shorten(words, n_words, function (ws, i) {
+            return ws[i].value;
+        })
+        .map(function (w) { return w.key; });
+    };
+    that.topic_words = topic_words;
+
+    word_topics = function (word, n) {
+        var t, row, word_wt,
+            n_topics = n || this.n_top_words(),
+            result = [],
+            calc_rank = function (row) {
+                // zero-based rank = (# of words strictly greater than word)
+                return row.values().reduce(function (acc, cur) {
+                    return cur > word_wt ? acc + 1 : acc;
+                },
+                    0);
+            };
+
+        for (t = 0; t < this.n(); t += 1) {
+            row = this.tw(t);
+            if (row.has(word)) {
+                word_wt = row.get(word);
+                result.push({
+                    topic: t,
+                    rank: calc_rank(row)
+                });
+            }
+        }
+        result.sort(function (a, b) {
+            return d3.ascending(a.rank, b.rank);
+        });
+        return utils.shorten(result, n_topics, function (topics, i) {
+            return topics[i].rank;
+        });
+    };
+    that.word_topics = word_topics;
 
     set_tw = function (tw_s) {
         var parsed;

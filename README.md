@@ -1,6 +1,6 @@
 # A simple model browser
 
-These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix. 
+These files use [d3](http://d3js.org) to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix with an additional column of document id's. 
 
 ## Generating the datafiles
 
@@ -56,6 +56,7 @@ The browser looks for the following files in `data/`:
 - `tw.json`: a JSON object with `alpha`, a vector of alpha values for each topic, and `tw`, a vector of `{ words, weights }` objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).
 - `meta.csv`: headerless CSV of document metadata, with rows in the same order as `dt.csv`, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
 - `info.json`: a JSON object with `title`, `meta_info`, and optionally `VIS` members.
+- `doc_len.json`: a JSON object holding an array `doc_len` of document lengths.
 
 
 
@@ -63,7 +64,7 @@ The browser looks for the following files in `data/`:
 
 Currently, this provides very minimal views of topics, documents, and word types as specified in the model. It provides lists of "top" words and documents in topics, "top" topics in documents, and "top" topics for words, and, for each topic, a visualization of the yearly topic proportions. There is also a "bibliography" view of all your documents, ordered by year of publication.
 
-The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally, but it's not ready to go up on a web server with a big model.
+The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally. For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, but there are limits to this.
 
 ## What it should do
 
