@@ -605,11 +605,13 @@ model_view = function (m, type) {
     var type_chosen = type || VIS.last.model,
         coords;
 
+    // if loading scaled coordinates failed,
+    // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
+    // but fall through to choosing the grid below
     if (!m.tw() || !m.topic_scaled()) {
         view_loading(true);
         return true;
     }
-
 
     if (type_chosen === "list") {
         d3.select("#model_view_plot").classed("hidden", true);
@@ -617,14 +619,14 @@ model_view = function (m, type) {
         d3.select("#model_view_list").classed("hidden", false);
     } else {
         d3.select("#model_view_list").classed("hidden", true);
-        if (type_chosen === "scaled") {
+        if (type_chosen === "scaled" && m.topic_scaled().length === m.n()) {
             coords = m.topic_scaled();
         } else if (type_chosen === "grid") {
             coords = topic_coords_grid(m.n());
         } else {
-            // default to scaled
-            type_chosen = "scaled";
-            coords = m.topic_scaled();
+            // default to grid
+            type_chosen = "grid";
+            coords = topic_coords_grid(m.n());
         }
         model_view_plot(m, coords);
         d3.select("#model_view_plot").classed("hidden", false);
@@ -926,8 +928,14 @@ plot_svg = function (selector, spec) {
 };
 
 var load_data = function (target, callback) {
-    var target_base = target.replace(/^.*\//, ""),
-        target_id = "m__DATA__" + target_base.replace(/\..*$/, "");
+    var target_base, target_id;
+
+    if (target === undefined) {
+        return callback("target undefined", undefined);
+    }
+    
+    target_base = target.replace(/^.*\//, "");
+    target_id = "m__DATA__" + target_base.replace(/\..*$/, "");
 
     // preprocessed data available in DOM?
     if (document.getElementById(target_id)) {
@@ -988,7 +996,15 @@ main = function () {
         load_data(dfb.files.topic_scaled, function (error, s) {
             if (typeof(s) === 'string') {
                 m.set_topic_scaled(s);
+            } else {
+                // if missing, just gray out the button for the view
+                m.set_topic_scaled("");
+                d3.select("#nav_model_scaled")
+                    .classed("disabled", true)
+                    .select("a")
+                        .attr("href", "#/model/scaled");
             }
+
             view_refresh(m, window.location.hash);
         });
 
