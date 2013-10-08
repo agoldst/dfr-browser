@@ -47,8 +47,23 @@ footer {
 }
 
 #topic_hover p {
-    font-style: italic;
     text-align: left;
+}
+
+p.help {
+    font-style: italic;
+}
+
+#model_view_plot_info {
+    padding-bottom: 10px;
+}
+
+#model_view_plot svg {
+    pointer-events: all;
+}
+
+rect.bg {
+    fill: white;
 }
 
 text.topic_label {
@@ -59,6 +74,7 @@ text.topic_label {
 
 circle.topic_cloud {
     fill: rgba(240,240,240,0.6);
+    stroke: rgba(200,200,200,0.6); 
 }
 
 circle.topic_cloud:hover {

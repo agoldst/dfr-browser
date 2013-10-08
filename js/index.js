@@ -9,7 +9,8 @@ var VIS = {
         minor: "alpha"
     },
     overview_words: 15,     // TODO set these parameters interactively
-    topic_words_size_range: [7, 14],    // points
+    model_view_plot_words: 10,
+    topic_words_size_range: [7, 18],    // points
     topic_view_words: 50,
     topic_view_docs: 20,
     doc_view_topics: 10,
@@ -665,23 +666,31 @@ model_view_list = function (m) {
 };
 
 model_view_plot = function(m, coords) {
-    var svg, spec, cloud_size, circle_radius,
+    var svg, spec, cloud_size, circle_radius, range_padding,
         domain_x, domain_y,
         scale_x, scale_y, scale_size,
-        gs;
+        gs, translation, zoom;
 
     spec = {
         w: 900,
-        h: 600,
+        h: 700,
         m: {
-            left: 50,
-            right: 50,
-            top: 50,
-            bottom: 50
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0
         }
     };
 
     svg = plot_svg("#model_view_plot", spec);
+
+    // zoom-target rectangle
+    svg.selectAll("rect.bg")
+        .data([1])
+        .enter().append("rect")
+            .attr("width", spec.w)
+            .attr("height", spec.h)
+            .classed("bg", true);
 
     domain_x = d3.extent(coords, function (d) {
             return d[0];
@@ -690,18 +699,19 @@ model_view_plot = function(m, coords) {
             return d[1];
     });
 
-    cloud_size = Math.floor(spec.w / (2 * Math.sqrt(m.n())));
-    circle_radius = cloud_size / 1.5;
+    cloud_size = Math.floor(spec.w / Math.sqrt(m.n()));
+    circle_radius = cloud_size / 2.6;
+    range_padding = 1.1 * circle_radius;
 
     scale_x = d3.scale.linear()
         .domain(domain_x)
-        .range([circle_radius, spec.w - circle_radius]);
+        .range([range_padding, spec.w - range_padding]);
 
     scale_y = d3.scale.linear()
         .domain(domain_y)
-        .range([spec.h - circle_radius, circle_radius]);
+        .range([spec.h - range_padding, range_padding]);
 
-    scale_size = d3.scale.linear()
+    scale_size = d3.scale.sqrt()
         .domain([0, 1])
         .range(VIS.topic_words_size_range);
 
@@ -712,12 +722,13 @@ model_view_plot = function(m, coords) {
         .each(function (p, t) {
             var g = d3.select(this),
                 max_wt = m.tw(t, m.topic_words(t, 1)),
-                wds = m.topic_words(t, 20).map(function (w) {
-                    return {
-                        text: w,
-                        size: scale_size(m.tw(t, w) / max_wt)
-                    };
-                });
+                wds = m.topic_words(t, VIS.model_view_plot_words)
+                    .map(function (w) {
+                        return {
+                            text: w,
+                            size: scale_size(m.tw(t, w) / max_wt)
+                        };
+                    });
 
             g.append("circle")
                 .attr("cx", 0)
@@ -741,10 +752,11 @@ model_view_plot = function(m, coords) {
                 .size([cloud_size, cloud_size])
                 .words(wds)
                 .padding(0)
-                .spiral("rectangular") // TODO MAKE WORK
+                .spiral("archimedean")
+                .font("sans-serif")
                 .fontSize(function (wd) { return wd.size; })
                 .rotate(0)
-                .on("end",function (words) {
+                .on("end", function (words) {
                     var texts = g.selectAll("text")
                         .data(words);
                     texts.enter().append("text");
@@ -769,17 +781,42 @@ model_view_plot = function(m, coords) {
                 .start();
         });
 
+    translation = function (p) {
+        var result = "translate(" + scale_x(p[0]);
+        result += "," + scale_y(p[1]) + ")";
+        return result;
+    };
 
     gs.transition()
         .duration(1000)
-        .attr("transform", function (p) {
-            var result = "translate(" + scale_x(p[0]);
-            result += "," + scale_y(p[1]) + ")";
-            return result;
+        .attr("transform", translation);
+
+    zoom = d3.behavior.zoom()
+        .x(scale_x)
+        .y(scale_y)
+        .scaleExtent([1, 10])
+        .on("zoom", function () {
+            if (VIS.zoom_transition) {
+                gs.transition()
+                    .duration(1000)
+                    .attr("transform", translation);
+                VIS.zoom_transition = false;
+            } else {
+                gs.attr("transform", translation);
+            }
+        });
+
+    // zoom reset button
+    d3.select("button#reset_zoom")
+        .on("click", function () {
+            VIS.zoom_transition = true;
+            zoom.translate([0, 0])
+                .scale(1)
+                .event(svg);
         });
 
 
-    // TODO visualize alphas
+    zoom(svg);
 };
 
 topic_coords_grid = function (n) {
@@ -891,7 +928,7 @@ setup_vis = function (m) {
     }
 
     // model title
-    d3.selectAll("h1.model_title")
+    d3.selectAll(".model_title")
         .text(m.info().title);
 
     // hashchange handler

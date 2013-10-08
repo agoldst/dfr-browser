@@ -45,6 +45,7 @@ prepare_data(dfr_dirs,"data",doc_topics,keys)
 
 2. Navigate to the home page, `http://localhost:8888`, in your favorite web browser. You can also go directly to one of the other views of the model using URLs:
 
+- `/#/model/<grid|scaled|list>` for the different topic overviews
 - `/#/topic/<k>` where *<k>* is the 1-based topic number
 - `/#/word/<word>` where *<word>* is a topic key word
 - `/#/doc/<k>` where *<k>* is the internal document id (not so handy)
@@ -59,14 +60,15 @@ The browser looks for the following files in `data/`:
 - `meta.csv`: headerless CSV of document metadata, with rows in the same order as `dt.csv`, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
 - `info.json`: a JSON object with `title`, `meta_info`, and optionally `VIS` members.
 - `doc_len.json`: a JSON object holding an array `doc_len` of document lengths.
+- `topic_scaled.csv`: x and y coordinates for the topics in some space. If available, the browser can draw the "scaled" overview plot. In `dfr-analysis` there is a function for computing Jensen-Shannon divergences among the topics in a model, which can then be turned into 2-dimensional coordinates using `cmdscale()`. 
 
 
 
 # What it does
 
-Currently, this provides very minimal views of topics, documents, and word types as specified in the model. It provides lists of "top" words and documents in topics, "top" topics in documents, and "top" topics for words, and, for each topic, a visualization of the yearly topic proportions. There is also a "bibliography" view of all your documents, ordered by year of publication.
+Currently, this provides very minimal views of topics, documents, and word types as specified in the model. It provides a visualization of the topics as wordclouds (or as a list of top words), lists of top words and topics in each topic, "top" topics in documents, and "top" topics for words, and, for each topic, a visualization of the yearly topic proportions. There is also a "bibliography" view of all your documents, ordered by year of publication.
 
-The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally. For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, but there are limits to this.
+The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally. For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this.
 
 ## What it should do
 
