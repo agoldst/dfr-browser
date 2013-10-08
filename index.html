@@ -6,6 +6,7 @@
   <title>Topic Model Browser</title>
   <script type="text/javascript" src="lib/d3.v3.min.js"></script>
   <script type="text/javascript" src="lib/queue.v1.min.js"></script>
+  <script type="text/javascript" src="lib/d3.layout.cloud.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
@@ -42,28 +43,51 @@
 
 <div class="container">
 
+
   <div id="loading" class="well">
     <p>Loading...</p>
   </div>
 
   <div id="model_view" class="hidden">
-    <h1 id="model_title">Loading...</h1>
-    <table class="table table-condensed" id="model_topics">
-      <thead>
-        <th>Topic</th>
-        <th>Top words</th>
-        <th>α</th>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
+    <h1 class="model_title"></h1>
+    <div class="row">
+      <div class="span4">
+        <ul id="nav_model" class="nav nav-pills">
+          <li id="nav_model_scaled" class="active">
+            <a href="#/model/scaled">Scaled</a>
+          </li>
+          <li id="nav_model_grid">
+            <a href="#/model/grid">Grid</a>
+          </li>
+          <li id="nav_model_list">
+            <a href="#/model/list">List</a>
+          </li>
+        </ul>
+      </div>
+      <div id="topic_hover" class="span6 offset2">
+        <p>Click a topic for more detail</p>
+      </div>
+    </div>
+    <div id="model_view_list" class="hidden">
+      <table class="table table-condensed">
+        <thead>
+          <th>Topic</th>
+          <th>Top words</th>
+          <th>α</th>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+    <div id="model_view_plot" class="hidden">
+    </div>
   </div>
 
   <div id="about_view" class="hidden">
     <h2>About this model</h2>
     <div id="meta_info"></div>
     <div id="about_browser">
-      <p>Model-browser interface by <a class="external" href="http://andrewgoldstone.com">Andrew Goldstone</a>; source available on <a class="external" href="http://github.com/agoldst/dfr-browser/">github</a>. Made using <a class="external" href="http://d3js.org">d3.js</a> and <a class="external" href="http://getbootstrap.com/">Bootstrap</a>. Zip support using <a class="external" href="http://stuk.github.io/jszip/">JSZip</a>.</p>
+      <p>Model-browser interface by <a class="external" href="http://andrewgoldstone.com">Andrew Goldstone</a>; source available on <a class="external" href="http://github.com/agoldst/dfr-browser/">github</a>. Made using <a class="external" href="http://d3js.org">d3.js</a> and <a class="external" href="http://getbootstrap.com/">Bootstrap</a>. Zip support using <a class="external" href="http://stuk.github.io/jszip/">JSZip</a>. Word clouds with <a class="external" href="http://github.com/jasondavies/d3-cloud">d3-cloud</a>.</p>
     </div>
   </div>
 

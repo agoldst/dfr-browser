@@ -150,6 +150,11 @@ prepare_data <- function(dfr_dirs,
         warning("Unable to read metadata.")
     }
 
+    message("Checking for topic_scaled.csv")
+    message(ifelse(file.exists(file.path(out_dir,"topic_scaled.csv")),
+                   "ok",
+                   "missing. Scaled topic coordinates must be precalculated."))
+
     message("Checking for info JSON file...")
     info_file <- file.path(out_dir,"info.json")
     if(file.exists(info_file)) {

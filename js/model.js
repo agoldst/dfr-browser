@@ -13,9 +13,10 @@ model = function (spec) {
         that = { }, // resultant object
         // methods
         info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
+        topic_scaled,
         yearly_topic, topic_yearly, doc_year, yearly_total,
         topic_docs, topic_words, doc_topics, word_topics,
-        set_dt, set_tw, set_meta, set_doc_len;
+        set_dt, set_tw, set_meta, set_doc_len, set_topic_scaled;
 
 
     info = function (model_meta) {
@@ -159,6 +160,17 @@ model = function (spec) {
         }
     };
     that.doc_year = doc_year;
+
+    topic_scaled = function (t) {
+        if (!my.topic_scaled) {
+            return undefined;
+        } else if (t === undefined) {
+            return my.topic_scaled;
+        } else {
+            return my.topic_scaled[t];
+        }
+    };
+    that.topic_scaled = topic_scaled;
 
     yearly_total = function (y) {
         var result;
@@ -412,6 +424,13 @@ model = function (spec) {
         my.doc_len = JSON.parse(s).doc_len;
     };
     that.set_doc_len = set_doc_len;
+
+    set_topic_scaled = function(s) {
+        my.topic_scaled = d3.csv.parseRows(s, function (row) {
+            return row.map(parseFloat);
+        });
+    };
+    that.set_topic_scaled = set_topic_scaled;
 
     return that;
 };

@@ -3,11 +3,13 @@
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
     ready: { }, // which viz already generated?
+    last: { }, // which subviews last shown?
     bib_sort: {
         major: "year",
         minor: "alpha"
     },
     overview_words: 15,     // TODO set these parameters interactively
+    topic_words_size_range: [7, 14],    // points
     topic_view_words: 50,
     topic_view_docs: 20,
     doc_view_topics: 10,
@@ -47,6 +49,9 @@ var doc_sort_key,   // bibliography sorting
     bib_view,
     about_view,
     model_view,
+    model_view_list,
+    model_view_plot,
+    topic_coords_grid,
     view_refresh,
     view_loading,
     setup_vis,      // initialization
@@ -323,7 +328,7 @@ plot_topic_yearly = function(m, t) {
     var year_seq, series = [],
         w, scale_x, scale_y,
         rects, axis_x, axis_y, 
-        svg = plot_svg();
+        svg = plot_svg("div#topic_plot",VIS.plot);
 
     series = m.topic_yearly(t).keys().sort().map(function (y) {
         return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
@@ -596,30 +601,50 @@ about_view = function (m) {
     return true;
 };
 
+model_view = function (m, type) {
+    var type_chosen = type || VIS.last.model,
+        coords;
 
-model_view = function (m) {
-    var view = d3.select("#model_view"),
-        trs;
-
-    if (VIS.ready.model) {
-        view.classed("hidden", false);
-        return true;
-    }
-
-    if (!m.tw()) {
+    if (!m.tw() || !m.topic_scaled()) {
         view_loading(true);
         return true;
     }
 
-    trs = d3.select("table#model_topics tbody")
+
+    if (type_chosen === "list") {
+        d3.select("#model_view_plot").classed("hidden", true);
+        model_view_list(m);
+        d3.select("#model_view_list").classed("hidden", false);
+    } else {
+        d3.select("#model_view_list").classed("hidden", true);
+        if (type_chosen === "scaled") {
+            coords = m.topic_scaled();
+        } else if (type_chosen === "grid") {
+            coords = topic_coords_grid(m.n());
+        } else {
+            // default to scaled
+            type_chosen = "scaled";
+            coords = m.topic_scaled();
+        }
+        model_view_plot(m, coords);
+        d3.select("#model_view_plot").classed("hidden", false);
+    }
+    VIS.last.model = type_chosen;
+
+    // ensure pill highlighting
+    d3.selectAll("#nav_model li.active").classed("active",false);
+    d3.select("#nav_model_" + type_chosen).classed("active",true);
+    view_loading(false);
+    return true;
+};
+
+model_view_list = function (m) {
+    var trs;
+
+    trs = d3.select("#model_view_list table tbody")
         .selectAll("tr")
-        .data(d3.range(m.n()));
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    trs.enter().append("tr");
-    trs.exit().remove();
+        .data(d3.range(m.n()))
+        .enter().append("tr");
 
     trs.append("td").append("a")
         .text(function (t) { return t + 1; }) // sigh
@@ -635,17 +660,142 @@ model_view = function (m) {
         .text(function (t) {
             return VIS.float_format(m.alpha(t));
         });
+};
 
-    VIS.ready.model = true;
+model_view_plot = function(m, coords) {
+    var svg, spec, cloud_size, circle_radius,
+        domain_x, domain_y,
+        scale_x, scale_y, scale_size,
+        gs;
 
-    view_loading(false);
-    return true;
+    spec = {
+        w: 900,
+        h: 600,
+        m: {
+            left: 50,
+            right: 50,
+            top: 50,
+            bottom: 50
+        }
+    };
+
+    svg = plot_svg("#model_view_plot", spec);
+
+    domain_x = d3.extent(coords, function (d) {
+            return d[0];
+    });
+    domain_y = d3.extent(coords, function (d) {
+            return d[1];
+    });
+
+    cloud_size = Math.floor(spec.w / (2 * Math.sqrt(m.n())));
+    circle_radius = cloud_size / 1.5;
+
+    scale_x = d3.scale.linear()
+        .domain(domain_x)
+        .range([circle_radius, spec.w - circle_radius]);
+
+    scale_y = d3.scale.linear()
+        .domain(domain_y)
+        .range([spec.h - circle_radius, circle_radius]);
+
+    scale_size = d3.scale.linear()
+        .domain([0, 1])
+        .range(VIS.topic_words_size_range);
+
+    gs = svg.selectAll("g")
+        .data(coords);
+
+    gs.enter().append("g")
+        .each(function (p, t) {
+            var g = d3.select(this),
+                max_wt = m.tw(t, m.topic_words(t, 1)),
+                wds = m.topic_words(t, 20).map(function (w) {
+                    return {
+                        text: w,
+                        size: scale_size(m.tw(t, w) / max_wt)
+                    };
+                });
+
+            g.append("circle")
+                .attr("cx", 0)
+                .attr("cy", 0)
+                .classed("topic_cloud", true)
+                .attr("r", circle_radius)
+                .on("click", function (p) {
+                    window.location.hash = "/topic/" + (t + 1);
+                })
+                .on("mouseover", function(p) {
+                    d3.select("#topic_hover p")
+                        .text("Click for more detail on topic "
+                            + topic_label(m, t, 3));
+                })
+                .on("mouseout",function() {
+                    d3.select("#topic_hover p")
+                        .text("Click a topic for more detail");
+                });
+
+            d3.layout.cloud()
+                .size([cloud_size, cloud_size])
+                .words(wds)
+                .padding(0)
+                .spiral("rectangular") // TODO MAKE WORK
+                .fontSize(function (wd) { return wd.size; })
+                .rotate(0)
+                .on("end",function (words) {
+                    var texts = g.selectAll("text")
+                        .data(words);
+                    texts.enter().append("text");
+                    texts.text(function (wd) {
+                            return wd.text;
+                        })
+                        .style("font-size", function (wd) {
+                            return wd.size + "px";
+                        })
+                        .attr("x", function (wd) {
+                            return wd.x;
+                        })
+                        .attr("y", function (wd) {
+                            return wd.y;
+                        })
+                        .on("click", function (wd) {
+                            window.location.hash = "/topic/" + (t + 1);
+                        }) 
+                        .classed("topic_label", true);
+                        // TODO coloring
+                })
+                .start();
+        });
+
+
+    gs.transition()
+        .duration(1000)
+        .attr("transform", function (p) {
+            var result = "translate(" + scale_x(p[0]);
+            result += "," + scale_y(p[1]) + ")";
+            return result;
+        });
+
 
     // TODO visualize alphas
-    // (later: word clouds)
-    // (later: grid of time graphs)
-    // (later: multi-dimensional scaling projection showing topic clusters)
 };
+
+topic_coords_grid = function (n) {
+    var n_row = Math.floor(Math.sqrt(n)),
+        n_col = Math.floor(n / n_row),
+        remain = n - n_row * n_col,
+        i, j,
+        result = [];
+
+    for (i = n_row - 1; i >= 0; i -= 1, remain -= 1) {
+        for (j = 0; j < n_col + (remain > 0) ? 1 : 0; j += 1) {
+            result.push([j + 0.5, i + 0.5]);
+        }
+    }
+
+    return result;
+};
+
 
 view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag);
@@ -667,7 +817,7 @@ view_refresh = function (m, v) {
             success = model_view(m);
             break;
         case "model":
-            success = model_view(m);
+            success = model_view(m, param);
             break;
         case "about":
             success = about_view(m);
@@ -706,10 +856,10 @@ view_refresh = function (m, v) {
         } 
     }
 
-    VIS.cur_view.classed("hidden",false);
+    VIS.cur_view.classed("hidden", false);
 
     // ensure highlighting of nav link
-    d3.selectAll("li.active").classed("active",false);
+    d3.selectAll("#nav_main li.active").classed("active",false);
     d3.select("li#nav_" + view_parsed[1]).classed("active",true);
 
 };
@@ -720,7 +870,7 @@ view_refresh = function (m, v) {
 
 // global visualization setup
 setup_vis = function (m) {
-    var key;
+    var key, tab_click;
 
     // ensure plot div has size
     d3.select("div#topic_plot")
@@ -739,37 +889,40 @@ setup_vis = function (m) {
     }
 
     // model title
-    d3.select("#model_title")
+    d3.selectAll("h1.model_title")
         .text(m.info().title);
 
     // hashchange handler
-
     window.onhashchange = function () {
         view_refresh(m, window.location.hash, false);
     };
 
-
     // TODO settings controls
-    
 };
 
-plot_svg = function () {
-    if(VIS.svg) {
-        return VIS.svg;
+plot_svg = function (selector, spec) {
+    var svg;
+
+    if (!VIS.svg) {
+        VIS.svg = d3.map();
+    }
+    if (VIS.svg.has(selector)) {
+        return VIS.svg.get(selector);
     }
 
     // mbostock margin convention
     // http://bl.ocks.org/mbostock/3019563
-    VIS.svg = d3.select("div#topic_plot")
+    svg = d3.select(selector)
         .append("svg")
-            .attr("width", VIS.plot.w + VIS.plot.m.left + VIS.plot.m.right)
-            .attr("height", VIS.plot.h + VIS.plot.m.top + VIS.plot.m.bottom)
+            .attr("width", spec.w + spec.m.left + spec.m.right)
+            .attr("height", spec.h + spec.m.top + spec.m.bottom)
         // g element passes on xform to all contained elements
         .append("g")
             .attr("transform",
-                  "translate(" + VIS.plot.m.left + "," + VIS.plot.m.top + ")");
+                  "translate(" + spec.m.left + "," + spec.m.top + ")");
 
-    return VIS.svg;
+    VIS.svg.set(selector, svg);
+    return svg;
 };
 
 var load_data = function (target, callback) {
@@ -830,7 +983,12 @@ main = function () {
         });
         load_data(dfb.files.doc_len, function (error, doc_len_s) {
             m.set_doc_len(doc_len_s);
-            VIS.m = m;
+            view_refresh(m, window.location.hash);
+        });
+        load_data(dfb.files.topic_scaled, function (error, s) {
+            if (typeof(s) === 'string') {
+                m.set_topic_scaled(s);
+            }
             view_refresh(m, window.location.hash);
         });
 

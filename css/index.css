@@ -7,16 +7,16 @@ body {
     display: none;
 }
 
-a {
+p a,td a {
     text-decoration: none;
     color: black;
 }
 
-a:hover {
+p a:hover,td a:hover {
     text-decoration: underline;
 }
 
-a:visited {
+p a:visited,td a:visited {
     color: black;
 }
 
@@ -41,6 +41,31 @@ footer {
 }
 
 /* model_view aka overview */
+
+#model_view svg {
+    border: 1px solid black;
+}
+
+#topic_hover p {
+    font-style: italic;
+    text-align: left;
+}
+
+text.topic_label {
+    text-anchor: middle;
+    fill: rgba(0,0,0,0.6);
+    pointer-events: none;
+}
+
+circle.topic_cloud {
+    fill: rgba(240,240,240,0.6);
+}
+
+circle.topic_cloud:hover {
+    fill: rgba(0,0,240,0.6);
+}
+
+/* topic_list_view */
 
 /* topic_view */
 
