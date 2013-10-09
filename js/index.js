@@ -699,8 +699,8 @@ model_view_plot = function(m, coords) {
             return d[1];
     });
 
-    cloud_size = Math.floor(spec.w / Math.sqrt(m.n()));
-    circle_radius = cloud_size / 2.6;
+    cloud_size = Math.floor(spec.h / Math.sqrt(m.n()));
+    circle_radius = cloud_size / 2;
     range_padding = 1.1 * circle_radius;
 
     scale_x = d3.scale.linear()
@@ -730,11 +730,16 @@ model_view_plot = function(m, coords) {
                         };
                     });
 
+            /*g.append("rect")
+                .attr("x", -cloud_size / 2)
+                .attr("y", -cloud_size / 2)
+                .attr("width", cloud_size)
+                .attr("height", cloud_size) */
             g.append("circle")
                 .attr("cx", 0)
                 .attr("cy", 0)
-                .classed("topic_cloud", true)
                 .attr("r", circle_radius)
+                .classed("topic_cloud", true)
                 .on("click", function (p) {
                     window.location.hash = "/topic/" + (t + 1);
                 })

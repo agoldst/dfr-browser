@@ -72,12 +72,12 @@ text.topic_label {
     pointer-events: none;
 }
 
-circle.topic_cloud {
+.topic_cloud {
     fill: rgba(240,240,240,0.6);
     stroke: rgba(200,200,200,0.6); 
 }
 
-circle.topic_cloud:hover {
+.topic_cloud:hover {
     fill: rgba(0,0,240,0.6);
 }
 
