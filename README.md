@@ -39,6 +39,8 @@ keys <- ...# weighted keys frame filename
 prepare_data(dfr_dirs,"data",doc_topics,keys)
 ```
 
+One optional file, `topic_scaled.csv`, must also be precalculated separately (more detail below).
+
 ## Using the browser
 
 1. Once the files are in place in a `data/` subdirectory, launch a web server in the `dfr-browser/` directory; `bin/server` uses the python 3 `http.server` module serving at `localhost:8888`. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text`).
@@ -66,7 +68,9 @@ The browser looks for the following files in `data/`:
 
 # What it does
 
-Currently, this provides very minimal views of topics, documents, and word types as specified in the model. It provides a visualization of the topics as wordclouds (or as a list of top words), lists of top words and topics in each topic, "top" topics in documents, and "top" topics for words, and, for each topic, a visualization of the yearly topic proportions. There is also a "bibliography" view of all your documents, ordered by year of publication.
+Currently, this provides very minimal views of topics, documents, and word types as specified in the model. The goal is to focus attention on the hierarchical layers of the model, so that you attend not only to topics but documents and individual words as well.
+
+This provides an overview visualization of the topics as wordclouds or as a simple list; lists of top words and documents in each topic, plus the yearly topic proportions; lists of "top" topics in documents; and lists of "top" topics for words. There is also a "bibliography" view of all your documents, ordered by year of publication (or alphabetically, if you choose).
 
 The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally. For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this.
 
@@ -76,7 +80,7 @@ Needed: more interactive adjustment of parameters. More speed and asychronous lo
 
 ## The downloadable version
 
-If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`.
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`. This requires non-zipped individual data files, which you can generate using `prepare_data(...,no_zip=T)`.
 
 To produce an all-in-one archive for sharing, use `make model.zip`.
 
