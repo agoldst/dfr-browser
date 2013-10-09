@@ -4,7 +4,7 @@
 included_plots := 
 
 data_dir := data
-data_files := $(addprefix $(data_dir)/,info.json tw.json meta.csv dt.json doc_len.json)
+data_files := $(addprefix $(data_dir)/,info.json tw.json meta.csv dt.json doc_len.json topic_scaled.csv)
 
 no_zip = F
 
@@ -14,6 +14,8 @@ model.html: insert_model.py
 	    --tw $(data_dir)/tw.json \
 	    --meta $(data_dir)/meta.csv \
 	    --dt $(data_dir)/dt.json \
+	    --doc_len $(data_dir)/doc_len.json \
+	    --topic_scaled $(data_dir)/topic_scaled.csv \
 	    index.html \
 	    | sed 's/js\/dfb.js/js\/dfb_nozip.js/' \
 	    | sed 's/<script.*jszip.*script>//' \

@@ -1,7 +1,8 @@
 # usage
 #
 # python insert_model.py --info info.json --dt dt.json --tw tw.json \
-#        --meta meta.csv index.html > model.html
+#        --meta meta.csv --doc_len len.json -- topic_scaled scaled.csv \
+#        index.html > model.html
 #
 # model.html can now be loaded from the hard drive without a web server
 # (it will still look for local copies of d3, queue, bootstrap, jquery)
@@ -14,7 +15,9 @@ def main(argv):
             "info": "application/json",
             "dt": "application/json",
             "tw": "application/json",
-            "meta": "text/csv"
+            "meta": "text/csv",
+            "doc_len": "application/json",
+            "topic_scaled": "text/csv"
             }
     opts, args = getopt.getopt(argv,None,[s + "=" for s in needed.keys()])
     with open(args[0]) as f_src:

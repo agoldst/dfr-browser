@@ -425,7 +425,15 @@ model = function (spec) {
     };
     that.set_doc_len = set_doc_len;
 
-    set_topic_scaled = function(s) {
+    set_topic_scaled = function(ts_s) {
+        var s;
+        if (typeof(ts_s) !== 'string') {
+            return;
+        }
+
+        // strip blank "rows" at start or end
+        s = ts_s.replace(/^\n*/,"")
+            .replace(/\n*$/,"\n");
         my.topic_scaled = d3.csv.parseRows(s, function (row) {
             return row.map(parseFloat);
         });
