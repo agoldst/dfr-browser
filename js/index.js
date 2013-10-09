@@ -716,7 +716,9 @@ model_view_plot = function(m, coords) {
         .range(VIS.topic_words_size_range);
 
     gs = svg.selectAll("g")
-        .data(coords);
+        .data(coords.map(function (p, j) {
+            return { x: p[0], y: p[1], t: j };
+        }));
 
     gs.enter().append("g")
         .each(function (p, t) {
@@ -743,12 +745,26 @@ model_view_plot = function(m, coords) {
                 .on("click", function (p) {
                     window.location.hash = "/topic/" + (t + 1);
                 })
-                .on("mouseover", function(p) {
+                .on("mouseover", function (p) {
+                    gs.sort(function (a, b) {
+                            if (a.t === t) {
+                                return 1;
+                            } else if (b.t === t) {
+                                return -1;
+                            } else {
+                                return d3.ascending(a.t, b.t);
+                            }
+                        })
+                        .order();
                     d3.select("#topic_hover p")
                         .text("Click for more detail on topic "
                             + topic_label(m, t, 3));
                 })
                 .on("mouseout",function() {
+                    gs.sort(function (a, b) {
+                            return d3.ascending(a.t, b.t);
+                        })
+                        .order();
                     d3.select("#topic_hover p")
                         .text("Click a topic for more detail");
                 });
@@ -787,8 +803,8 @@ model_view_plot = function(m, coords) {
         });
 
     translation = function (p) {
-        var result = "translate(" + scale_x(p[0]);
-        result += "," + scale_y(p[1]) + ")";
+        var result = "translate(" + scale_x(p.x);
+        result += "," + scale_y(p.y) + ")";
         return result;
     };
 

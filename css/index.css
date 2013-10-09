@@ -78,7 +78,7 @@ text.topic_label {
 }
 
 .topic_cloud:hover {
-    fill: rgba(0,0,240,0.6);
+    fill: rgba(51,153,255,0.9);
 }
 
 /* topic_list_view */
