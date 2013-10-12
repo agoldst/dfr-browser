@@ -592,6 +592,9 @@ bib_view = function (m) {
 
 };
 
+// TODO a vocab index would be easy and not useless
+// vocab_view = function (m) { };
+
 about_view = function (m) {
     if(!VIS.ready.about) {
         d3.select("div#meta_info")
@@ -780,6 +783,8 @@ model_view_plot = function(m, coords) {
                 .on("end", function (words) {
                     var texts = g.selectAll("text")
                         .data(words);
+
+                    // TODO check whether words != wds
                     texts.enter().append("text");
                     texts.text(function (wd) {
                             return wd.text;
@@ -950,7 +955,7 @@ setup_vis = function (m) {
 
     // model title
     d3.selectAll(".model_title")
-        .text(m.info().title);
+        .html(m.info().title);
 
     // hashchange handler
     window.onhashchange = function () {
