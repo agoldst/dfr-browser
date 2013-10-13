@@ -10,6 +10,10 @@ var VIS = {
     },
     overview_words: 15,     // TODO set these parameters interactively
     model_view_plot_words: 10,
+    model_view_plot: {
+        w: 900,
+        h: 700
+    },
     topic_words_size_range: [7, 18],    // points
     topic_view_words: 50,
     topic_view_docs: 20,
@@ -675,8 +679,8 @@ model_view_plot = function(m, coords) {
         gs, translation, zoom;
 
     spec = {
-        w: 900,
-        h: 700,
+        w: VIS.model_view_plot.w,
+        h: VIS.model_view_plot.h,
         m: {
             left: 0,
             right: 0,
@@ -702,8 +706,12 @@ model_view_plot = function(m, coords) {
             return d[1];
     });
 
-    cloud_size = Math.floor(spec.h / Math.sqrt(m.n()));
-    circle_radius = cloud_size / 2;
+    // The rectangular grid should fill the plot along the smaller dimension 
+    // with circles. TODO: closest possible packing?
+    circle_radius = Math.floor(d3.min([spec.h, spec.w]) / Math.sqrt(m.n()) / 2);
+     // Allow the cloud to spill outside circle a little
+    cloud_size = Math.floor(circle_radius * 2.1);
+
     range_padding = 1.1 * circle_radius;
 
     scale_x = d3.scale.linear()
@@ -780,13 +788,22 @@ model_view_plot = function(m, coords) {
                 .font("sans-serif")
                 .fontSize(function (wd) { return wd.size; })
                 .rotate(0)
+                .start_pos_range(0.5) // TODO not great
                 .on("end", function (words) {
-                    var texts = g.selectAll("text")
+                    var texts, i = 0;
+                    // __DEV_ONLY__
+                    while (i < words.length && wds[i] === words[i]) {
+                        i += 1;
+                    }
+                    if (i < words.length) {
+                        console.log("Topic " + t + ": dropped word "
+                            + i + " " + wds[i].text);
+                    }
+                    // __END_DEV_ONLY__
+                    texts = g.selectAll("text")
                         .data(words);
-
-                    // TODO check whether words != wds
-                    texts.enter().append("text");
-                    texts.text(function (wd) {
+                    texts.enter().append("text")
+                        .text(function (wd) {
                             return wd.text;
                         })
                         .style("font-size", function (wd) {

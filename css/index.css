@@ -42,10 +42,6 @@ footer {
 
 /* model_view aka overview */
 
-#model_view svg {
-    border: 1px solid black;
-}
-
 #topic_hover p {
     text-align: left;
 }
@@ -59,6 +55,7 @@ p.help {
 }
 
 #model_view_plot svg {
+    border: 1px solid rgb(240,240,240);
     pointer-events: all;
 }
 
