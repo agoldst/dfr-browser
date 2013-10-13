@@ -14,32 +14,34 @@
 </head>
 
 <body>
-  <div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="navbar-inner">
-      <div class="container">
-        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-        </button>
-        <a class="brand model_title" href="#"></a>
-        <div class="nav-collapse collapse">
-          <ul id="nav_main" class="nav">
-            <li id="nav_model"><a href="#">Overview</a></li>
-            <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
-            <!-- TODO support these -->
-            <!--
-            <li><a href="#/topic">Topic</a></li>
-            <li><a href="#/doc">Document</a></li>
-            <li><a href="#/word">Word</a></li>
-            <li><a href="#/settings">Settings</a></li>
-            -->
-            <li id="nav_about"><a href="#/about">About</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div>
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand model_title" href="#"></a>
     </div>
+    <div class="collapse navbar-collapse">
+      <ul id="nav_main" class="nav navbar-nav">
+        <li id="nav_model"><a href="#">Overview</a></li>
+        <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
+        <!-- TODO support these -->
+        <!--
+        <li><a href="#/topic">Topic</a></li>
+        <li><a href="#/doc">Document</a></li>
+        <li><a href="#/word">Word</a></li>
+        <li><a href="#/settings">Settings</a></li>
+        -->
+        <li id="nav_about"><a href="#/about">About</a></li>
+      </ul>
+    </div><!--/.navbar-collapse -->
   </div>
+</div>
 
 <div class="container">
-
 
   <div id="loading" class="well">
     <p>Loading...</p>
@@ -47,7 +49,7 @@
 
   <div id="model_view" class="hidden">
     <div class="row">
-      <div class="span3">
+      <div class="col-md-3">
         <ul id="nav_model" class="nav nav-pills">
           <li id="nav_model_grid" class="active">
             <a href="#/model/grid">Grid</a>
@@ -60,14 +62,14 @@
           </li>
         </ul>
       </div>
-      <div class="span4">
+      <div class="col-md-4">
           <p id="topic_hover" class="help">Click a topic for more detail</p>
       </div>
-      <div class="span3">
+      <div class="col-md-3">
           <p class="help">Drag to pan; double-click to zoom</p>
       </div>
-      <div class="span2">
-        <button id="reset_zoom" type="button" class="btn">Reset zoom</button>
+      <div class="col-md-2">
+        <button id="reset_zoom" type="button" class="btn btn-default">Reset zoom</button>
       </div>
     </div>
     <div id="model_view_list" class="hidden">
@@ -97,7 +99,7 @@
     <h2></h2>
     <p id="topic_remark"></p>
     <div class="row">
-      <div id="topic_words" class="span3">
+      <div id="topic_words" class="col-md-3">
         <h3>Top words</h3>
         <table class="table table-condensed" id="topic_words">
           <thead>
@@ -108,7 +110,7 @@
           </tbody>
         </table>
       </div>
-      <div class="span9">
+      <div class="col-md-9">
         <div id="topic_plot">
           <h3>Yearly proportion of words in topic</h3>
         </div>
@@ -168,12 +170,12 @@
     <h2>Settings</h2>
     <p><em>Note:</em> these settings are not saved between sessions.</p>
     <div class="row">
-      <div class="span6">
+      <div class="col-md-6">
         <p>The number of the most prominent words in a topic to display:</p>
         <input id="overview_words_setting" type="number">
         <p> (In the topic view, all available top-words are shown.)</p>
       </div>
-      <div class="span6">
+      <div class="col-md-6">
         <p>Number of salient documents to display:</p>
         <input id="top_documents_setting" type="range" min="0" max="0" />
       </div>
@@ -186,7 +188,7 @@
 </div> <!-- /container -->
 
 
-<script type="text/javascript" src="lib/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery.js"></script>
 <script type="text/javascript" src="lib/bootstrap.min.js"></script>
 <script type="text/javascript" src="lib/jszip.js"></script>
 <script type="text/javascript" src="lib/jszip-load.js"></script>
