@@ -9,12 +9,12 @@ var VIS = {
         minor: "alpha"
     },
     overview_words: 15,     // TODO set these parameters interactively
-    model_view_plot_words: 10,
+    model_view_plot_words: 4, // may need adjustment
     model_view_plot: {
         w: 900,
         h: 700
     },
-    topic_words_size_range: [7, 18],    // points
+    topic_words_size_range: [7, 18],    // points. may need adjustment
     topic_view_words: 50,
     topic_view_docs: 20,
     doc_view_topics: 10,
