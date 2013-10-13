@@ -739,15 +739,11 @@ model_view_plot = function(m, coords) {
                     .map(function (w) {
                         return {
                             text: w,
-                            size: scale_size(m.tw(t, w) / max_wt)
+                            size: Math.floor(scale_size(m.tw(t, w) / max_wt))
                         };
-                    });
+                    }),
+                up, down, toggle, i;
 
-            /*g.append("rect")
-                .attr("x", -cloud_size / 2)
-                .attr("y", -cloud_size / 2)
-                .attr("width", cloud_size)
-                .attr("height", cloud_size) */
             g.append("circle")
                 .attr("cx", 0)
                 .attr("cy", 0)
@@ -780,48 +776,39 @@ model_view_plot = function(m, coords) {
                         .text("Click a topic for more detail");
                 });
 
-            d3.layout.cloud()
-                .size([cloud_size, cloud_size])
-                .words(wds)
-                .padding(0)
-                .spiral("archimedean")
-                .font("sans-serif")
-                .fontSize(function (wd) { return wd.size; })
-                .rotate(0)
-                .start_pos_range(0.5) // TODO not great
-                .on("end", function (words) {
-                    var texts, i = 0;
-                    // __DEV_ONLY__
-                    while (i < words.length && wds[i] === words[i]) {
-                        i += 1;
-                    }
-                    if (i < words.length) {
-                        console.log("Topic " + t + ": dropped word "
-                            + i + " " + wds[i].text);
-                    }
-                    // __END_DEV_ONLY__
-                    texts = g.selectAll("text")
-                        .data(words);
-                    texts.enter().append("text")
-                        .text(function (wd) {
-                            return wd.text;
-                        })
-                        .style("font-size", function (wd) {
-                            return wd.size + "px";
-                        })
-                        .attr("x", function (wd) {
-                            return wd.x;
-                        })
-                        .attr("y", function (wd) {
-                            return wd.y;
-                        })
-                        .on("click", function (wd) {
-                            window.location.hash = "/topic/" + (t + 1);
-                        }) 
-                        .classed("topic_label", true);
-                        // TODO coloring
-                })
-                .start();
+            up = 0, down = 0, toggle = false;
+            for (i = 0; i < wds.length; i += 1, toggle = !toggle) {
+                if (toggle) {
+                    wds[i].y = up;
+                    up -= wds[i].size;
+                } else {
+                    down += wds[i].size;
+                    wds[i].y = down;
+                }
+                if (up - cloud_size / 2 < wds[i].size
+                        && down > cloud_size / 2) {
+                    break;
+                }
+            }
+
+            g.selectAll("text")
+                .data(wds.slice(0, i))
+                .enter().append("text")
+                    .text(function (wd) {
+                        return wd.text;
+                    })
+                    .style("font-size", function (wd) {
+                        return wd.size + "px";
+                    })
+                    .attr("x", 0)
+                    .attr("y", function (wd) {
+                        return wd.y;
+                    })
+                    .on("click", function (wd) {
+                        window.location.hash = "/topic/" + (t + 1);
+                    }) 
+                    .classed("topic_label", true);
+                    // TODO coloring
         });
 
     translation = function (p) {
