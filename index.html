@@ -47,7 +47,7 @@
 
   <div id="model_view" class="hidden">
     <div class="row">
-      <div class="span12">
+      <div class="span3">
         <ul id="nav_model" class="nav nav-pills">
           <li id="nav_model_grid" class="active">
             <a href="#/model/grid">Grid</a>
@@ -59,6 +59,15 @@
             <a href="#/model/list">List</a>
           </li>
         </ul>
+      </div>
+      <div class="span4">
+          <p id="topic_hover" class="help">Click a topic for more detail</p>
+      </div>
+      <div class="span3">
+          <p class="help">Drag to pan; double-click to zoom</p>
+      </div>
+      <div class="span2">
+        <button id="reset_zoom" type="button" class="btn">Reset zoom</button>
       </div>
     </div>
     <div id="model_view_list" class="hidden">
@@ -73,17 +82,6 @@
       </table>
     </div>
     <div id="model_view_plot" class="hidden">
-      <div id="model_view_plot_info" class="row">
-        <div id="topic_hover" class="span6">
-          <p class="help">Click a topic for more detail</p>
-        </div>
-        <div class="span4">
-          <p class="help">Drag to pan; scroll-wheel/double-click to zoom</p>
-        </div>
-        <div class="span2">
-          <button id="reset_zoom" type="button" class="btn">Reset zoom</button>
-        </div>
-      </div>
     </div>
   </div>
 

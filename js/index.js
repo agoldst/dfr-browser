@@ -625,6 +625,7 @@ model_view = function (m, type) {
         d3.select("#model_view_plot").classed("hidden", true);
         model_view_list(m);
         d3.select("#model_view_list").classed("hidden", false);
+        // TODO hide pan/zoom help text
     } else {
         d3.select("#model_view_list").classed("hidden", true);
         if (type_chosen === "scaled" && m.topic_scaled().length === m.n()) {
@@ -763,8 +764,8 @@ model_view_plot = function(m, coords) {
                             }
                         })
                         .order();
-                    d3.select("#topic_hover p")
-                        .text("Click for more detail on topic "
+                    d3.select("p#topic_hover")
+                        .text("Click for more on topic "
                             + topic_label(m, t, 3));
                 })
                 .on("mouseout",function() {
@@ -772,7 +773,7 @@ model_view_plot = function(m, coords) {
                             return d3.ascending(a.t, b.t);
                         })
                         .order();
-                    d3.select("#topic_hover p")
+                    d3.select("p#topic_hover")
                         .text("Click a topic for more detail");
                 });
 
