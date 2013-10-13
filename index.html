@@ -41,16 +41,16 @@
   </div>
 </div>
 
-<div class="container">
+<div id="main_container" class="container">
 
   <div id="loading" class="well">
     <p>Loading...</p>
   </div>
 
   <div id="model_view" class="hidden">
-    <div class="row">
-      <div class="col-md-3">
-        <ul id="nav_model" class="nav nav-pills">
+    <nav class="nav navbar-default" role="navigation">
+      <div class="collapse navbar-collapse navbar-ex1-collapse">
+        <ul id="nav_model" class="nav navbar-nav nav-pills">
           <li id="nav_model_grid" class="active">
             <a href="#/model/grid">Grid</a>
           </li>
@@ -61,17 +61,13 @@
             <a href="#/model/list">List</a>
           </li>
         </ul>
+        <p id="topic_hover" class="navbar-text help">Click a topic for more detail</p>
+        <div id="model_view_plot_help" class="navbar-right">
+          <p class="navbar-text help">Drag to pan; scroll wheel or double-click to zoom</p>
+          <button id="reset_zoom" type="button" class="btn btn-default navbar-btn">Reset zoom</button>
+        </div>
       </div>
-      <div class="col-md-4">
-          <p id="topic_hover" class="help">Click a topic for more detail</p>
-      </div>
-      <div class="col-md-3">
-          <p class="help">Drag to pan; double-click to zoom</p>
-      </div>
-      <div class="col-md-2">
-        <button id="reset_zoom" type="button" class="btn btn-default">Reset zoom</button>
-      </div>
-    </div>
+    </nav>
     <div id="model_view_list" class="hidden">
       <table class="table table-condensed">
         <thead>

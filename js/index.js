@@ -9,23 +9,14 @@ var VIS = {
         minor: "alpha"
     },
     overview_words: 15,     // TODO set these parameters interactively
-    model_view_plot_words: 4, // may need adjustment
-    model_view_plot: {
-        w: 900,
-        h: 700
+    model_view: {
+        aspect: 1.3333,
+        words: 4,           // may need adjustment
+        size_range: [7, 18] // points. may need adjustment
     },
-    topic_words_size_range: [7, 18],    // points. may need adjustment
-    topic_view_words: 50,
-    topic_view_docs: 20,
-    doc_view_topics: 10,
-    float_format: function (x) {
-        return d3.round(x, 3);
-    },
-    percent_format: d3.format(".1%"),
-    cite_date_format: d3.time.format("%B %Y"),
-    uri_proxy: ".proxy.libraries.rutgers.edu",
-    prefab_plots: true, // use SVG or look for image files for plots?
-    plot: {
+    topic_view: {
+        words: 50,
+        docs: 20,
         w: 640, // TODO hardcoding = bad
         h: 300,
         m: {
@@ -36,7 +27,15 @@ var VIS = {
         },
         bar_width: 300, // in days!
         ticks: 10 // applied to both x and y axes
-    }
+    }, 
+    doc_view_topics: 10,
+    float_format: function (x) {
+        return d3.round(x, 3);
+    },
+    percent_format: d3.format(".1%"),
+    cite_date_format: d3.time.format("%B %Y"),
+    uri_proxy: ".proxy.libraries.rutgers.edu",
+    prefab_plots: true, // use SVG or look for image files for plots?
 };
 
 /* declaration of functions */
@@ -249,7 +248,7 @@ topic_view = function (m, t) {
 
     trs_w = view.select("table#topic_words tbody")
         .selectAll("tr")
-        .data(m.topic_words(t, m.n_top_words()));
+        .data(m.topic_words(t, VIS.topic_view.words));
 
     trs_w.enter().append("tr");
     trs_w.exit().remove();
@@ -276,7 +275,7 @@ topic_view = function (m, t) {
 
     trs_d = view.select("table#topic_docs tbody")
         .selectAll("tr")
-        .data(m.topic_docs(t, VIS.topic_view_docs));
+        .data(m.topic_docs(t, VIS.topic_view.docs));
 
     trs_d.enter().append("tr");
     trs_d.exit().remove();
@@ -333,7 +332,8 @@ plot_topic_yearly = function(m, t) {
     var year_seq, series = [],
         w, scale_x, scale_y,
         rects, axis_x, axis_y, 
-        svg = plot_svg("div#topic_plot",VIS.plot);
+        spec = VIS.topic_view,
+        svg = plot_svg("div#topic_plot",spec);
 
     series = m.topic_yearly(t).keys().sort().map(function (y) {
         return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
@@ -342,11 +342,11 @@ plot_topic_yearly = function(m, t) {
     scale_x = d3.time.scale()
         .domain([series[0][0],
                 d3.time.day.offset(series[series.length - 1][0],
-                    VIS.plot.bar_width)])
-        .range([0, VIS.plot.w]);
+                    VIS.topic_view.bar_width)])
+        .range([0, VIS.topic_view.w]);
         //.nice();
 
-    w = scale_x(d3.time.day.offset(series[0][0],VIS.plot.bar_width)) -
+    w = scale_x(d3.time.day.offset(series[0][0],VIS.topic_view.bar_width)) -
         scale_x(series[0][0]);
 
 
@@ -354,7 +354,7 @@ plot_topic_yearly = function(m, t) {
         .domain([0, d3.max(series, function (d) {
             return d[1];
         })])
-        .range([VIS.plot.h, 0])
+        .range([VIS.topic_view.h, 0])
         .nice();
 
     // axes
@@ -367,11 +367,11 @@ plot_topic_yearly = function(m, t) {
     svg.append("g")
         .classed("axis",true)
         .classed("x",true)
-        .attr("transform","translate(0," + VIS.plot.h + ")")
+        .attr("transform","translate(0," + VIS.topic_view.h + ")")
         .call(d3.svg.axis()
             .scale(scale_x)
             .orient("bottom")
-            .ticks(d3.time.years,VIS.plot.ticks));
+            .ticks(d3.time.years,VIS.topic_view.ticks));
 
     // y axis
     svg.append("g")
@@ -380,10 +380,10 @@ plot_topic_yearly = function(m, t) {
         .call(d3.svg.axis()
             .scale(scale_y)
             .orient("left")
-            .tickSize(-VIS.plot.w)
+            .tickSize(-VIS.topic_view.w)
             .outerTickSize(0)
             .tickFormat(VIS.percent_format)
-            .ticks(VIS.plot.ticks));
+            .ticks(VIS.topic_view.ticks));
 
     svg.selectAll("g.axis.y g").filter(function(d) { return d; })
         .classed("minor", true);
@@ -408,7 +408,7 @@ plot_topic_yearly = function(m, t) {
         })
         .attr("width",w)
         .attr("height", function (d) {
-            return VIS.plot.h - scale_y(d[1]);
+            return VIS.topic_view.h - scale_y(d[1]);
         });
 };
 
@@ -623,9 +623,9 @@ model_view = function (m, type) {
 
     if (type_chosen === "list") {
         d3.select("#model_view_plot").classed("hidden", true);
+        d3.select("#model_view_plot_help").classed("hidden", true);
         model_view_list(m);
         d3.select("#model_view_list").classed("hidden", false);
-        // TODO hide pan/zoom help text
     } else {
         d3.select("#model_view_list").classed("hidden", true);
         if (type_chosen === "scaled" && m.topic_scaled().length === m.n()) {
@@ -638,6 +638,7 @@ model_view = function (m, type) {
             coords = topic_coords_grid(m.n());
         }
         model_view_plot(m, coords);
+        d3.select("#model_view_plot_help").classed("hidden", false);
         d3.select("#model_view_plot").classed("hidden", false);
     }
     VIS.last.model = type_chosen;
@@ -674,14 +675,16 @@ model_view_list = function (m) {
 };
 
 model_view_plot = function(m, coords) {
-    var svg, spec, cloud_size, circle_radius, range_padding,
+    var spec, svg_w, spec, cloud_size, circle_radius, range_padding,
         domain_x, domain_y,
         scale_x, scale_y, scale_size,
         gs, translation, zoom;
 
+    svg_w  = $("#main_container").width();
+
     spec = {
-        w: VIS.model_view_plot.w,
-        h: VIS.model_view_plot.h,
+        w: svg_w,
+        h: Math.floor(svg_w / VIS.model_view.aspect),
         m: {
             left: 0,
             right: 0,
@@ -707,9 +710,8 @@ model_view_plot = function(m, coords) {
             return d[1];
     });
 
-    // The rectangular grid should fill the plot along the smaller dimension 
-    // with circles. TODO: closest possible packing?
-    circle_radius = Math.floor(d3.min([spec.h, spec.w]) / Math.sqrt(m.n()) / 2);
+    circle_radius = Math.floor(spec.w /
+            (2 * Math.sqrt(VIS.model_view.aspect * m.n())));
      // Allow the cloud to spill outside circle a little
     cloud_size = Math.floor(circle_radius * 2.1);
 
@@ -725,7 +727,7 @@ model_view_plot = function(m, coords) {
 
     scale_size = d3.scale.sqrt()
         .domain([0, 1])
-        .range(VIS.topic_words_size_range);
+        .range(VIS.model_view.size_range);
 
     gs = svg.selectAll("g")
         .data(coords.map(function (p, j) {
@@ -736,7 +738,7 @@ model_view_plot = function(m, coords) {
         .each(function (p, t) {
             var g = d3.select(this),
                 max_wt = m.tw(t, m.topic_words(t, 1)),
-                wds = m.topic_words(t, VIS.model_view_plot_words)
+                wds = m.topic_words(t, VIS.model_view.words)
                     .map(function (w) {
                         return {
                             text: w,
@@ -851,12 +853,13 @@ model_view_plot = function(m, coords) {
 };
 
 topic_coords_grid = function (n) {
-    var n_row = Math.floor(Math.sqrt(n)),
-        n_col = Math.floor(n / n_row),
+    var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
+        n_row = Math.floor(n / n_col),
         remain = n - n_row * n_col,
         i, j,
         result = [];
 
+    // Rectangular grid. TODO: closest possible packing?
     for (i = n_row - 1; i >= 0; i -= 1, remain -= 1) {
         for (j = 0; j < n_col + (remain > 0) ? 1 : 0; j += 1) {
             result.push([j + 0.5, i + 0.5]);
@@ -943,11 +946,14 @@ setup_vis = function (m) {
     var key, tab_click;
 
     // ensure plot div has size
-    d3.select("div#topic_plot")
+    /*d3.select("div#topic_plot")
         .attr("width", VIS.plot.w + VIS.plot.m.left + VIS.plot.m.right)
         .attr("height", VIS.plot.h + VIS.plot.m.top + VIS.plot.m.bottom);
+        */
 
     // load any preferences stashed in model info
+    // TODO if info.VIS.whatever is an object, it will completely replace
+    // VIS.whatever; union would be better
 
     if (m.info().VIS) {
         for (key in m.info().VIS) {
