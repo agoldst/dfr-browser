@@ -37,11 +37,11 @@
         </li>
         <li id="nav_doc"><a href="#/doc">Document</a></li>
         <li id="nav_word"><a href="#/word">Word</a></li>
-        <!-- TODO support these -->
-        <!--
+        <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
+        <li id="nav_words"><a href="#/words">All words</a></li>
+        <!-- TODO: settings
         <li><a href="#/settings">Settings</a></li>
         -->
-        <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
     </div><!--/.navbar-collapse -->
@@ -165,6 +165,11 @@
   </div>
 
   <div id="word_view" class="hidden">
+    <div id="word_view_help">
+      <p class="help">Choose a specific word to view from 
+      <a href="#/words">the list of all words</a> or from
+        <a href="#/topic">a topic page</a>.</p>
+    </div>
     <div id="word_view_main" class="hidden">
       <h2 id="word_header"></h2>
       <div id="word_no_topics" class="alert alert-info hidden">
@@ -181,17 +186,19 @@
         </tbody>
       </table>
     </div>
-    <div id="word_view_vocab">
-      <h2>All words prominent in any topic</h2>
-      <button id="toggle_vocab" type="button" class="btn btn-default">Show</button>
-      <ul id="vocab_list" class="list-unstyled hidden"></ul>
-    </div>
   </div>
 
   <div id="bib_view" class="hidden">
     <nav></nav>
     <div id="bib_main"></div>
   </div>
+
+  <div id="words_view" class="hidden">
+    <h2>All words prominent in any topic</h2>
+    <p class="help">Words not prominent in any topic are not listed</p>
+    <ul id="vocab_list" class="list-unstyled"></ul>
+  </div>
+
   
   <!-- TODO put settings view as dropdown or sim. on all views 
   <div id="settings_view" class="hidden">

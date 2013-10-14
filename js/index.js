@@ -49,8 +49,7 @@ var doc_sort_key,   // bibliography sorting
     topic_view,     // view generation
     plot_topic_yearly,
     word_view,
-    word_view_vocab,
-    word_view_single,
+    words_view,
     doc_view,
     bib_view,
     about_view,
@@ -431,48 +430,29 @@ plot_topic_yearly = function(m, t) {
 
 word_view = function (m, w) {
     var view = d3.select("div#word_view"),
-        word = w || VIS.last.word; // fall back to last word shown
+        word = w,
+        trs, topics;
 
     if (!m.tw()) {
         view_loading(true);
         return true;
     }
+    view_loading(false);
 
     if (word) {
-        view.select("#word_view_main").classed("hidden", false);
-        VIS.last.word = word;
-        word_view_single(m, word);
+        view.select("#word_view_help").classed("hidden", true);
+    } else {
+        view.select("#word_view_help").classed("hidden", false);
+        if (VIS.last.word) {
+            word = VIS.last.word; // fall back to last word if available
+        } else {
+            view.select("#word_view_main").classed("hidden", true);
+            return true;
+        }
     }
+    view.select("#word_view_main").classed("hidden", false);
 
-    d3.select("#toggle_vocab")
-        .on("click", function () {
-            var btn = d3.select(this),
-                flag = btn.text() === "Show";
-
-            btn.text(flag ? "Hide" : "Show");
-            d3.select("#vocab_list").classed("hidden", !flag);
-        });
-
-    word_view_vocab(m);
-    view_loading(false);
-    return true;
-};
-
-word_view_vocab = function (m) {
-    d3.select("ul#vocab_list").selectAll("li")
-        .data(m.vocab())
-        .enter().append("li")
-        .append("a")
-        .text(function (w) { return w; })
-        .attr("href", function (w) {
-            return "#/word/" + w;
-        });
-};
-
-word_view_single = function (m, word) {
-    var view = d3.select("div#word_view"),
-        trs, topics;
-
+    VIS.last.word = word;
     view.select("h2#word_header")
         .text(word);
 
@@ -485,8 +465,6 @@ word_view_single = function (m, word) {
     else {
         view.select("#word_no_topics").classed("hidden", true);
     }
-
-    console.log("building rows for word " + word);
 
     trs = view.select("table#word_topics tbody")
         .selectAll("tr")
@@ -511,11 +489,29 @@ word_view_single = function (m, word) {
             return topic_link(d.topic);
         });
 
-    view_loading(false);
     return true;
-
     // (later: time graph)
 };
+
+words_view = function (m) {
+    if (!m.tw()) {
+        view_loading(true);
+        return true;
+    }
+    view_loading(false);
+
+    d3.select("ul#vocab_list").selectAll("li")
+        .data(m.vocab())
+        .enter().append("li")
+        .append("a")
+        .text(function (w) { return w; })
+        .attr("href", function (w) {
+            return "#/word/" + w;
+        });
+
+    return true;
+};
+
 
 doc_view = function (m, d) {
     var view = d3.select("div#doc_view"),
@@ -980,20 +976,18 @@ view_refresh = function (m, v) {
             success = bib_view(m);
             break;
         case "topic":
-            // TODO interactive specification of param if missing
-            // to support raw #/topic links
             param = +param - 1;
             success = topic_view(m, param);
             break;
         case "word":
-            // TODO support raw #/word links w/ no param
             success = word_view(m, param);
             break;
         case "doc":
-            // TODO support raw #/doc links w/ no param
-            // (incl. toggle active state on navbar)
             param = +param;
             success = doc_view(m, param);
+            break;
+        case "words":
+            success = words_view(m);
             break;
         default:
             success = false;
