@@ -165,11 +165,7 @@
   </div>
 
   <div id="word_view" class="hidden">
-    <div id="word_view_vocab">
-      <h2>Words prominent in at least one topic</h2>
-      <ul id="vocab_list" class="list-unstyled"></ul>
-    </div>
-    <div id="word_view_main">
+    <div id="word_view_main" class="hidden">
       <h2 id="word_header"></h2>
       <div id="word_no_topics" class="alert alert-info hidden">
         <p>There are no topics in which this word is prominent.</p>
@@ -184,6 +180,11 @@
         <tbody>
         </tbody>
       </table>
+    </div>
+    <div id="word_view_vocab">
+      <h2>All words prominent in any topic</h2>
+      <button id="toggle_vocab" type="button" class="btn btn-default">Show</button>
+      <ul id="vocab_list" class="list-unstyled hidden"></ul>
     </div>
   </div>
 

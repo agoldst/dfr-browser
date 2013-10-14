@@ -429,8 +429,9 @@ plot_topic_yearly = function(m, t) {
 };
 
 
-word_view = function (m, word) {
-    var view = d3.select("div#word_view");
+word_view = function (m, w) {
+    var view = d3.select("div#word_view"),
+        word = w || VIS.last.word; // fall back to last word shown
 
     if (!m.tw()) {
         view_loading(true);
@@ -438,15 +439,21 @@ word_view = function (m, word) {
     }
 
     if (word) {
-        view.select("#word_view_vocab").classed("hidden", true);
-        word_view_single(m, word);
         view.select("#word_view_main").classed("hidden", false);
-    } else {
-        view.select("#word_view_main").classed("hidden", true);
-        word_view_vocab(m);
-        view.select("#word_view_vocab").classed("hidden", false);
+        VIS.last.word = word;
+        word_view_single(m, word);
     }
 
+    d3.select("#toggle_vocab")
+        .on("click", function () {
+            var btn = d3.select(this),
+                flag = btn.text() === "Show";
+
+            btn.text(flag ? "Hide" : "Show");
+            d3.select("#vocab_list").classed("hidden", !flag);
+        });
+
+    word_view_vocab(m);
     view_loading(false);
     return true;
 };

@@ -130,6 +130,15 @@ ul#vocab_list {
     -webkit-column-width: 10em;
 }
 
+ul#vocab_list li a {
+    color: black;
+}
+
+ul#vocab_list li a:visited {
+    color: black;
+}
+
+
 /* doc_view */
 
 /* bib_view */
