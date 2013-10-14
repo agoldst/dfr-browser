@@ -47,6 +47,7 @@ var doc_sort_key,   // bibliography sorting
     cite_doc,
     doc_uri,
     topic_view,     // view generation
+    topic_view_docs,
     plot_topic_yearly,
     word_view,
     words_view,
@@ -282,10 +283,61 @@ topic_view = function (m, t) {
         });
 
 
-    // get top articles
-    // ----------------
+    // table of top articles
+    // ---------------------
 
-    trs_d = view.select("table#topic_docs tbody")
+    topic_view_docs(m, t);
+
+    d3.select("#topic_docs_down")
+        .on("click", function () {
+            VIS.topic_view.docs += 5;
+            if (VIS.topic_view.docs > m.n_docs()) {
+                VIS.topic_view.docs = m.n_docs();
+                d3.select(this).classed("disabled", true);
+            }
+            d3.select("#topic_docs_up").classed("disabled", false);
+
+            topic_view_docs(m, t);
+        });
+
+    d3.select("#topic_docs_up")
+        .on("click", function () {
+            VIS.topic_view.docs -= 5;
+            if (VIS.topic_view.docs < 1) {
+                VIS.topic_view.docs = 1;
+                d3.select(this).classed("disabled", true);
+            }
+            d3.select("#topic_docs_down").classed("disabled", false);
+            topic_view_docs(m, t);
+        });
+
+    // Plot topic over time
+    // --------------------
+
+    if (VIS.prefab_plots) {
+        // Set image link
+        img = d3.select("#topic_plot img");
+        if(img.empty()) {
+            img = d3.select("#topic_plot").append("img"); 
+        }
+
+        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
+            .attr("title", "yearly proportion of topic " + (t + 1));
+    }
+    else {
+        plot_topic_yearly(m, t);
+    }
+    view_loading(false);
+
+    return true;
+    // TODO visualize word and doc weights as lengths
+    // (later: nearby topics by J-S div or cor on log probs)
+};
+
+topic_view_docs = function (m, t) {
+    var trs_d;
+
+    trs_d = d3.select("table#topic_docs tbody")
         .selectAll("tr")
         .data(m.topic_docs(t, VIS.topic_view.docs));
 
@@ -315,29 +367,6 @@ topic_view = function (m, t) {
         .text(function (d) {
             return d.weight;
         });
-
-
-    // Plot topic over time
-    // --------------------
-
-    if (VIS.prefab_plots) {
-        // Set image link
-        img = d3.select("#topic_plot img");
-        if(img.empty()) {
-            img = d3.select("#topic_plot").append("img"); 
-        }
-
-        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
-            .attr("title", "yearly proportion of topic " + (t + 1));
-    }
-    else {
-        plot_topic_yearly(m, t);
-    }
-    view_loading(false);
-
-    return true;
-    // TODO visualize word and doc weights as lengths
-    // (later: nearby topics by J-S div or cor on log probs)
 };
 
 plot_topic_yearly = function(m, t) {

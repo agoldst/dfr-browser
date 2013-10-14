@@ -92,6 +92,14 @@ text.topic_label {
 
 /* topic_view */
 
+#topic_view h2 {
+    font-size: 1.5em;
+}
+
+#topic_view h3 {
+    font-size: 1.333em;
+}
+
 #topic_words a {
     font-size: 1em;
 }

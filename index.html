@@ -39,9 +39,6 @@
         <li id="nav_word"><a href="#/word">Word</a></li>
         <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
         <li id="nav_words"><a href="#/words">All words</a></li>
-        <!-- TODO: settings
-        <li><a href="#/settings">Settings</a></li>
-        -->
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
     </div><!--/.navbar-collapse -->
@@ -124,18 +121,20 @@
           <div id="topic_plot">
             <h3>Yearly proportion of words in topic</h3>
           </div>
-          <div>
-            <h3>Documents with largest proportion</h3>
-            <table class="table table-condensed" id="topic_docs">
-              <thead>
-                <th>Document</th>
-                <th>%</th>
-                <th>Weight</th>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
+          <h3>Documents with largest proportion</h3>
+          <div class="btn-group btn-group-xs">
+            <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show 5 fewer</button>
+            <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show 5 more</button>
           </div>
+          <table class="table table-condensed" id="topic_docs">
+            <thead>
+              <th>Document</th>
+              <th>%</th>
+              <th>Weight</th>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
         </div>
       </div>
     </div> <!-- #topic_view_main -->
@@ -198,27 +197,6 @@
     <p class="help">Words not prominent in any topic are not listed</p>
     <ul id="vocab_list" class="list-unstyled"></ul>
   </div>
-
-  
-  <!-- TODO put settings view as dropdown or sim. on all views 
-  <div id="settings_view" class="hidden">
-    <h2>Settings</h2>
-    <p><em>Note:</em> these settings are not saved between sessions.</p>
-    <div class="row">
-      <div class="col-md-6">
-        <p>The number of the most prominent words in a topic to display:</p>
-        <input id="overview_words_setting" type="number">
-        <p> (In the topic view, all available top-words are shown.)</p>
-      </div>
-      <div class="col-md-6">
-        <p>Number of salient documents to display:</p>
-        <input id="top_documents_setting" type="range" min="0" max="0" />
-      </div>
-    </div>
-    <p>Show topic hyperparameter (α) values:</p>
-    <input id="show_alpha_setting" type="checkbox" />
-  </div>
-  -->
 
 </div> <!-- /container -->
 
