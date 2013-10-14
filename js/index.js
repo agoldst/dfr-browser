@@ -333,7 +333,10 @@ plot_topic_yearly = function(m, t) {
         w, scale_x, scale_y,
         rects, axis_x, axis_y, 
         spec = VIS.topic_view,
-        svg = plot_svg("div#topic_plot",spec);
+        svg;
+
+    spec.w = $("#main_container").width() * 0.6667;
+    svg = plot_svg("div#topic_plot", spec);
 
     series = m.topic_yearly(t).keys().sort().map(function (y) {
         return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
@@ -624,6 +627,7 @@ model_view = function (m, type) {
     if (type_chosen === "list") {
         d3.select("#model_view_plot").classed("hidden", true);
         d3.select("#model_view_plot_help").classed("hidden", true);
+        d3.select("#reset_zoom").classed("disabled", true);
         model_view_list(m);
         d3.select("#model_view_list").classed("hidden", false);
     } else {
@@ -639,6 +643,7 @@ model_view = function (m, type) {
         }
         model_view_plot(m, coords);
         d3.select("#model_view_plot_help").classed("hidden", false);
+        d3.select("#reset_zoom").classed("disabled", false);
         d3.select("#model_view_plot").classed("hidden", false);
     }
     VIS.last.model = type_chosen;
@@ -944,12 +949,6 @@ view_refresh = function (m, v) {
 // global visualization setup
 setup_vis = function (m) {
     var key, tab_click;
-
-    // ensure plot div has size
-    /*d3.select("div#topic_plot")
-        .attr("width", VIS.plot.w + VIS.plot.m.left + VIS.plot.m.right)
-        .attr("height", VIS.plot.h + VIS.plot.m.top + VIS.plot.m.bottom);
-        */
 
     // load any preferences stashed in model info
     // TODO if info.VIS.whatever is an object, it will completely replace
