@@ -12,7 +12,7 @@ model = function (spec) {
     var my = spec || { }, // private members
         that = { }, // resultant object
         // methods
-        info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta,
+        info, dt, n_docs, doc_len, tw, n, n_top_words, alpha, meta, vocab,
         topic_scaled,
         yearly_topic, topic_yearly, doc_year, yearly_total,
         topic_docs, topic_words, doc_topics, word_topics,
@@ -160,6 +160,26 @@ model = function (spec) {
         }
     };
     that.doc_year = doc_year;
+
+    vocab = function () {
+        var result;
+        if (my.vocab) {
+            return my.vocab;
+        }
+        if (!this.tw()) {
+            return undefined;
+        }
+
+        result = d3.set();
+        this.tw().map(function (words) {
+            words.keys().map(function (w) {
+                result.add(w);
+            });
+        });
+        my.vocab = result.values().sort();
+        return my.vocab;
+    };
+    that.vocab = vocab;
 
     topic_scaled = function (t) {
         if (!my.topic_scaled) {

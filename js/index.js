@@ -35,7 +35,7 @@ var VIS = {
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format("%B %Y"),
     uri_proxy: ".proxy.libraries.rutgers.edu",
-    prefab_plots: true, // use SVG or look for image files for plots?
+    prefab_plots: true // use SVG or look for image files for plots?
 };
 
 /* declaration of functions */
@@ -49,6 +49,8 @@ var doc_sort_key,   // bibliography sorting
     topic_view,     // view generation
     plot_topic_yearly,
     word_view,
+    word_view_vocab,
+    word_view_single,
     doc_view,
     bib_view,
     about_view,
@@ -58,6 +60,7 @@ var doc_sort_key,   // bibliography sorting
     topic_coords_grid,
     view_refresh,
     view_loading,
+    view_error,
     setup_vis,      // initialization
     plot_svg,
     read_files,
@@ -236,10 +239,20 @@ topic_view = function (m, t) {
     // TODO don't need anything but tw to show topic words h2 and div; so can 
     // have div-specific loading messages instead
 
+    if (!isFinite(t) || t < 0 || t >= m.n()) {
+        d3.select("#topic_view_help").classed("hidden", false);
+        d3.select("#topic_view_main").classed("hidden", true);
+        view_loading(false);
+        return true;
+    } else {
+        d3.select("#topic_view_help").classed("hidden", true);
+        d3.select("#topic_view_main").classed("hidden", false);
+    }
+
     // get top words and weights
     // -------------------------
 
-    view.select("h2")
+    view.select("h2#topic_header")
         .text(topic_label(m, t, VIS.overview_words));
 
     view.select("p#topic_remark")
@@ -417,25 +430,56 @@ plot_topic_yearly = function(m, t) {
 
 
 word_view = function (m, word) {
-    var view = d3.select("div#word_view"),
-        trs, topics;
-
-    if (word === undefined) {
-        return false;
-    }
+    var view = d3.select("div#word_view");
 
     if (!m.tw()) {
         view_loading(true);
         return true;
     }
 
+    if (word) {
+        view.select("#word_view_vocab").classed("hidden", true);
+        word_view_single(m, word);
+        view.select("#word_view_main").classed("hidden", false);
+    } else {
+        view.select("#word_view_main").classed("hidden", true);
+        word_view_vocab(m);
+        view.select("#word_view_vocab").classed("hidden", false);
+    }
 
-    view.select("h2")
+    view_loading(false);
+    return true;
+};
+
+word_view_vocab = function (m) {
+    d3.select("ul#vocab_list").selectAll("li")
+        .data(m.vocab())
+        .enter().append("li")
+        .append("a")
+        .text(function (w) { return w; })
+        .attr("href", function (w) {
+            return "#/word/" + w;
+        });
+};
+
+word_view_single = function (m, word) {
+    var view = d3.select("div#word_view"),
+        trs, topics;
+
+    view.select("h2#word_header")
         .text(word);
 
     topics = m.word_topics(word);
 
-    // TODO alert if topics.length == 0
+    if (topics.length === 0) {
+        view.select("#word_no_topics").classed("hidden", false);
+        return true;
+    }
+    else {
+        view.select("#word_no_topics").classed("hidden", true);
+    }
+
+    console.log("building rows for word " + word);
 
     trs = view.select("table#word_topics tbody")
         .selectAll("tr")
@@ -466,18 +510,33 @@ word_view = function (m, word) {
     // (later: time graph)
 };
 
-doc_view = function (m, doc) {
+doc_view = function (m, d) {
     var view = d3.select("div#doc_view"),
-        trs;
+        doc = d, trs;
 
     if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         view_loading(true);
         return true;
     }
     
-    // TODO asynchronous loading of different pieces of view
+    view_loading(false);
 
-    view.select("#doc_view h2")
+    if (!isFinite(doc) || doc < 0 || doc >= m.n_docs()) {
+        d3.select("#doc_view_help").classed("hidden", false);
+        if (VIS.last.doc === undefined) {
+            d3.select("#doc_view_main").classed("hidden", true);
+            return true;
+        } else {
+            doc = VIS.last.doc; // fall back to last doc if none entered
+        }
+
+    } else {
+        d3.select("#doc_view_help").classed("hidden", true);
+        VIS.last.doc = doc;
+    }
+    d3.select("#doc_view_main").classed("hidden", false);
+
+    view.select("h2#doc_header")
         .html(cite_doc(m, doc));
 
     view.select("p#doc_remark")
@@ -514,7 +573,6 @@ doc_view = function (m, doc) {
             return VIS.percent_format(t.weight / m.doc_len(doc));
         });
 
-    view_loading(false);
     return true;
     // TODO visualize topic proportions as rectangles at the very least
 
@@ -680,7 +738,7 @@ model_view_list = function (m) {
 };
 
 model_view_plot = function(m, coords) {
-    var spec, svg_w, spec, cloud_size, circle_radius, range_padding,
+    var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
         domain_x, domain_y,
         scale_x, scale_y, scale_size,
         gs, translation, zoom;
@@ -784,7 +842,9 @@ model_view_plot = function(m, coords) {
                         .text("Click a topic for more detail");
                 });
 
-            up = 0, down = 0, toggle = false;
+            up = 0;
+            down = 0;
+            toggle = false;
             for (i = 0; i < wds.length; i += 1, toggle = !toggle) {
                 if (toggle) {
                     wds[i].y = up;
@@ -879,6 +939,15 @@ view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag);
 };
 
+view_error = function (msg) {
+    d3.select("div#error").append("div")
+        .classed("alert", true)
+        .classed("alert-danger", true)
+        .append("p")
+            .text(msg);
+    d3.select("div#error").classed("hidden", false);
+};
+
 view_refresh = function (m, v) {
     var view_parsed, param, success;
 
@@ -939,7 +1008,6 @@ view_refresh = function (m, v) {
     // ensure highlighting of nav link
     d3.selectAll("#nav_main li.active").classed("active",false);
     d3.select("li#nav_" + view_parsed[1]).classed("active",true);
-
 };
 
 
@@ -1059,8 +1127,24 @@ main = function () {
             view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.tw, function (error, tw_s) {
-            m.set_tw(tw_s);
-            view_refresh(m, window.location.hash);
+            if (typeof(tw_s) === 'string') {
+                m.set_tw(tw_s);
+
+                // Set up topic menu: remove loading message
+                d3.select("ul#topic_dropdown").selectAll("li").remove();
+                // Add menu items
+                d3.select("ul#topic_dropdown").selectAll("li")
+                    .data(d3.range(m.n()))
+                    .enter().append("li").append("a")
+                    .text(function (topic) {
+                        return topic_label(m, topic, VIS.model_view.words);
+                    })
+                    .attr("href", topic_link);
+
+                view_refresh(m, window.location.hash);
+            } else {
+                view_error("Unable to load topic words from " + dfb.files.tw);
+            }
         });
         load_data(dfb.files.doc_len, function (error, doc_len_s) {
             m.set_doc_len(doc_len_s);

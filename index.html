@@ -27,14 +27,21 @@
     <div class="collapse navbar-collapse">
       <ul id="nav_main" class="nav navbar-nav">
         <li id="nav_model"><a href="#">Overview</a></li>
-        <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
+        <li id="nav_topic" class="dropdown">
+          <a href="#/topic" class="dropdown-toggle" data-toggle="dropdown" data-target="#" id="topic_dropdown_toggle">
+            Topic<b class="caret"></b>
+          </a>
+          <ul id="topic_dropdown" class="dropdown-menu scroll-menu" role="menu" aria-labelledby="topic_dropdown_toggle">
+            <li class="disabled"><a href="#/topic">Loading topics...</a></li>
+          </ul>
+        </li>
+        <li id="nav_doc"><a href="#/doc">Document</a></li>
+        <li id="nav_word"><a href="#/word">Word</a></li>
         <!-- TODO support these -->
         <!--
-        <li><a href="#/topic">Topic</a></li>
-        <li><a href="#/doc">Document</a></li>
-        <li><a href="#/word">Word</a></li>
         <li><a href="#/settings">Settings</a></li>
         -->
+        <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
     </div><!--/.navbar-collapse -->
@@ -45,6 +52,9 @@
 
   <div id="loading" class="well">
     <p>Loading...</p>
+  </div>
+
+  <div id="error" class="hidden">
   </div>
 
   <div id="model_view" class="hidden">
@@ -92,68 +102,89 @@
   </div>
 
   <div id="topic_view" class="hidden">
-    <h2></h2>
-    <p id="topic_remark"></p>
-    <div class="row">
-      <div id="topic_words" class="col-md-3">
-        <h3>Top words</h3>
-        <table class="table table-condensed" id="topic_words">
-          <thead>
-            <th>Word</th>
-            <th>Weight</th>
-          </thead>
-          <tbody>
-          </tbody>
-        </table>
-      </div>
-      <div class="col-md-9">
-        <div id="topic_plot">
-          <h3>Yearly proportion of words in topic</h3>
-        </div>
-        <div>
-          <h3>Documents with largest proportion</h3>
-          <table class="table table-condensed" id="topic_docs">
+    <div id="topic_view_help">
+      <p class="help">Select a topic from the "Topic" menu above</p>
+    </div>
+    <div id="topic_view_main">
+      <h2 id="topic_header"></h2>
+      <p id="topic_remark"></p>
+      <div class="row">
+        <div id="topic_words" class="col-md-3">
+          <h3>Top words</h3>
+          <table class="table table-condensed" id="topic_words">
             <thead>
-              <th>Document</th>
-              <th>%</th>
+              <th>Word</th>
               <th>Weight</th>
             </thead>
             <tbody>
             </tbody>
           </table>
         </div>
+        <div class="col-md-9">
+          <div id="topic_plot">
+            <h3>Yearly proportion of words in topic</h3>
+          </div>
+          <div>
+            <h3>Documents with largest proportion</h3>
+            <table class="table table-condensed" id="topic_docs">
+              <thead>
+                <th>Document</th>
+                <th>%</th>
+                <th>Weight</th>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </div> <!-- #topic_view_main -->
   </div>
 
   <div id="doc_view" class="hidden">
-    <h2></h2>
-    <p id="doc_remark"></p>
-    <table class="table table-condensed" id="doc_topics">
-      <thead>
-        <tr>
-          <th>Topic</th>
-          <th>Tokens</th>
-          <th>%</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
+    <div id="doc_view_help">
+      <p class="help">Choose a specific document to view from 
+      <a href="#/bib">the bibliography</a> or from
+        <a href="#/topic">a topic page</a>.</p>
+    </div>
+    <div id="doc_view_main">
+      <h2 id="doc_header"></h2>
+      <p id="doc_remark"></p>
+      <table class="table table-condensed" id="doc_topics">
+        <thead>
+          <tr>
+            <th>Topic</th>
+            <th>Tokens</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div><!-- #doc_view_main -->
   </div>
 
   <div id="word_view" class="hidden">
-    <h2></h2>
-    <table class="table table-condensed" id="word_topics">
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Topic</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-    </table>
+    <div id="word_view_vocab">
+      <h2>Words prominent in at least one topic</h2>
+      <ul id="vocab_list" class="list-unstyled"></ul>
+    </div>
+    <div id="word_view_main">
+      <h2 id="word_header"></h2>
+      <div id="word_no_topics" class="alert alert-info hidden">
+        <p>There are no topics in which this word is prominent.</p>
+      </div>
+      <table class="table table-condensed" id="word_topics">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Topic</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div id="bib_view" class="hidden">

@@ -40,6 +40,15 @@ footer {
     margin-top: 70px;
 }
 
+/* dropdown tweak */
+
+ul.scroll-menu {
+    height: auto;
+    max-height: 480px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 /* model_view aka overview */
 
 #topic_hover p {
@@ -115,6 +124,11 @@ rect.topic_proportion {
 }
 
 /* word_view */
+
+ul#vocab_list {
+    -moz-column-width: 10em;
+    -webkit-column-width: 10em;
+}
 
 /* doc_view */
 
