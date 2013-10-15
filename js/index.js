@@ -532,13 +532,8 @@ word_view = function (m, w) {
 
     topics = m.word_topics(word);
 
-    if (topics.length === 0) {
-        view.select("#word_no_topics").classed("hidden", false);
-        return true;
-    }
-    else {
-        view.select("#word_no_topics").classed("hidden", true);
-    }
+    view.select("#word_no_topics").classed("hidden", topics.length !== 0);
+    view.select("table#word_topics").classed("hidden", topics.length === 0);
 
     trs = view.select("table#word_topics tbody")
         .selectAll("tr")
