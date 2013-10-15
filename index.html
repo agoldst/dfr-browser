@@ -211,8 +211,39 @@
   </div>
 
   <div id="bib_view" class="hidden">
-    <nav></nav>
-    <div id="bib_main"></div>
+    <nav class="nav navbar-default navbar-fixed-bottom" role="navigation">
+      <div class="container">
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <button id="bib_sort_dir"
+            class="btn btn-default navbar-btn navbar-left"
+            type="button">
+            <span class="glyphicon glyphicon-chevron-down"></span>
+          </button>
+          <form id="bib_sort_form" class="navbar-form navbar-left">
+            <div class="form-group">
+              <select class="form-control" id="select_bib_sort">
+                <option id="sort_year_alpha" value="year_alpha">
+                  by year, then by author
+                </option> 
+                <option id="sort_year_date" value="year_date">
+                  chronologically
+                </option>
+                <option id="sort_decade_year" value="decade_year">
+                  by decade, then by year
+                </option>
+              </select>
+            </div>
+          </form>
+          <div class="navbar-right">
+            <p class="navbar-text help">Click headings to expand/collapse document lists</p>
+            <button id="bib_collapse_all" type="button" class="btn btn-default navbar-btn">Collapse all</button>
+            <button id="bib_expand_all" type="button" class="btn btn-default navbar-btn">Expand all</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div id="bib_main">
+    </div>
   </div>
 
   <div id="words_view" class="hidden">

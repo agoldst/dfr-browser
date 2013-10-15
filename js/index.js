@@ -91,12 +91,13 @@ doc_sort_key = function (m, i) {
     }
 };
 
-bib_sort = function (m, major, minor) {
+bib_sort = function (m, maj, min) {
     var result = {
             headings: [],
             docs: []
         },
         docs = d3.range(m.n_docs()),
+        major = maj, minor = min,
         major_sort, major_split, minor_sort,
         major_key, cur_major,
         i, last,
@@ -120,10 +121,8 @@ bib_sort = function (m, major, minor) {
             return d3.ascending(+m.meta(a).date, +m.meta(b).date);
         };
     } else {
-        if (major !== "alpha") {
-            console.log("Unknown bib_sort: " + major + "; defaulting to alpha");
-        }
-        // alphabetical
+        // default to alphabetical
+        major = "alpha";
         major_split = function (i) {
             return doc_sort_key(m, i);
         };
@@ -137,15 +136,18 @@ bib_sort = function (m, major, minor) {
         minor_sort = function(a, b) {
             return d3.ascending(+m.meta(a).date, +m.meta(b).date);
         };
-    } else  {
-        if (minor !== "alpha") {
-            console.log("Unknown bib_sort: " + minor + "; defaulting to alpha");
-        }
-        // alphabetical
+    } else {
+        // default to alphabetical
+        minor = "alpha";
         minor_sort = function (a, b) {
             return d3.ascending(doc_sort_key(m, a), doc_sort_key(m, b));
         };
     }
+
+    d3.select("select#select_bib_sort option")
+        .property("selected", false);
+    d3.select("select#select_bib_sort option#sort_" + major + "_" + minor)
+        .property("selected", true);
 
     docs = docs.sort(major_sort);
     for (i = 0; i < docs.length; i += 1) {
@@ -672,68 +674,118 @@ doc_view = function (m, d) {
     // (later: nearby documents)
 };
 
-bib_view = function (m) {
+bib_view = function (m, maj, min) {
     var view = d3.select("div#bib_view"),
-        ordering, nav_as, sections, headings, as;
+        major = maj, minor = min,
+        ordering, nav_as, sections, panels, as;
 
-    if (VIS.ready.bib) {
-        return true;
+    if (major === undefined) {
+        major = VIS.bib_sort.major;
     }
+    if (minor === undefined) {
+        minor = VIS.bib_sort.minor;
+    }
+
+    if (VIS.last.bib) {
+        if (VIS.last.bib.major === major && VIS.last.bib.minor === minor) {
+            return true;
+        }
+    } 
 
     if (!m.meta()) {
         view_loading(true);
         return true;
     }
 
-    ordering = bib_sort(m, VIS.bib_sort.major, VIS.bib_sort.minor);
+    VIS.last.bib = {
+        major: major,
+        minor: minor
+    };
 
-    VIS.ordering = ordering;
+    // set up sort order menu
+    d3.select("select#select_bib_sort option")
+        .each(function () {
+            this.selected = (this.value === major + "_" + minor);
+        });
+    d3.select("select#select_bib_sort")
+        .on("change", function () {
+            var sorting;
+            d3.selectAll("#select_bib_sort option").each(function () {
+                if (this.selected) {
+                    sorting = this.value;
+                }
+            });
+            window.location.hash = "/bib/" + sorting.replace(/_/,"/");
+        });
 
-    // TODO fix page-jumping #links
-    // TODO use bootstrap accordions?
-    /*
-    nav_as = view.select("nav")
-        .selectAll("a")
-        .data(ordering.headings);
+    d3.select("button#bib_collapse_all")
+        .on("click", function () {
+            $(".panel-collapse").collapse("hide");
+        });
+    d3.select("button#bib_expand_all")
+        .on("click", function () {
+            $(".panel-collapse").collapse("show");
+        });
+    d3.select("button#bib_sort_dir")
+        .on("click", function () {
+            var is_down = d3.select(this)
+                .select("span")
+                .classed("glyphicon-chevron-down");
+            d3.select(this).select("span")
+                .classed("glyphicon-chevron-down", !is_down)
+                .classed("glyphicon-chevron-up", is_down);
+            
+            d3.selectAll("div#bib_main div.panel-default")
+                .sort(function (i, j) {
+                    return d3.descending(i, j);
+                })
+                .order();
+        });
 
-    nav_as.enter().append("a");
-    nav_as.exit().remove();
+    // TODO fix bugged re-sorting and non year-author sorts
+    ordering = bib_sort(m, major, minor);
 
-    nav_as
-        .attr("href", function (h) { return "#" + h; })
-        .text(function (h) { return h; });
-    nav_as
-        .attr("href", "#/bib")
-        .text(function (h) { return h; });
-    */
     sections = view.select("div#bib_main")
-        .selectAll("section")
-        .data(ordering.headings);
-
-    sections.enter()
-        .append("section")
-        .append("h2");
+        .selectAll("div")
+        .data(d3.range(ordering.headings.length));
 
     sections.exit().remove();
 
-    headings = sections.selectAll("h2");
+    panels = sections.enter().append("div")
+        .classed("panel", true)
+        .classed("panel-default", true);
 
-    headings
-        .attr("id", function (h) {
-            return h;
+    panels.append("div")
+        .classed("panel-heading", true) 
+        .on("click", function (i) {
+            $("#" + ordering.headings[i]).collapse("toggle");
         })
-        .text(function (h) { return h; });
+        .append("h2")
+            .classed("panel-title", true)
+            .html(function (i) {
+                var a = '<a class="accordion-toggle"';
+                a += ' data-toggle="collapse"';
+                a += ' href="#' + ordering.headings[i] + '">';
+                a += ordering.headings[i];
+                a += '</a>';
+                return a;
+            });
 
-    as = sections
-        .selectAll("a")
-        .data(function (h, i) {
-            return ordering.docs[i];
-        });
+    as = panels.append("div")
+        .classed("panel-collapse", true)
+        .classed("collapse", true)
+        .classed("in", true)
+        .attr("id", function (i) { return ordering.headings[i]; }) 
+        .append("div")
+            .classed("panel-body", true)
+            .classed("bib_section", true)
+            .selectAll("a")
+                .data(function (i) {
+                    return ordering.docs[i];
+                });
 
     as.enter().append("a");
     as.exit().remove();
-
-    // TODO list topics in bib entry?
 
     as
         .attr("href", function (d) {
@@ -749,9 +801,6 @@ bib_view = function (m) {
     return true;
 
 };
-
-// TODO a vocab index would be easy and not useless
-// vocab_view = function (m) { };
 
 about_view = function (m) {
     if(!VIS.ready.about) {
@@ -1063,7 +1112,7 @@ view_refresh = function (m, v) {
             success = about_view(m);
             break;
         case "bib":
-            success = bib_view(m);
+            success = bib_view(m, param, view_parsed[3]);
             break;
         case "topic":
             param = +param - 1;

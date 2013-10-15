@@ -1,6 +1,7 @@
 /* head clearance for bootstrap navbar */
 body {
     padding-top: 60px;
+    padding-bottom: 60px;
 }
 
 .hidden {
@@ -153,20 +154,17 @@ ul#vocab_list li a:visited {
 
 /* bib_view */
 
-#bib_view a {
+#bib_view {
+}
+
+#bib_view nav {
+}
+
+.bib_section a {
     display: block;
     line-height: 1.33em;
     text-indent: -3em;
     margin-left: 3em;
-}
-
-#bib_view nav a {
-    display: inline;
-    padding-right: 0.5em;
-    font-size: 0.75em;
-}
-
-#bib_view #bib_main a {
     color: black;
 }
 
