@@ -16,6 +16,7 @@ var VIS = {
     },
     topic_view: {
         words: 50,
+        words_increment: 5,
         docs: 20,           // should be divisible by docs_increment
         docs_increment: 5,
         w: 640, // initial guess, adjusted to proportion of container width
@@ -38,7 +39,7 @@ var VIS = {
     },
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format("%B %Y"),
-    uri_proxy: ".proxy.libraries.rutgers.edu",
+    uri_proxy: "",
     prefab_plots: true // use SVG or look for image files for plots?
 };
 
@@ -50,8 +51,9 @@ var doc_sort_key,   // bibliography sorting
     topic_link,
     cite_doc,
     doc_uri,
-    topic_view,     // view generation
     render_updown,
+    topic_view,     // view generation
+    topic_view_words,
     topic_view_docs,
     plot_topic_yearly,
     word_view,
@@ -227,110 +229,18 @@ doc_uri = function (m, d) {
         + m.meta(d).doi;
 };
 
-
-// Principal view-generating functions
-// -----------------------------------
-
-topic_view = function (m, t) {
-    var view = d3.select("div#topic_view"),
-        trs_w, trs_d, img;
-
-    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
-        // not ready yet; show loading message
-        view_loading(true);
-        return true;
-    }
-
-    // TODO don't need anything but tw to show topic words h2 and div; so can 
-    // have div-specific loading messages instead
-
-    if (!isFinite(t) || t < 0 || t >= m.n()) {
-        d3.select("#topic_view_help").classed("hidden", false);
-        d3.select("#topic_view_main").classed("hidden", true);
-        view_loading(false);
-        return true;
-    } else {
-        d3.select("#topic_view_help").classed("hidden", true);
-        d3.select("#topic_view_main").classed("hidden", false);
-    }
-
-    // get top words and weights
-    // -------------------------
-
-    view.select("h2#topic_header")
-        .text(topic_label(m, t, VIS.overview_words));
-
-    view.select("p#topic_remark")
-        .text("α = " + VIS.float_format(m.alpha(t)));
-
-
-    trs_w = view.select("table#topic_words tbody")
-        .selectAll("tr")
-        .data(m.topic_words(t, VIS.topic_view.words));
-
-    trs_w.enter().append("tr");
-    trs_w.exit().remove();
-
-    // clear rows
-    trs_w.selectAll("td").remove();
-
-    trs_w
-        .append("td").append("a")
-        .attr("href", function (w) {
-            return "#/word/" + w;
-        })
-        .text(function (w) { return w; });
-
-    trs_w
-        .append("td")
-        .text(function (w) {
-            return m.tw(t,w);
-        });
-
-
-    // table of top articles
-    // ---------------------
-
-    // with up/down buttons
-    render_updown("button#topic_docs", VIS.topic_view.docs,
-            VIS.topic_view.docs_increment, m.n_docs(),
-            VIS.topic_view.docs_increment, function (n) {
-                topic_view_docs(m, t, n);
-                // Ensure the initial count persists in another topic view
-                VIS.topic_view.docs = n;
-            });
-
-
-    // Plot topic over time
-    // --------------------
-
-    if (VIS.prefab_plots) {
-        // Set image link
-        img = d3.select("#topic_plot img");
-        if(img.empty()) {
-            img = d3.select("#topic_plot").append("img"); 
-        }
-
-        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
-            .attr("title", "yearly proportion of topic " + (t + 1));
-    }
-    else {
-        plot_topic_yearly(m, t);
-    }
-    view_loading(false);
-
-    return true;
-    // TODO visualize word and doc weights as lengths
-    // (later: nearby topics by J-S div or cor on log probs)
-};
+// utility for views
+// -----------------
 
 render_updown = function (selector, start, min, max, increment, render) {
     return (function () {
         var counter = start;
-        if (counter < min) {
+        if (counter <= min) {
             counter = min;
-        } else if (counter > max) {
+            d3.select(selector + "_up").classed("disabled", true);
+        } else if (counter >= max) {
             counter = max;
+            d3.select(selector + "_down").classed("disabled", true);
         }
         d3.select(selector + "_down")
             .on("click", function () {
@@ -356,6 +266,113 @@ render_updown = function (selector, start, min, max, increment, render) {
 
         render(counter);
     })();
+};
+
+// Principal view-generating functions
+// -----------------------------------
+
+topic_view = function (m, t) {
+    var view = d3.select("div#topic_view"),
+        img;
+
+    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
+        // not ready yet; show loading message
+        view_loading(true);
+        return true;
+    }
+
+    // TODO don't need anything but tw to show topic words h2 and div; so can 
+    // have div-specific loading messages instead
+
+    if (!isFinite(t) || t < 0 || t >= m.n()) {
+        d3.select("#topic_view_help").classed("hidden", false);
+        d3.select("#topic_view_main").classed("hidden", true);
+        view_loading(false);
+        return true;
+    } else {
+        d3.select("#topic_view_help").classed("hidden", true);
+        d3.select("#topic_view_main").classed("hidden", false);
+    }
+
+    // heading information
+    // -------------------
+
+    view.select("h2#topic_header")
+        .text(topic_label(m, t, VIS.overview_words));
+
+    view.select("p#topic_remark")
+        .text("α = " + VIS.float_format(m.alpha(t)));
+
+    // table of top words and weights
+    // ------------------------------
+
+    // with up/down buttons
+    render_updown("button#topic_words", VIS.topic_view.words,
+            VIS.topic_view.words_increment, m.n_top_words(),
+            VIS.topic_view.words_increment, function (n) {
+                topic_view_words(m, t, n);
+                // Ensure the initial count persists in another topic view
+                VIS.topic_view.words = n;
+            });
+
+    // table of top articles
+    // ---------------------
+
+    // with up/down buttons
+    render_updown("button#topic_docs", VIS.topic_view.docs,
+            VIS.topic_view.docs_increment, m.n_docs(),
+            VIS.topic_view.docs_increment, function (n) {
+                topic_view_docs(m, t, n);
+                // Ensure the initial count persists in another topic view
+                VIS.topic_view.docs = n;
+            });
+
+    // Plot topic over time
+    // --------------------
+
+    if (VIS.prefab_plots) {
+        // Set image link
+        img = d3.select("#topic_plot img");
+        if(img.empty()) {
+            img = d3.select("#topic_plot").append("img"); 
+        }
+
+        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
+            .attr("title", "yearly proportion of topic " + (t + 1));
+    }
+    else {
+        plot_topic_yearly(m, t);
+    }
+    view_loading(false);
+
+    return true;
+    // TODO visualize word and doc weights as lengths
+    // (later: nearby topics by J-S div or cor on log probs)
+};
+
+topic_view_words = function (m, t, n) {
+    var trs_w = d3.select("table#topic_words tbody")
+        .selectAll("tr")
+        .data(m.topic_words(t, n));
+
+    trs_w.enter().append("tr");
+    trs_w.exit().remove();
+
+    // clear rows
+    trs_w.selectAll("td").remove();
+
+    trs_w
+        .append("td").append("a")
+        .attr("href", function (w) {
+            return "#/word/" + w;
+        })
+        .text(function (w) { return w; });
+
+    trs_w
+        .append("td")
+        .text(function (w) {
+            return m.tw(t, w);
+        });
 };
 
 topic_view_docs = function (m, t, n) {
