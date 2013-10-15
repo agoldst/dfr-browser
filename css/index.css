@@ -28,6 +28,16 @@ a.external:visited {
     color: purple;
 }
 
+/* long subclass for headers */
+
+h2.h-small {
+    font-size: 1.5em;
+}
+
+h3.h-small {
+    font-size: 1.333em;
+}
+
 /* tables */
 table a {
     display: inline;
@@ -92,14 +102,6 @@ text.topic_label {
 
 /* topic_view */
 
-#topic_view h2 {
-    font-size: 1.5em;
-}
-
-#topic_view h3 {
-    font-size: 1.333em;
-}
-
 #topic_words a {
     font-size: 1em;
 }
@@ -154,6 +156,8 @@ ul#vocab_list li a:visited {
 #bib_view a {
     display: block;
     line-height: 1.33em;
+    text-indent: -3em;
+    margin-left: 3em;
 }
 
 #bib_view nav a {
