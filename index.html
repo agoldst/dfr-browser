@@ -173,11 +173,24 @@
   </div>
 
   <div id="word_view" class="hidden">
-    <div id="word_view_help">
-      <p class="help">Choose a specific word to view from 
-      <a class="external" href="#/words">the list of all words</a> or from
-        <a class="external" href="#/topic">a topic page</a>.</p>
-      <p class="help hidden" id="last_word_help">Below: the last-viewed word. Stable link to this view: <a class="external" id="last_word" href="#/word"></a></p>
+    <div class="row">
+      <div class="col-md-8">
+        <div id="word_view_help">
+          <p class="help">Choose a specific word to view from 
+          <a class="external" href="#/words">the list of all words</a> or from
+            <a class="external" href="#/topic">a topic page</a>.</p>
+          <p class="help hidden" id="last_word_help">Below: the last-viewed word. Stable link to this view: <a class="external" id="last_word" href="#/word"></a></p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <form id="word_view_form" class="form-inline pull-right" role="form">
+          <div class="form-group">
+            <label class="sr-only" for="word_input">Choose a word:</label>
+            <input type="text" class="form-control" id="word_input" placeholder="Enter a word">
+          </div>
+          <button type="submit" class="btn btn-default">List topics</button>
+        </form>
+      </div>
     </div>
     <div id="word_view_main" class="hidden">
       <h2 id="word_header"></h2>

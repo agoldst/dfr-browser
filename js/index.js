@@ -509,6 +509,15 @@ word_view = function (m, w) {
     }
     view_loading(false);
 
+    // word form setup
+    d3.select("form#word_view_form")
+        .on("submit", function () {
+            var input_word = d3.select("input#word_input")
+                .property("value")
+                .toLowerCase();
+            window.location.hash = "/word/" + input_word;
+        });
+
     if (word) {
         view.select("#word_view_help").classed("hidden", true);
     } else {
