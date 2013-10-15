@@ -29,7 +29,10 @@ var VIS = {
         bar_width: 300, // in days!
         ticks: 10 // applied to both x and y axes
     }, 
-    doc_view_topics: 10,
+    doc_view: {
+        topics: 10,         // should be divisible by...
+        topics_increment: 2 
+    },
     float_format: function (x) {
         return d3.round(x, 3);
     },
@@ -324,11 +327,16 @@ topic_view = function (m, t) {
 render_updown = function (selector, start, min, max, increment, render) {
     return (function () {
         var counter = start;
+        if (counter < min) {
+            counter = min;
+        } else if (counter > max) {
+            counter = max;
+        }
         d3.select(selector + "_down")
             .on("click", function () {
                 counter += increment;
                 if (counter > max) {
-                    counter = Math.ceiling(max / increment) * increment;
+                    counter = Math.ceil(max / increment) * increment;
                     d3.select(this).classed("disabled", true);
                 }
                 d3.select(selector + "_up").classed("disabled", false);
@@ -338,7 +346,7 @@ render_updown = function (selector, start, min, max, increment, render) {
         d3.select(selector + "_up")
             .on("click", function () {
                 counter -= increment;
-                if (counter < increment) {
+                if (counter < min) {
                     counter = increment;
                     d3.select(this).classed("disabled", true);
                 }
@@ -564,7 +572,8 @@ words_view = function (m) {
 
 doc_view = function (m, d) {
     var view = d3.select("div#doc_view"),
-        doc = d, trs;
+        doc = d,
+        topics, trs;
 
     if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         view_loading(true);
@@ -594,7 +603,7 @@ doc_view = function (m, d) {
     view.select("h2#doc_header")
         .html(cite_doc(m, doc));
 
-    view.select("p#doc_remark")
+    view.select("#doc_remark")
         .html(m.doc_len(doc) + " tokens. "
                 + '<a class ="external" href="'
                 + doc_uri(m, doc)
@@ -602,34 +611,42 @@ doc_view = function (m, d) {
                 + m.meta(doc).doi
                 + " on JSTOR</a>");
 
-    trs = view.select("table#doc_topics tbody")
-        .selectAll("tr")
-        .data(m.doc_topics(doc, VIS.doc_view_topics));
+    topics = m.doc_topics(doc, m.n());
+    render_updown("button#doc_topics", VIS.doc_view.topics,
+        VIS.doc_view.topics_increment, topics.length,
+        VIS.doc_view.topics_increment,
+        function (n) {
+            // Ensure the initial count persists in another doc view
+            VIS.doc_view.topics = n;
+            trs = view.select("table#doc_topics tbody")
+                .selectAll("tr")
+                .data(topics.slice(0, n));
 
-    trs.enter().append("tr");
-    trs.exit().remove();
+            trs.enter().append("tr");
+            trs.exit().remove();
 
-    // clear rows
-    trs.selectAll("td").remove();
+            // clear rows
+            trs.selectAll("td").remove();
 
-    trs.append("td").append("a")
-        .attr("href", function (t) {
-            return topic_link(t.topic);
-        })
-        .text(function (t) {
-            return topic_label(m, t.topic, VIS.overview_words);
-        });
-    trs.append("td")
-        .text(function (t) {
-            return t.weight;
-        });
-    trs.append("td")
-        .text(function (t) {
-            return VIS.percent_format(t.weight / m.doc_len(doc));
+    // TODO visualize topic proportions as rectangles at the very least
+            trs.append("td").append("a")
+                .attr("href", function (t) {
+                    return topic_link(t.topic);
+                })
+                .text(function (t) {
+                    return topic_label(m, t.topic, VIS.overview_words);
+                });
+            trs.append("td")
+                .text(function (t) {
+                    return t.weight;
+                });
+            trs.append("td")
+                .text(function (t) {
+                    return VIS.percent_format(t.weight / m.doc_len(doc));
+                });
         });
 
     return true;
-    // TODO visualize topic proportions as rectangles at the very least
 
     // (later: nearby documents)
 };
