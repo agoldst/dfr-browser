@@ -100,7 +100,7 @@
 
   <div id="topic_view" class="hidden">
     <div id="topic_view_help">
-      <p class="help">Select a topic from the "Topic" menu above</p>
+      <p class="help">Select a topic from the "Topic" menu above.</p>
     </div>
     <div id="topic_view_main">
       <h2 id="topic_header"></h2>
@@ -123,8 +123,8 @@
           </div>
           <h3>Documents with largest proportion</h3>
           <div class="btn-group btn-group-xs">
-            <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show 5 fewer</button>
-            <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show 5 more</button>
+            <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
+            <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
           </div>
           <table class="table table-condensed" id="topic_docs">
             <thead>
@@ -143,8 +143,9 @@
   <div id="doc_view" class="hidden">
     <div id="doc_view_help">
       <p class="help">Choose a specific document to view from 
-      <a href="#/bib">the bibliography</a> or from
-        <a href="#/topic">a topic page</a>.</p>
+      <a class="external" href="#/bib">the bibliography</a> or from
+        <a class="external" href="#/topic">a topic page</a>.</p>
+      <p class="help hidden" id="last_doc_help">Below: the last-viewed document. Stable link to this view: <a class="external" id="last_doc" href="#/doc"></a></p>
     </div>
     <div id="doc_view_main">
       <h2 id="doc_header"></h2>
@@ -166,8 +167,9 @@
   <div id="word_view" class="hidden">
     <div id="word_view_help">
       <p class="help">Choose a specific word to view from 
-      <a href="#/words">the list of all words</a> or from
-        <a href="#/topic">a topic page</a>.</p>
+      <a class="external" href="#/words">the list of all words</a> or from
+        <a class="external" href="#/topic">a topic page</a>.</p>
+      <p class="help hidden" id="last_word_help">Below: the last-viewed word. Stable link to this view: <a class="external" id="last_word" href="#/word"></a></p>
     </div>
     <div id="word_view_main" class="hidden">
       <h2 id="word_header"></h2>

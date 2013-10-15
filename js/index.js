@@ -16,9 +16,10 @@ var VIS = {
     },
     topic_view: {
         words: 50,
-        docs: 20,
-        w: 640, // TODO hardcoding = bad
-        h: 300,
+        docs: 20,           // should be divisible by docs_increment
+        docs_increment: 5,
+        w: 640, // initial guess, adjusted to proportion of container width
+        h: 300, // fixed
         m: {
             left: 40,
             right: 20,
@@ -47,6 +48,7 @@ var doc_sort_key,   // bibliography sorting
     cite_doc,
     doc_uri,
     topic_view,     // view generation
+    render_updown,
     topic_view_docs,
     plot_topic_yearly,
     word_view,
@@ -286,30 +288,15 @@ topic_view = function (m, t) {
     // table of top articles
     // ---------------------
 
-    topic_view_docs(m, t);
+    // with up/down buttons
+    render_updown("button#topic_docs", VIS.topic_view.docs,
+            VIS.topic_view.docs_increment, m.n_docs(),
+            VIS.topic_view.docs_increment, function (n) {
+                topic_view_docs(m, t, n);
+                // Ensure the initial count persists in another topic view
+                VIS.topic_view.docs = n;
+            });
 
-    d3.select("#topic_docs_down")
-        .on("click", function () {
-            VIS.topic_view.docs += 5;
-            if (VIS.topic_view.docs > m.n_docs()) {
-                VIS.topic_view.docs = m.n_docs();
-                d3.select(this).classed("disabled", true);
-            }
-            d3.select("#topic_docs_up").classed("disabled", false);
-
-            topic_view_docs(m, t);
-        });
-
-    d3.select("#topic_docs_up")
-        .on("click", function () {
-            VIS.topic_view.docs -= 5;
-            if (VIS.topic_view.docs < 1) {
-                VIS.topic_view.docs = 1;
-                d3.select(this).classed("disabled", true);
-            }
-            d3.select("#topic_docs_down").classed("disabled", false);
-            topic_view_docs(m, t);
-        });
 
     // Plot topic over time
     // --------------------
@@ -334,12 +321,41 @@ topic_view = function (m, t) {
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-topic_view_docs = function (m, t) {
+render_updown = function (selector, start, min, max, increment, render) {
+    return (function () {
+        var counter = start;
+        d3.select(selector + "_down")
+            .on("click", function () {
+                counter += increment;
+                if (counter > max) {
+                    counter = Math.ceiling(max / increment) * increment;
+                    d3.select(this).classed("disabled", true);
+                }
+                d3.select(selector + "_up").classed("disabled", false);
+                render(counter);
+            });
+
+        d3.select(selector + "_up")
+            .on("click", function () {
+                counter -= increment;
+                if (counter < increment) {
+                    counter = increment;
+                    d3.select(this).classed("disabled", true);
+                }
+                d3.select(selector + "_down").classed("disabled", false);
+                render(counter);
+            });
+
+        render(counter);
+    })();
+};
+
+topic_view_docs = function (m, t, n) {
     var trs_d;
 
     trs_d = d3.select("table#topic_docs tbody")
         .selectAll("tr")
-        .data(m.topic_docs(t, VIS.topic_view.docs));
+        .data(m.topic_docs(t, n));
 
     trs_d.enter().append("tr");
     trs_d.exit().remove();
@@ -474,6 +490,10 @@ word_view = function (m, w) {
         view.select("#word_view_help").classed("hidden", false);
         if (VIS.last.word) {
             word = VIS.last.word; // fall back to last word if available
+            view.select("a#last_word") 
+                .attr("href", "#/word/" + word)
+                .text(document.URL.replace(/#.*$/,"") + "#/word/" + word);
+            view.select("#last_word_help").classed("hidden", false);
         } else {
             view.select("#word_view_main").classed("hidden", true);
             return true;
@@ -560,8 +580,11 @@ doc_view = function (m, d) {
             return true;
         } else {
             doc = VIS.last.doc; // fall back to last doc if none entered
+            view.select("a#last_doc") 
+                .attr("href", "#/doc/" + doc)
+                .text(document.URL.replace(/#.*$/,"") + "#/doc/" + doc);
+            view.select("#last_doc_help").classed("hidden", false);
         }
-
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
         VIS.last.doc = doc;
