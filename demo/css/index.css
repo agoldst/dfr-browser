@@ -1,0 +1,205 @@
+/* head clearance for bootstrap navbar */
+body {
+    padding-top: 60px;
+    padding-bottom: 60px;
+}
+
+.hidden {
+    display: none;
+}
+
+p a,td a {
+    text-decoration: none;
+    color: black;
+}
+
+p a:hover,td a:hover {
+    text-decoration: underline;
+}
+
+p a:visited,td a:visited {
+    color: black;
+}
+
+a.external {
+    color: blue;
+}
+
+a.external:visited {
+    color: purple;
+}
+
+/* long subclass for headers */
+
+h2.h-small {
+    font-size: 1.5em;
+}
+
+h3.h-small {
+    font-size: 1.333em;
+}
+
+/* tables */
+table a {
+    display: inline;
+}
+
+/* footer--currently unused */
+footer {
+    background-color: rgb(245,245,245);
+    padding: 30px 0px;
+    margin-top: 70px;
+}
+
+/* dropdown tweak */
+
+ul.scroll-menu {
+    height: auto;
+    max-height: 480px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+td.weight {
+    min-width: 10em;
+}
+
+td.weight div.proportion {
+    background-color: rgb(51,153,255);
+    text-align: right;
+}
+
+td.weight div.proportion span.proportion {
+    color: rgba(0,0,0,0);
+}
+
+th.th-right {
+    text-align: right;
+}
+
+th.wide {
+    min-width: 20em;
+}
+/* model_view aka overview */
+
+#topic_hover p {
+    text-align: left;
+}
+
+p.help {
+    font-style: italic;
+}
+
+#model_view_plot_info {
+    padding-bottom: 10px;
+}
+
+#model_view_plot svg {
+    border: 1px solid rgb(240,240,240);
+    pointer-events: all;
+}
+
+rect.bg {
+    fill: white;
+}
+
+text.topic_label {
+    text-anchor: middle;
+    fill: rgba(0,0,0,0.6);
+    pointer-events: none;
+    font: sans-serif;
+}
+
+.topic_cloud {
+    fill: rgba(240,240,240,0.6);
+    stroke: rgba(200,200,200,0.6); 
+}
+
+.topic_cloud:hover {
+    fill: rgba(51,153,255,0.9);
+}
+
+/* topic_list_view */
+
+/* topic_view */
+
+#topic_words a {
+    font-size: 1em;
+}
+
+/* topic_plot */
+
+.axis path, .axis line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+/* horizontal grid lines */
+.axis .minor line {
+    stroke: #ddd;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+/* hide line on y axis */
+.axis.y path.domain {
+    display: none;
+}
+
+rect.topic_proportion {
+    fill: black;
+}
+
+/* word_view */
+
+ul#vocab_list {
+    -moz-column-width: 10em;
+    -webkit-column-width: 10em;
+}
+
+ul#vocab_list li a {
+    color: black;
+}
+
+ul#vocab_list li a:visited {
+    color: black;
+}
+
+
+/* doc_view */
+
+/* bib_view */
+
+#bib_main {
+    padding-top: 5px;
+}
+
+#bib_view {
+}
+
+#bib_nav {
+}
+
+/* for hovering on panel headings, using mouseover events */
+div.panel div.panel-heading.panel_heading_hover {
+    background-color: rgb(221, 221, 221);
+}
+
+.bib_section a {
+    display: block;
+    line-height: 1.33em;
+    text-indent: -3em;
+    margin-left: 3em;
+    color: black;
+}
+
+/* about_view */
+
+#about_view div#about_browser {
+    padding-top: 5ex;
+    font-style: italic;
+}
