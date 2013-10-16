@@ -60,6 +60,26 @@ ul.scroll-menu {
     overflow-x: hidden;
 }
 
+td.weight {
+    min-width: 10em;
+}
+
+td.weight div.proportion {
+    background-color: rgb(51,153,255);
+    text-align: right;
+}
+
+td.weight div.proportion span.proportion {
+    color: rgba(0,0,0,0);
+}
+
+th.th-right {
+    text-align: right;
+}
+
+th.wide {
+    min-width: 20em;
+}
 /* model_view aka overview */
 
 #topic_hover p {

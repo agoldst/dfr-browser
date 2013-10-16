@@ -8,7 +8,7 @@ var VIS = {
         major: "year",
         minor: "alpha"
     },
-    overview_words: 15,     // TODO set these parameters interactively
+    overview_words: 15,     // may need adjustment
     model_view: {
         aspect: 1.3333,
         words: 4,           // may need adjustment
@@ -53,6 +53,7 @@ var doc_journal_sort,   // bibliography sorting
     cite_doc,
     doc_uri,
     render_updown,      // view generation
+    add_weight_cells,
     topic_view,
     topic_view_words,
     topic_view_docs,
@@ -388,9 +389,17 @@ topic_view = function (m, t) {
 };
 
 topic_view_words = function (m, t, n) {
-    var trs_w = d3.select("table#topic_words tbody")
+    var trs_w,
+        words = m.topic_words(t, n).map(function (w) {
+            return {
+                word: w,
+                weight: m.tw(t, w)
+            };
+        });
+
+    trs_w = d3.select("table#topic_words tbody")
         .selectAll("tr")
-        .data(m.topic_words(t, n));
+        .data(words);
 
     trs_w.enter().append("tr");
     trs_w.exit().remove();
@@ -398,18 +407,28 @@ topic_view_words = function (m, t, n) {
     // clear rows
     trs_w.selectAll("td").remove();
 
-    trs_w
-        .append("td").append("a")
+    trs_w.append("td").append("a")
         .attr("href", function (w) {
-            return "#/word/" + w;
+            return "#/word/" + w.word;
         })
-        .text(function (w) { return w; });
+        .text(function (w) { return w.word; });
 
-    trs_w
-        .append("td")
-        .text(function (w) {
-            return m.tw(t, w);
-        });
+    add_weight_cells(trs_w, "weight", words[0].weight);
+
+};
+
+add_weight_cells = function (sel, wt, max) {
+    sel.append("td").classed("weight", true)
+        .append("div")
+            .classed("proportion", true)
+            .style("margin-left", function (w) {
+                return d3.format(".1%")(1 - w[wt] / max);
+            })
+            .append("span")
+                .classed("proportion", true)
+                .text(function (w) {
+                    return w.weight;
+                });
 };
 
 topic_view_docs = function (m, t, n) {
@@ -433,6 +452,8 @@ topic_view_docs = function (m, t, n) {
         .html(function (d) {
             return cite_doc(m, d.doc);
         });
+
+    add_weight_cells(trs_d, "frac", 1);
 
     trs_d
         .append("td")
@@ -686,14 +707,17 @@ doc_view = function (m, d) {
             // clear rows
             trs.selectAll("td").remove();
 
-    // TODO visualize topic proportions as rectangles at the very least
-            trs.append("td").append("a")
-                .attr("href", function (t) {
-                    return topic_link(t.topic);
-                })
-                .text(function (t) {
-                    return topic_label(m, t.topic, VIS.overview_words);
-                });
+            trs.append("td")
+                .append("a")
+                    .attr("href", function (t) {
+                        return topic_link(t.topic);
+                    })
+                    .text(function (t) {
+                        return topic_label(m, t.topic, VIS.overview_words);
+                    });
+
+            add_weight_cells(trs, "weight", m.doc_len(doc));
+
             trs.append("td")
                 .text(function (t) {
                     return t.weight;
