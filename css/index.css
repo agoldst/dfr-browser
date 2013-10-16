@@ -157,7 +157,12 @@ ul#vocab_list li a:visited {
 #bib_view {
 }
 
-#bib_view nav {
+#bib_nav {
+}
+
+/* for hovering on panel headings, using mouseover events */
+div.panel div.panel-heading.panel_heading_hover {
+    background-color: rgb(221, 221, 221);
 }
 
 .bib_section a {

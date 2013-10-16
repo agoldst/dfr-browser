@@ -45,14 +45,15 @@ var VIS = {
 
 /* declaration of functions */
 
-var doc_sort_key,   // bibliography sorting
+var doc_journal_sort,   // bibliography sorting
     bib_sort,
-    topic_label,    // stringifiers
+    topic_label,        // stringifiers
     topic_link,
+    doc_author_string,
     cite_doc,
     doc_uri,
-    render_updown,
-    topic_view,     // view generation
+    render_updown,      // view generation
+    topic_view,
     topic_view_words,
     topic_view_docs,
     plot_topic_yearly,
@@ -68,101 +69,88 @@ var doc_sort_key,   // bibliography sorting
     view_refresh,
     view_loading,
     view_error,
-    setup_vis,      // initialization
+    setup_vis,          // initialization
     plot_svg,
     read_files,
-    main;           // main program
+    main;               // main program
 
 
 // utility functions
 // -----------------
 
 // bibliography sorting
-
-doc_sort_key = function (m, i) {
-    var names;
-    // TODO shouldn't really combine sort key and extracting the first letter
-    // also, this fails when author name ends with Jr, 2nd, (xxx), etc.
-    if (m.meta(i).authors.length > 0) {
-        names = m.meta(i).authors[0].split(" ");
-        return names[names.length - 1][0].toUpperCase(); // N.B. casefolding
-    } else {
-        return "[Anon]";
-    }
-};
-
-bib_sort = function (m, maj, min) {
+bib_sort = function (m, major, minor) {
     var result = {
             headings: [],
             docs: []
         },
-        docs = d3.range(m.n_docs()),
-        major = maj, minor = min,
-        major_sort, major_split, minor_sort,
-        major_key, cur_major,
-        i, last,
+        docs,
+        major_key, minor_key,
+        cur_major, i, last,
         partition = [];
 
     if (major === "decade") {
-        major_split = function (i) {
+        major_key = function (i) {
             return Math.floor(m.meta(i).date.getFullYear() / 10).toString() +
                 "0s";
         };
-
-        major_sort = function (a, b) {
-            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
-        };
     } else if (major === "year") {
-        major_split = function (i) {
+        major_key = function (i) {
             return m.meta(i).date.getFullYear();
         };
-
-        major_sort = function (a, b) {
-            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
+    } else if (major === "journal") {
+        major_key = function (i) {
+            return m.meta(i).journaltitle;
         };
     } else {
         // default to alphabetical
-        major = "alpha";
-        major_split = function (i) {
-            return doc_sort_key(m, i);
-        };
-        major_sort = function (a, b) {
-            return d3.ascending(doc_sort_key(m, a), doc_sort_key(m, b));
+        major_key = function (i) {
+            return doc_author_string(m, i).replace(/^\W*/, "")[0]
+                .toUpperCase();
         };
     }
-
 
     if (minor === "date") {
-        minor_sort = function(a, b) {
-            return d3.ascending(+m.meta(a).date, +m.meta(b).date);
+        minor_key = function (i) {
+            return +m.meta(i).date;
         };
     } else {
         // default to alphabetical
-        minor = "alpha";
-        minor_sort = function (a, b) {
-            return d3.ascending(doc_sort_key(m, a), doc_sort_key(m, b));
+        minor_key = function (i) {
+            return doc_author_string(m, i);
         };
     }
+    // TODO minor "journal" sort
 
-    d3.select("select#select_bib_sort option")
-        .property("selected", false);
-    d3.select("select#select_bib_sort option#sort_" + major + "_" + minor)
-        .property("selected", true);
+    docs = d3.range(m.n_docs())
+        .map(function (d) {
+            return {
+                id: d,
+                major: major_key(d),
+                minor: minor_key(d)
+            };
+        })
+        .sort(function (a, b) {
+            var M = d3.ascending(a.major, b.major);
+            return (M !== 0) ? M : d3.ascending(a.minor, b.minor);
+        });
 
-    docs = docs.sort(major_sort);
-    for (i = 0; i < docs.length; i += 1) {
-        major_key = major_split(docs[i]);
-        if (major_key !== cur_major) {
+    for (i = 0, cur_major = ""; i < docs.length; i += 1) {
+        if (docs[i].major !== cur_major) {
             partition.push(i);
-            result.headings.push(major_key);
-            cur_major = major_key;
+            result.headings.push(docs[i].major);
+            cur_major = docs[i].major;
         }
     }
     partition.shift(); // correct for "0" always getting added at the start
     partition.push(docs.length); // make sure we get the tail 
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
-        result.docs.push(docs.slice(last, partition[i]).sort(minor_sort));
+        result.docs.push(docs.slice(last, partition[i])
+                .map(function (d) {
+                    return d.id;
+                })
+        );
         last = partition[i];
     }
 
@@ -187,30 +175,57 @@ topic_link = function (t) {
     return "#/topic/" + (t + 1);
 };
 
-cite_doc = function (m, d) {
-    var doc, lead, result;
+doc_author_string = function (m, i) {
+    var doc = m.meta(i),
+        lead, lead_trail,
+        result;
 
-    doc = m.meta(d);
-    // TODO factor out sort-name extraction (to use with doc_sort_key too)
-    // fails on Jr., 2nd, etc.
     if(doc.authors.length > 0) {
-        lead = doc.authors[0].split(" ");
-        result = lead.pop() + ", ";
-        result += lead.join(" ");
-        if(doc.authors.length > 1) {
-            if(doc.authors.length > 2) {
+        lead = doc.authors[0].replace(/,/g, "").split(" ");
+        // check for Jr., Sr., 2nd, etc.
+        // Can mess up if last name is actually the letter I, X, or V.
+        lead_trail = lead.pop();
+        if (lead.length >= 2
+                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
+            result = lead.pop().replace(/_$/, "");
+            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
+            
+        }
+        else {
+            result = lead_trail;
+            lead_trail = "";
+        }
+        result += ", " + lead.join(" ") + lead_trail;
+        if (doc.authors.length > 1) {
+            // "et al" is better for real bibliography, but it's
+            // actually worth being able to search all the multiple authors
+            /*if (doc.authors.length > 3) {
+                result += ", " + doc.authors.slice(1, 3).join(", ");
+                result += "et al.";
+            } else {*/
+            if (doc.authors.length > 2) {
                 result += ", ";
                 result += doc.authors
-                    .slice(1,doc.authors.length - 1)
+                    .slice(1, doc.authors.length - 1)
                     .join(", ");
             }
             result += ", and " + doc.authors[doc.authors.length - 1];
         }
     } else {
-            result = "[Anon]";
+        result = "[Anon]";
     }
 
-    result += ". ";
+    return result;
+};
+
+cite_doc = function (m, d) {
+    var doc, lead, result;
+
+    doc = m.meta(d);
+    result = doc_author_string(m, d);
+
+    // don't duplicate trailing period on middle initial etc.
+    result = result.replace(/\.?$/,". ");
     result += '"' + doc.title + '."';
     result += " <em>" + doc.journaltitle + "</em> ";
     result += doc.volume + ", no. " + doc.issue;
@@ -218,6 +233,7 @@ cite_doc = function (m, d) {
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange + ".";
 
+    result = result.replace(/\.\./g, ".");
     result = result.replace(/_/g, ",");
     result = result.replace(/\t/g, "");
 
@@ -718,6 +734,7 @@ bib_view = function (m, maj, min) {
             window.location.hash = "/bib/" + sorting.replace(/_/,"/");
         });
 
+    // set up rest of toolbar
     d3.select("button#bib_collapse_all")
         .on("click", function () {
             $(".panel-collapse").collapse("hide");
@@ -730,26 +747,26 @@ bib_view = function (m, maj, min) {
         .on("click", function () {
             var is_down = d3.select(this)
                 .select("span")
-                .classed("glyphicon-chevron-down");
+                .classed("glyphicon-chevron-down"),
+                sorter = is_down ? d3.descending : d3.ascending;
+
             d3.select(this).select("span")
                 .classed("glyphicon-chevron-down", !is_down)
                 .classed("glyphicon-chevron-up", is_down);
             
             d3.selectAll("div#bib_main div.panel-default")
-                .sort(function (i, j) {
-                    return d3.descending(i, j);
-                })
+                .sort(sorter)
                 .order();
         });
 
-    // TODO fix bugged re-sorting and non year-author sorts
     ordering = bib_sort(m, major, minor);
+
+    // clear listings
+    view.selectAll("div#bib_main > div.panel").remove();
 
     sections = view.select("div#bib_main")
         .selectAll("div")
         .data(d3.range(ordering.headings.length));
-
-    sections.exit().remove();
 
     panels = sections.enter().append("div")
         .classed("panel", true)
@@ -759,6 +776,12 @@ bib_view = function (m, maj, min) {
         .classed("panel-heading", true) 
         .on("click", function (i) {
             $("#" + ordering.headings[i]).collapse("toggle");
+        })
+        .on("mouseover", function () {
+            d3.select(this).classed("panel_heading_hover", true);
+        })
+        .on("mouseout", function () {
+            d3.select(this).classed("panel_heading_hover", false);
         })
         .append("h2")
             .classed("panel-title", true)
@@ -798,6 +821,9 @@ bib_view = function (m, maj, min) {
     VIS.ready.bib = true;
 
     view_loading(false);
+
+    // TODO smooth sliding-in / -out appearance of navbar would be nicer
+
     return true;
 
 };

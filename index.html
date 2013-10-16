@@ -211,7 +211,7 @@
   </div>
 
   <div id="bib_view" class="hidden">
-    <nav class="nav navbar-default navbar-fixed-bottom" role="navigation">
+    <nav id="bib_nav" class="nav navbar-default navbar-fixed-bottom" role="navigation">
       <div class="container">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
           <button id="bib_sort_dir"
@@ -225,11 +225,14 @@
                 <option id="sort_year_alpha" value="year_alpha">
                   by year, then by author
                 </option> 
-                <option id="sort_year_date" value="year_date">
-                  chronologically
+                <option id="sort_decade_date" value="decade_date">
+                  chronologically by decades
                 </option>
-                <option id="sort_decade_year" value="decade_year">
-                  by decade, then by year
+                <option id="sort_alpha_alpha" value="alpha_alpha">
+                  alphabetically by author
+                </option>
+                <option id="sort_journal_journal" value="journal_journal">
+                  chronologically by journal contents
                 </option>
               </select>
             </div>
