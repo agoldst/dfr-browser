@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="dfr-browser : Visualize a topic model of JSTOR journals" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>dfr-browser</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/agoldst/dfr-browser">View on GitHub</a>
+
+          <h1 id="project_title">dfr-browser</h1>
+          <h2 id="project_tagline">Visualize a topic model of JSTOR journals</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/agoldst/dfr-browser/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/agoldst/dfr-browser/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="a-simple-model-browser" class="anchor" href="#a-simple-model-browser"><span class="octicon octicon-link"></span></a>A simple model browser</h1>
+
+<p>These files use <a href="http://d3js.org">d3</a> to provide a rudimentary way to browse some of a topic model in a web browser. It assumes output files in the formats saved by my topic-modeling scripts in <a href="http://github.com/agoldst/dfr-analysis">dfr-analysis</a>. To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix with an additional column of document id's.</p>
+
+<p>This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). This project skews to my needs as a literary scholar and to my amateurishness as a programmer. No aspect of this code has been systematically tested. Sorry.</p>
+
+<h2>
+<a name="generating-the-datafiles" class="anchor" href="#generating-the-datafiles"><span class="octicon octicon-link"></span></a>Generating the datafiles</h2>
+
+<p><a href="http://github.com/agoldst/dfr-analysis">dfr-analysis</a> supplies functions (in <code>topics_rmallet.R</code>) to create data frames which you can save as <code>keys.csv</code> and <code>doc_topics.csv</code>.</p>
+
+<p><code>info.json</code> must be written by hand. You need only:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+  <span class="nt">"title"</span><span class="p">:</span> <span class="s2">"Model title"</span><span class="p">,</span>
+  <span class="nt">"meta_info"</span><span class="p">:</span> <span class="s2">"&lt;p&gt;About the model...&lt;p&gt;"</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>You can also override some aspects of the visualization by adding a <code>VIS</code> object here with properties whose names correspond to those of the <code>VIS</code> object in the program (in <code>index.js:setup_vis()</code>). For example, to generate plots of topics over time on the fly instead of looking for pregenerated files, try:</p>
+
+<div class="highlight highlight-json"><pre><span class="p">{</span>
+  <span class="nt">"title"</span><span class="p">:</span> <span class="s2">"Model title"</span><span class="p">,</span>
+  <span class="nt">"meta_info"</span><span class="p">:</span> <span class="s2">"&lt;p&gt;About the model...&lt;p&gt;"</span><span class="p">,</span>
+  <span class="nt">"VIS"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"prefab_plots"</span><span class="p">:</span> <span class="kc">false</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p>For the remaining files, I provide an R script to transform the model outputs into the formats needed by the javascript code.</p>
+
+<div class="highlight highlight-r"><pre><span class="c">source("prepare_data.R")</span>
+<span class="c">dfr_dirs &lt;- ...# directories containing citations.CSV files</span>
+<span class="c">doc_topics &lt;- ...# doc topics filename</span>
+<span class="c">keys &lt;- ...# weighted keys frame filename</span>
+<span class="c">prepare_data(dfr_dirs,"data",doc_topics,keys)</span>
+</pre></div>
+
+<p>One optional file, <code>topic_scaled.csv</code>, must also be precalculated separately (more detail below).</p>
+
+<h2>
+<a name="using-the-browser" class="anchor" href="#using-the-browser"><span class="octicon octicon-link"></span></a>Using the browser</h2>
+
+<ol>
+<li><p>Once the files are in place in a <code>data/</code> subdirectory, launch a web server in the <code>dfr-browser/</code> directory; <code>bin/server</code> uses the python 3 <code>http.server</code> module serving at <code>localhost:8888</code>. The point of the server is simply to allow the javascript to ask for the data files from your file system (via <code>d3.text</code>).</p></li>
+<li><p>Navigate to the home page, <code>http://localhost:8888</code>, in your favorite web browser. You can also go directly to one of the other views of the model using URLs:</p></li>
+</ol><ul>
+<li>
+<code>/#/model/&lt;grid|scaled|list&gt;</code> for the different topic overviews</li>
+<li>
+<code>/#/topic/&lt;k&gt;</code> where <em></em> is the 1-based topic number</li>
+<li>
+<code>/#/word/&lt;word&gt;</code> where <em></em> is a topic key word</li>
+<li>
+<code>/#/doc/&lt;k&gt;</code> where <em></em> is the internal document id (not so handy)</li>
+<li>
+<code>/#/bib</code> for the bibliography view</li>
+</ul><h3>
+<a name="more-detail-on-those-files" class="anchor" href="#more-detail-on-those-files"><span class="octicon octicon-link"></span></a>(More detail on those files)</h3>
+
+<p>The browser looks for the following files in <code>data/</code>:</p>
+
+<ul>
+<li>
+<code>dt.json</code>: the document-topic matrix, but in sparse compressed-column format (from R's <a href="http://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/CsparseMatrix-class.html"><code>CsparseMatrix</code> class</a>. The object properties are three arrays : <code>i</code>, <code>p</code>, and <code>x</code>.</li>
+<li>
+<code>tw.json</code>: a JSON object with <code>alpha</code>, a vector of alpha values for each topic, and <code>tw</code>, a vector of <code>{ words, weights }</code> objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).</li>
+<li>
+<code>meta.csv</code>: headerless CSV of document metadata, with rows in the same order as <code>dt.csv</code>, and with fields identical to those in DfR <code>citations.CSV</code> files, <em>excluding</em> the following: <code>doi, publisher, reviewed-work</code>.</li>
+<li>
+<code>info.json</code>: a JSON object with <code>title</code>, <code>meta_info</code>, and optionally <code>VIS</code> members.</li>
+<li>
+<code>doc_len.json</code>: a JSON object holding an array <code>doc_len</code> of document lengths.</li>
+<li>
+<code>topic_scaled.csv</code>: x and y coordinates for the topics in some space. If available, the browser can draw the "scaled" overview plot. In <code>dfr-analysis</code> there is a function for computing Jensen-Shannon divergences among the topics in a model, which can then be turned into 2-dimensional coordinates using <code>cmdscale()</code>. </li>
+</ul><h1>
+<a name="what-it-does" class="anchor" href="#what-it-does"><span class="octicon octicon-link"></span></a>What it does</h1>
+
+<p>Currently, this provides very minimal views of topics, documents, and word types as specified in the model. The goal is to focus attention on the hierarchical layers of the model, so that you attend not only to topics but documents and individual words as well.</p>
+
+<p>This provides an overview visualization of the topics as Little Circles With Words in Them (TM) or as a simple list; lists of top words and documents in each topic, plus the yearly topic proportions; lists of "top" topics in documents; and lists of "top" topics for words. There is also a "bibliography" view of all your documents, ordered by year of publication (or alphabetically, if you choose).</p>
+
+<p>Little Circles With Words in Them (TM) (not really TM): the overview visualizations show each topic as a circle with words in them, placed either in arbitrary order in a regular grid or, if scaled coordinates are supplied with <code>topic_scaled.csv</code>, in the two-dimensional space of those coordinates. Originally I wanted the circles to be word clouds, but the otherwise awesome d3-cloud is really not meant to squeeze few words into a very small space (it's much better at a bunch of words in a larger space). So I have opted instead for a simple column of words, with their sizes decreasing from the center. No effort is made to respect the horizontal bounds of the circle.</p>
+
+<p>The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable if you run it locally. For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this.</p>
+
+<h2>
+<a name="what-it-should-do" class="anchor" href="#what-it-should-do"><span class="octicon octicon-link"></span></a>What it should do</h2>
+
+<p>Needed: more interactive adjustment of parameters. More speed and asychronous loading jazz. And eventually I will add fuller visualizations....</p>
+
+<h2>
+<a name="the-downloadable-version" class="anchor" href="#the-downloadable-version"><span class="octicon octicon-link"></span></a>The downloadable version</h2>
+
+<p>If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the <code>insert_model.py</code> script. The provided <code>Makefile</code> shows the usage, so you can just do <code>make model.html</code> to embed the necessary parts of <code>data/</code> into <code>index.html</code>. This requires non-zipped individual data files, which you can generate using <code>prepare_data(...,no_zip=T)</code>.</p>
+
+<p>To produce an all-in-one archive for sharing, use <code>make model.zip</code>.</p>
+
+<h2>
+<a name="the-polished-options" class="anchor" href="#the-polished-options"><span class="octicon octicon-link"></span></a>The polished options</h2>
+
+<p>This is just something I hacked together, and it is really tuned to my own interests and my work on JSTOR's Data for Research data. Here are some more polished general-use model-browsing projects:</p>
+
+<p><a href="http://glimmer.rstudio.com/cpsievert/LDAviz/">LDAviz</a>, by Carson Sievert, uses the Shiny R server to support visualizations of both individual topics and the interrelations among topics.</p>
+
+<p><a href="http://www.networkedcorpus.com/">The Networked Corpus</a> is a beautiful way to visualize a topic model of a full-text corpus. </p>
+
+<p>David Mimno's <a href="https://github.com/mimno/jsLDA">jsLDA</a> computes the topic model in the browser as well as visualizing it in interesting ways.</p>
+
+<p><a href="http://www.jgoodwin.net/">Jonathan Goodwin</a>'s journal topic-model browsers are very elegant: see e.g. <a href="http://jgoodwin.net/theory-browser/">this one, of literary theory journals</a>.</p>
+
+<p><a href="http://code.google.com/p/tmve/">Allison Chaney's Topic Model Visualization Engine</a> is a robust static-site generator.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">dfr-browser maintained by <a href="https://github.com/agoldst">agoldst</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
