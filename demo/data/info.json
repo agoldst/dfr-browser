@@ -1,0 +1,16 @@
+{
+    "title": "Topics in <em>PMLA<\/em>",
+    "meta_info": "<p>A model, from the demonstration for dfr-analysis.<\/p>",
+    "VIS": {
+        "bib_sort": {
+            "major": "year",
+            "minor": "alpha"
+        },
+        "prefab_plots": false, 
+        "model_view": {
+            "aspect": 1.333,
+            "words": 6,
+            "size_range": [6, 14]
+        } 
+    }
+}
