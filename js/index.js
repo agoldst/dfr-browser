@@ -1007,7 +1007,9 @@ model_view_plot = function(m, coords) {
                 })
                 .on("mouseover", function (p) {
                     gs.sort(function (a, b) {
-                            if (a.t === t) {
+                            if (a.t === b.t) {
+                                return 0;
+                            } else if (a.t === t) {
                                 return 1;
                             } else if (b.t === t) {
                                 return -1;
