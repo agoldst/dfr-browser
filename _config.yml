@@ -1,2 +1,1 @@
-exclude: [Gemfile,Gemfile.lock,,data_files,dfr-browser.Rproj,scrap]
-
+exclude: ["Gemfile","Gemfile.lock","data_files","dfr-browser.Rproj","scrap"]
