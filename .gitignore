@@ -1,0 +1,6 @@
+*.Rproj.user
+_site
+*.zip
+data_files
+demo_files
+scrap
