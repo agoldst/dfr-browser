@@ -787,20 +787,15 @@ bib_view = function (m, maj, min) {
             $(".panel-collapse").collapse("show");
         });
     d3.select("button#bib_sort_dir")
-        .on("click", function () {
-            var is_down = d3.select(this)
-                .select("span")
-                .classed("glyphicon-chevron-down"),
-                sorter = is_down ? d3.descending : d3.ascending;
-
-            d3.select(this).select("span")
-                .classed("glyphicon-chevron-down", !is_down)
-                .classed("glyphicon-chevron-up", is_down);
-            
-            d3.selectAll("div#bib_main div.panel-default")
-                .sort(sorter)
-                .order();
-        });
+        .on("click", (function () {
+            var descend = true;
+            return (function () {
+                d3.selectAll("div#bib_main div.panel-default")
+                    .sort(descend ? d3.descending : d3.ascending)
+                    .order();
+                descend = !descend;
+            });
+        })()); // up/down state is preserved in the closure
 
     ordering = bib_sort(m, major, minor);
 

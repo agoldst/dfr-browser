@@ -213,14 +213,9 @@
   </div>
 
   <div id="bib_view" class="hidden">
-    <nav id="bib_nav" class="nav navbar-default navbar-fixed-bottom" role="navigation">
+    <nav id="bib_nav" class="nav navbar-default" role="navigation">
       <div class="container">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
-          <button id="bib_sort_dir"
-            class="btn btn-default navbar-btn navbar-left"
-            type="button">
-            <span class="glyphicon glyphicon-chevron-down"></span>
-          </button>
           <form id="bib_sort_form" class="navbar-form navbar-left">
             <div class="form-group">
               <select class="form-control" id="select_bib_sort">
@@ -245,6 +240,11 @@
               </select>
             </div>
           </form>
+          <button id="bib_sort_dir"
+            class="btn btn-default navbar-btn"
+            type="button">
+            Reverse order
+          </button>
           <div class="navbar-right">
             <p class="navbar-text help">Click headings to expand/collapse document lists</p>
             <button id="bib_collapse_all" type="button" class="btn btn-default navbar-btn">Collapse all</button>
