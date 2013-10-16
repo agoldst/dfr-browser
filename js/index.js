@@ -103,7 +103,7 @@ bib_sort = function (m, major, minor) {
             return m.meta(i).journaltitle;
         };
     } else {
-        // default to alphabetical
+        // default to alphabetical by author
         major_key = function (i) {
             return doc_author_string(m, i).replace(/^\W*/, "")[0]
                 .toUpperCase();
@@ -114,13 +114,28 @@ bib_sort = function (m, major, minor) {
         minor_key = function (i) {
             return +m.meta(i).date;
         };
-    } else {
-        // default to alphabetical
+    } else if (minor == "journal") {
         minor_key = function (i) {
-            return doc_author_string(m, i);
+            var doc = m.meta(i),
+                result = doc.journaltitle;
+
+            result += d3.format("05d")(doc.volume);
+            result += d3.format("05d")(doc.issue ? 0
+                    : doc.issue.replace(/\/.*$/, ""));
+            if (doc.pagerange.search(/^\d/) !== -1) {
+                result += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
+            } else {
+                result += doc.pagerange;
+            }
+            return result;
         };
     }
-    // TODO minor "journal" sort
+    else {
+        // default to alphabetical by author then title
+        minor_key = function (i) {
+            return doc_author_string(m, i) + m.meta(i).title;
+        };
+    }
 
     docs = d3.range(m.n_docs())
         .map(function (d) {
@@ -228,7 +243,11 @@ cite_doc = function (m, d) {
     result = result.replace(/\.?$/,". ");
     result += '"' + doc.title + '."';
     result += " <em>" + doc.journaltitle + "</em> ";
-    result += doc.volume + ", no. " + doc.issue;
+    result += doc.volume;
+    if (doc.issue) {
+        result += ", no. " + doc.issue;
+    }
+
 
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange + ".";
