@@ -317,6 +317,17 @@ Full-Width Styles
   text-shadow: #111 0px 0px 10px;
 }
 
+#demo_link {
+    z-index: 10;
+    padding: 10px 10px 10px 10px;
+    color: #fff;
+    background-color: #0090ff;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(0,0,0,.5);
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
 #downloads {
   position: absolute;
   width: 210px;
