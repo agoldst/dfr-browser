@@ -45,8 +45,7 @@ var VIS = {
 
 /* declaration of functions */
 
-var doc_journal_sort,   // bibliography sorting
-    bib_sort,
+var bib_sort,   // bibliography sorting
     topic_label,        // stringifiers
     topic_link,
     doc_author_string,
