@@ -199,6 +199,14 @@ div.panel div.panel-heading.panel_heading_hover {
 
 /* about_view */
 
+#about_view a {
+    color: blue;
+}
+
+#about_view a:visited {
+    color: purple;
+}
+
 #about_view div#about_browser {
     padding-top: 5ex;
     font-style: italic;

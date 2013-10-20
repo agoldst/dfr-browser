@@ -872,6 +872,7 @@ about_view = function (m) {
             .html(m.info().meta_info);
         VIS.ready.about = true;
     }
+    view_loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
 };
