@@ -570,6 +570,7 @@ word_view = function (m, w) {
     // word form setup
     d3.select("form#word_view_form")
         .on("submit", function () {
+            d3.event.preventDefault();
             var input_word = d3.select("input#word_input")
                 .property("value")
                 .toLowerCase();
