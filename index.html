@@ -77,22 +77,21 @@
 
 <h3>Permalinks</h3>
 
-<p>Thanks to the <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">wisdom of Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser's URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo's view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>. </p>
+<p>Thanks to <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">this post by Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser's URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo's view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>. </p>
 
 <h2>Technical information</h2>
 
 <p>Learn more about the underpinnings, and grab the source, on the <a href="https://github.com/agoldst/dfr-browser">GitHub project page</a> for this browser. I looked into other topic-model visualization projects and was impressed by what I found (see <a href="#the-polished-options">The polished options</a> below). But I needed a setup which was (1) entirely static, since I didn't have access to a host for dynamic code and (2) tuned to the questions that looking at models of scholarly journals has raised for me. And I found working with <a href="http://d3js.org">d3.js</a> to be such a pleasure that I wanted to complete a project in it myself.</p>
 
-<p>This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). Though it is no doubt bug-ridden and amateurish—which is why this is still an <em>alpha release</em>—perhaps it may be useful to others with similar interests. Please <a href="https://github.com/agoldst/dfr-browser">clone the repository</a> and go to town. The project page gives more detail on how to convert MALLET outputs into the formats needed by this code. I hope to write a tutorial on using my <a href="http://github.com/agoldst/dfr-analysis">dfr-analysis</a> scripts to produce a topic model and visualize it with this browser soon.</p>
+<p>This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). Though it is woefully under-documented, and no doubt bug-ridden and amateurish—which is why this is still an <em>alpha release</em>—perhaps it may be useful to others with similar interests. Please <a href="https://github.com/agoldst/dfr-browser">clone the repository</a> and go to town. The repository project page gives more detail on how to convert MALLET outputs into the formats needed by this code. I hope to write a tutorial on using my <a href="http://github.com/agoldst/dfr-analysis">dfr-analysis</a> scripts to produce a topic model and visualize it with this browser soon (i.e., sometime in 2013–2014).</p>
 
-<p>As this is an <em>alpha release</em>, I have not tested this browser beyond my own system. I have relied on d3 and <a href="http://getbootstrap.com">bootstrap</a>, so in principle this should work in recent web browsers on any system, with the likely exception of Internet Explorer. As for touch devices, I don't do too much with hover states, and bootstrap is <em>supposed</em> to be responsive out of the box, but further development for the <a href="https://twitter.com/goldstoneandrew/status/383297490495475712">iMallet</a> will have to await some other, braver developer.</p>
+<p>As this is an <em>alpha release</em>, I have not tested this browser beyond my own system, where it appears to work in Firefox, Chrome, and Safari. I have relied on <a href="http://d3js.org">d3</a> and <a href="http://getbootstrap.com">bootstrap</a>, so in principle this should work in recent web browsers on most systems, with the likely exception of Internet Explorer. As for touch devices, I don't do too much with hover states, and bootstrap is <em>supposed</em> to be responsive out of the box, but further development for the <a href="https://twitter.com/goldstoneandrew/status/383297490495475712">iMallet</a> will have to await some other, braver developer.</p>
 
-<h2>
-<a name="the-polished-options" class="anchor" href="#the-polished-options"><span class="octicon octicon-link"></span></a>The polished options</h2>
+<h2><a name="the-polished-options" class="anchor" href="#the-polished-options"><span class="octicon octicon-link"></span></a>The polished options</h2>
 
 <p>This is an <em>alpha release</em> of something I just hacked together, and it is really tuned to my own interests and my work on JSTOR's Data for Research data. Here are some more polished general-use model-browsing projects:</p>
 
-<p><a href="http://glimmer.rstudio.com/cpsievert/LDAviz/">LDAviz</a>, by Carson Sievert, uses the Shiny R server to support visualizations of both individual topics and the interrelations among topics.</p>
+<p><a href="http://glimmer.rstudio.com/cpsievert/LDAviz/">LDAviz</a>, by Carson Sievert, uses the Shiny R server to support statistically-sophisticated visualizations of both individual topics and the interrelations among topics.</p>
 
 <p><a href="http://www.networkedcorpus.com/">The Networked Corpus</a> is a beautiful way to visualize a topic model of a full-text corpus. </p>
 
