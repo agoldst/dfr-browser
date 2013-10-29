@@ -39,13 +39,13 @@ keys <- "my_model/keys.csv" # weighted keys frame filename
 prepare_data(dfr_dirs,"data",doc_topics,keys)
 ```
 
-This will generate the remaining needed files in their default locations, under the directory `data`. 
+This will generate the remaining needed files in their default locations, under the directory `data`. Note in particular that it looks for a `citations.CSV` file in each of the `dfr_dirs` and produces a single merged metadata file for the browser (`meta.csv.zip`; see "More detail" immediately below). This is for cases in which you have downloaded your DfR data in several chunks.
 
-Alternatively, you can invoke the R script through the provided [Makefile](https://github.com/agoldst/dfr-browser/blob/master/Makefile) using `make prepare`. Adjust the file paths passed to the script using the Makefile variables `out_dir`, and `meta_dirs`. 
+Alternatively, you can invoke the R script through the provided [Makefile](https://github.com/agoldst/dfr-browser/blob/master/Makefile) using `make prepare`. Adjust the file paths passed to the script using the Makefile variables `out_dir` and `meta_dirs`. 
 
 #### More detail on the expected files and their formats
 
-The browser asks for data files using the names stored in the properties of the `dfb.files` object. Modify `dfb.js` to target filenames other than the default. If the filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. 
+The browser asks for data files using the names stored in the properties of the `dfb.files` object. Modify [dfb.js](https://github.com/agoldst/dfr-browser/blob/master/js/dfb.js) if you wish to target filenames other than the default. If a given filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. 
 
 - `dfb.files.info`: (*default*: `data/info.json`): a JSON object with `title`, `meta_info`, and optionally `VIS` members. `meta_info` is used to fill in the "About" page.
 - `dfb.files.dt` (*default*: `data/dt.json.zip`): the document-topic matrix, but in sparse compressed-column format (from R's [`CsparseMatrix` class](http://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/CsparseMatrix-class.html). The object properties are three arrays : `i`, `p`, and `x`.
@@ -76,16 +76,16 @@ In the model-info file (`data/info.json` by default), you can also override some
 
 ### Launch the browser
 
-The needed files are `index.html`, the data files (in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
+The necessary files are `index.html`, the data files (looked for in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
 
-To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. I use the python3 `http.server` module, which I have wrapped in a one-line script, so you that you can simply type:
+To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. I use the python3 `http.server` module, which I have wrapped in a one-line script, so that you can simply type:
 
 ````
 cd dfr-browser
 bin/server
 ````
 
-This makes the browser available at `http://localhost:8888`. If you don't have python3, you could use python 2:
+This makes the browser available at `http://localhost:8888`. If you don't have python 3, you could use python 2:
 
 ````
 python -m SimpleHTTPServer 8888
@@ -93,7 +93,7 @@ python -m SimpleHTTPServer 8888
 
 ## A downloadable version
 
-If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`. This uses non-zipped individual data files, which you can generate using `prepare_data(...,no_zip=T)`. (To wrap up zipped data would require using data URLs, which I didn't bother to set up.)
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided [Makefile](https://github.com/agoldst/dfr-browser/blob/master/Makefile) shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`. This uses non-zipped individual data files, which you can generate using `prepare_data(...,no_zip=T)`. (To wrap up zipped data would require using data URLs, which I didn't bother to set up.)
 
 To produce an all-in-one archive that could be downloaded by others and run on *their* systems without web servers, use `make model.zip`.
 
@@ -109,4 +109,9 @@ The data-prep is tuned to MALLET and my MALLET scripts, but again altering the s
 
 The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds all the data in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
 
-For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model in a proper database. I haven't implemented this, but because access to the model is abstracted by the methods of the model object (see [js/model.js](https://github.com/agoldst/dfr-browser/blob/master/js/model.js), adding it should not be difficult. 
+For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model in a proper database. I haven't implemented this, but because access to the model is abstracted by the methods of the model object (see [js/model.js](https://github.com/agoldst/dfr-browser/blob/master/js/model.js)), adding it should not be difficult. 
+
+## Libraries
+
+This browser uses the code of the following open-source projects by others, under the `fonts`, `css`, and `lib` directories: [d3](http://d3js.org) by Mike Bostock; [bootstrap](http://getbootstrap.com/) by Twitter, Inc.; [JQuery](http://jquery.com) by the JQuery Foundation; and [JSZip](http://stuk.github.io/jszip/) by Stuart Knightley.
+
