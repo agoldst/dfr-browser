@@ -1,19 +1,22 @@
 # A simple topic-model browser
 
-These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of JSTOR journal articles in a web browser. For more information and usage notes, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser). 
+These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of JSTOR journal articles in a web browser, relying entirely on static html and javascript files. For more information, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser) and the [working demo](http://agoldst.github.io/dfr-browser/demo), a browser for a 64-topic model of the journal *PMLA*.
 
 This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). This project skews to my needs as a literary scholar and to my amateurishness as a programmer. No aspect of this code has been systematically tested. Sorry.
 
+The rest of this file explains how to set up the browser to use with your own topic models.
 
-## Generating the datafiles
+## Generating the model
 
-It assumes output files in the formats saved by my topic-modeling scripts in [dfr-analysis](http://github.com/agoldst/dfr-analysis). To set up, you will need files with "weighted keys" (i.e. most frequent words in topics) and the document-topic matrix with an additional column of document id's.
+### Gather source data: the model and metadata
 
-The filenames for the needed data files are stored in the `dfb.files` object (`js/dfb.js`). By default, the browser script asks for the files it needs under a folder named `data/`. More detail about the entries in `dfb.files` under *More detail about those files* below.
+You will need the following source data:
 
-[dfr-analysis](http://github.com/agoldst/dfr-analysis) supplies functions (in `topics_rmallet.R`) to create data frames which you can save as `keys.csv` and `doc_topics.csv`.
-
-The model-info file, by default `data/info.json`, must be written by hand. You need only:
+1. A document-topic matrix, in CSV format, with an additional column of document id's that can be matched against JSTOR doc id's. Should also have a header row. 
+2. A file of the *n* top-weighted words in each topic, in CSV format, with a header row, with rows in the following format: *topic*,*alpha*,*word*,*weight*. (Yes, redundantly repeat the topic alpha for each row for a given topic.)
+3. Document metadata (in the format of the files called `citations.CSV` in DfR results).
+4. *Optional*: to display the "scaled" overview of topics, you will also need a CSV file, without a header, with two columns giving x and y coordinates for the topics, in topic order. 
+5. Information about the model itself, in JSON format, which you must write by hand. Here is a minimal example file:
 
 ```json
 {
@@ -22,73 +25,84 @@ The model-info file, by default `data/info.json`, must be written by hand. You n
 }
 ```
 
-You can also override some aspects of the visualization by adding a `VIS` object here with properties whose names correspond to those of the `VIS` object in the program (in `index.js:setup_vis()`). For example, to generate plots of topics over time on the fly instead of looking for pregenerated files, try:
+One way to generate the doc-topic, weighted keys, and scaled topic coordinates files is to use the `output_model()` model function in the [topics_rmallet.R](https://github.com/agoldst/dfr-analysis/blob/master/topics_rmallet.R) file in my [dfr-analysis](http://github.com/agoldst/dfr-analysis) collection of scripts.
 
-```json
-{
-  "title": "Model title",
-  "meta_info": "<p>About the model...<p>",
-  "VIS": {
-    "prefab_plots": false
-  }
-}
-```
+### Create the dfr-browser datafiles
 
-For the remaining files, I provide an R script to transform the model outputs into the formats needed by the javascript code.
+To convert these source data files into the formats dfr-browser needs, use the provided [prepare_data.R](https://github.com/agoldst/dfr-browser/blob/master/prepare_data.R) script. You can invoke the script within R as follows:
 
 ```r
 source("prepare_data.R")
-dfr_dirs <- ...# directories containing citations.CSV files
-doc_topics <- ...# doc topics filename
-keys <- ...# weighted keys frame filename
+dfr_dirs <- c("journal1data","journal2data") # directories containing citations.CSV files
+doc_topics <- "my_model/doc_topics.csv" # doc topics filename
+keys <- "my_model/keys.csv" # weighted keys frame filename
 prepare_data(dfr_dirs,"data",doc_topics,keys)
 ```
 
-One optional file, `topic_scaled.csv`, must also be precalculated separately (more detail below).
+This will generate the remaining needed files in their default locations, under the directory `data`. 
 
-## Using the browser
+Alternatively, you can invoke the R script through the provided [Makefile](https://github.com/agoldst/dfr-browser/blob/master/Makefile) using `make prepare`. Adjust the file paths passed to the script using the Makefile variables `out_dir`, and `meta_dirs`. 
 
-1. Once the files are in place in a `data/` subdirectory, launch a web server in the `dfr-browser/` directory; `bin/server` is just a call to the python 3 `http.server` module serving at `localhost:8888`, but you could use python 2's `python -m SimpleHTTPServer 8888` or any other. The point of the server is simply to allow the javascript to ask for the data files from your file system (via `d3.text`).
+#### More detail on the expected files and their formats
 
-2. Navigate to the home page, `http://localhost:8888`, in your favorite web browser. You can also go directly to one of the other views of the model using URLs:
-
-- `/#/model/<grid|scaled|list>` for the different topic overviews
-- `/#/topic/<k>` where *<k>* is the 1-based topic number
-- `/#/word/<word>` where *<word>* is a topic key word
-- `/#/doc/<k>` where *<k>* is the internal document id (not so handy)
-- `/#/bib` for the bibliography view
-
-These views are explained more fully in the [main project page](http://agoldst.github.io/dfr-browser).
-
-### More detail on those files
-
-The browser asks for data files using the names stored in the properties of the `dfb.files` object. Modify `dfb.js` to target filenames other than the default. If the filename ends in `.zip`, the browser uses [JSZip]() to unzip the file.
+The browser asks for data files using the names stored in the properties of the `dfb.files` object. Modify `dfb.js` to target filenames other than the default. If the filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. 
 
 - `dfb.files.info`: (*default*: `data/info.json`): a JSON object with `title`, `meta_info`, and optionally `VIS` members. `meta_info` is used to fill in the "About" page.
 - `dfb.files.dt` (*default*: `data/dt.json.zip`): the document-topic matrix, but in sparse compressed-column format (from R's [`CsparseMatrix` class](http://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/CsparseMatrix-class.html). The object properties are three arrays : `i`, `p`, and `x`.
 - `dfb.files.tw` (*default*: `data/tw.json`): a JSON object with `alpha`, a vector of alpha values for each topic, and `tw`, a vector of `{ words, weights }` objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).
 - `dfb.files.meta` (*default*: `meta.csv.zip`): headerless CSV of document metadata, with rows in the same order as the document-topic matrix, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
 - `dfb.files.doc_len` (*default*: `doc_len.json.zip`): a JSON object holding an array `doc_len` of document lengths. Used to skip the task of summing the rows of the doc-topic matrix---which might be supererogatory, but oh well.
-- `dfb.files.topic_scaled` (*default*: `data/topic_scaled.csv`): x and y coordinates for the topics in some space. This is optional; if it is available, the browser can draw the "scaled" overview plot. In `dfr-analysis` there is a function for computing Jensen-Shannon divergences among the topics in a model, which can then be turned into 2-dimensional coordinates using `cmdscale()`. 
+- `dfb.files.topic_scaled` (*default*: `data/topic_scaled.csv`): x and y coordinates for the topics in some space. This is optional; if it is available, the browser can draw the "scaled" overview plot.
 
+### Tune the visualization parameters
 
-# What it does
+In the model-info file (`data/info.json` by default), you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [the start of index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js) for the fields of the `VIS` object. Some possibilities of note:
 
-Currently, this provides very minimal views of topics, documents, and word types as specified in the model. The goal is to focus attention on the hierarchical layers of the model, so that you attend not only to topics but documents and individual words as well.
+`VIS.prefab_plots`: if true, plots for the topics are not drawn on the fly but requested in the format `topic_plot/020.png` (this format is, alas, hard-coded in the `topic_view()` function in [index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js))
 
-This provides an overview visualization of the topics as Little Circles With Words in Them (TM) or as a simple list; lists of top words and documents in each topic, plus the yearly topic proportions; lists of "top" topics in documents; and lists of "top" topics for words. There is also a "bibliography" view of all your documents, ordered by year of publication (or alphabetically, if you choose).
+`VIS.overview_words`: how many words to use as the "titles" for topics in the List view, and the topics menu
 
+`VIS.model_view`: specify as
 
-The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
+```json
+"model_view": {
+  "aspect": 1.5 # 3/2 aspect
+  "words": 6 # how many words in Little Circles?
+  "size_range": [8, 10] # size, in points, of topic words in Little Circles
+}
+```
+
+### Launch the browser
+
+The needed files are `index.html`, the data files (in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
+
+To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. I use the python3 `http.server` module, which I have wrapped in a one-line script, so you that you can simply type:
+
+````
+cd dfr-browser
+bin/server
+````
+
+This makes the browser available at `http://localhost:8888`. If you don't have python3, you could use python 2:
+
+````
+python -m SimpleHTTPServer 8888
+````
+
+## A downloadable version
+
+If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`. This uses non-zipped individual data files, which you can generate using `prepare_data(...,no_zip=T)`. (To wrap up zipped data would require using data URLs, which I didn't bother to set up.)
+
+To produce an all-in-one archive that could be downloaded by others and run on *their* systems without web servers, use `make model.zip`.
+
+## Adapting to other kinds of documents
+
+The specialization to JSTOR articles is limited to the bibliography sort, the external document links, and the expectations about the metadata format.  Adapting this code to other kinds of documents would require altering only these aspects of the browser. Most of this behavior is fairly-well encapsulated in the corresponding view functions and in the model object.
+
+The data-prep is tuned to MALLET and my MALLET scripts, but again altering the setup for other modeling tools or other kinds of latent topic models should not be arduous.
+
+## Performance
+
+The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds all the data in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
 
 For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model in a proper database. I haven't implemented this, but because access to the model abstracted by the methods of the model object (see `js/model.js`), adding it would not be difficult. 
-
-## The downloadable version
-
-If a local web server is not available, you can generate a version of this browser with the data embedded in the home page, so that it can be run completely off the filesystem. This is done with the `insert_model.py` script. The provided `Makefile` shows the usage, so you can just do `make model.html` to embed the necessary parts of `data/` into `index.html`. This requires non-zipped individual data files, which you can generate using `prepare_data(...,no_zip=T)`.
-
-To produce an all-in-one archive for sharing, use `make model.zip`.
-
-## Adapting the browser
-
-The specialization to JSTOR articles is limited to the bibliography sort, the external dcoument links, and the expectations about the metadata format. Adapting this to other kinds of topic models of other kinds of documents would require altering only these dimensions of the browser.
