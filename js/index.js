@@ -40,7 +40,7 @@ var VIS = {
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format("%B %Y"),
     uri_proxy: "",
-    prefab_plots: true // use SVG or look for image files for plots?
+    prefab_plots: false // use SVG or look for image files for plots?
 };
 
 /* declaration of functions */
