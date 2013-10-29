@@ -72,7 +72,6 @@ Currently, this provides very minimal views of topics, documents, and word types
 
 This provides an overview visualization of the topics as Little Circles With Words in Them (TM) or as a simple list; lists of top words and documents in each topic, plus the yearly topic proportions; lists of "top" topics in documents; and lists of "top" topics for words. There is also a "bibliography" view of all your documents, ordered by year of publication (or alphabetically, if you choose).
 
-Little Circles With Words in Them (TM) (not really TM): the overview visualizations show each topic as a circle with words in them, placed either in arbitrary order in a regular grid or, if scaled coordinates are supplied with `topic_scaled.csv`, in the two-dimensional space of those coordinates. Originally I wanted the circles to be word clouds, but the otherwise awesome d3-cloud is really not meant to squeeze few words into a very small space (it's much better at a bunch of words in a larger space). So I have opted instead for a simple column of words, with their sizes decreasing from the center. No effort is made to respect the horizontal bounds of the circle.
 
 The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds the document-topic matrix in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
 
