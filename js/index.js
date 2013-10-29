@@ -1,4 +1,4 @@
-/*global d3, queue, model */
+/*global d3, model */
 
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
