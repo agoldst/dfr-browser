@@ -62,15 +62,17 @@ In the model-info file (`data/info.json` by default), you can also override some
 
 `VIS.overview_words`: how many words to use as the "titles" for topics in the List view, and the topics menu
 
-`VIS.model_view`: specify as
+`VIS.model_view`: specify the overview's aspect ratio, number of words in the Little Circles, and type-size range in points:
 
 ```json
 "model_view": {
-  "aspect": 1.5 # 3/2 aspect
-  "words": 6 # how many words in Little Circles?
-  "size_range": [8, 10] # size, in points, of topic words in Little Circles
+  "aspect": 1.3333,
+  "words": 6,
+  "size_range": [8, 10]
 }
 ```
+
+*Known issue*: unfortunately, you can't replace a deeply-nested property using this mechanism, only a property of the `VIS` object. That's why you have to specify all three components of `VIS.model_view` if you specify any. I'll fix this, eventually.
 
 ### Launch the browser
 
@@ -95,6 +97,8 @@ If a local web server is not available, you can generate a version of this brows
 
 To produce an all-in-one archive that could be downloaded by others and run on *their* systems without web servers, use `make model.zip`.
 
+Note that these standalone files may not work if you have altered the default filenames in [js/dfb_nozip.js](https://github.com/agoldst/dfr-browser/blob/master/js/dfb_nozip.js).
+
 ## Adapting to other kinds of documents
 
 The specialization to JSTOR articles is limited to the bibliography sort, the external document links, and the expectations about the metadata format.  Adapting this code to other kinds of documents would require altering only these aspects of the browser. Most of this behavior is fairly-well encapsulated in the corresponding view functions and in the model object.
@@ -105,4 +109,4 @@ The data-prep is tuned to MALLET and my MALLET scripts, but again altering the s
 
 The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds all the data in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
 
-For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model in a proper database. I haven't implemented this, but because access to the model abstracted by the methods of the model object (see `js/model.js`), adding it would not be difficult. 
+For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model in a proper database. I haven't implemented this, but because access to the model is abstracted by the methods of the model object (see [js/model.js](https://github.com/agoldst/dfr-browser/blob/master/js/model.js), adding it should not be difficult. 
