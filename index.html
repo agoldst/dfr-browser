@@ -89,7 +89,9 @@
 
 <h3>Permalinks</h3>
 
-<p>Thanks to <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">this post by Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser&rsquo;s URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo&rsquo;s view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>. </p>
+<p>Thanks to <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">this post by Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser&rsquo;s URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo&rsquo;s view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>.</p>
+
+<p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>view_refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/js/index.js">main source file, index.js</a>. This function is set as the <code>hashchange</code> handler.</p>
 
 <h2>Browsing your own models</h2>
 
