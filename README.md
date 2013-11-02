@@ -54,6 +54,10 @@ The browser asks for data files using the names stored in the properties of the 
 - `dfb.files.doc_len` (*default*: `doc_len.json.zip`): a JSON object holding an array `doc_len` of document lengths. Used to skip the task of summing the rows of the doc-topic matrix---which might be supererogatory, but oh well.
 - `dfb.files.topic_scaled` (*default*: `data/topic_scaled.csv`): x and y coordinates for the topics in some space. This is optional; if it is available, the browser can draw the "scaled" overview plot.
 
+#### Sample datafiles
+
+The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*PMLA*, 64 topics) reside in a directory on the [gh-pages branch of this repository](https://github.com/agoldst/dfr-browser/tree/gh-pages/demo/data). They are generated, via the process explained above, from the [demonstration model for my dfr-analysis scripts](https://github.com/agoldst/dfr-analysis/tree/master/demo). 
+
 ### Tune the visualization parameters
 
 In the model-info file (`data/info.json` by default), you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [the start of index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js) for the fields of the `VIS` object. Some possibilities of note:
