@@ -1226,17 +1226,8 @@ setup_vis = function (m) {
     var key, tab_click;
 
     // load any preferences stashed in model info
-    // TODO if info.VIS.whatever is an object, it will completely replace
-    // VIS.whatever; union would be better
 
-    if (m.info().VIS) {
-        for (key in m.info().VIS) {
-            if (m.info().VIS.hasOwnProperty(key)
-                    && typeof(m.info().VIS[key] !== 'function')) {
-                VIS[key] = m.info().VIS[key];
-            }
-        }
-    }
+    VIS = utils.deep_replace(VIS, m.info().VIS);
 
     // model title
     d3.selectAll(".model_title")
