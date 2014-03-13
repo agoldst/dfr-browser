@@ -513,7 +513,7 @@ plot_topic_yearly = function(m, t) {
         .call(d3.svg.axis()
             .scale(scale_x)
             .orient("bottom")
-            .ticks(d3.time.years,VIS.topic_view.ticks));
+            .ticks(d3.time.years, VIS.topic_view.ticks));
 
     // y axis
     svg.append("g")
@@ -552,6 +552,8 @@ plot_topic_yearly = function(m, t) {
         .attr("height", function (d) {
             return VIS.topic_view.h - scale_y(d[1]);
         });
+
+    // TODO make bars clickable in order to condition on years
 };
 
 
@@ -624,6 +626,11 @@ word_view = function (m, w) {
         .attr("href", function (d) {
             return topic_link(d.topic);
         });
+
+        // TODO visualize rank by instead using bars in columns as in the left-hand-size 
+        // of the topic view. Column headers are links to topics, words are word links,
+        // highlight the word that's in focus. thicker column borders between topics. 
+        // Alternatively: termite-style grid.
 
     return true;
     // (later: time graph)
