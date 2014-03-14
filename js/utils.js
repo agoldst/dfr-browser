@@ -1,4 +1,5 @@
 var utils = (function () {
+    "use strict";
     var that = {},
         shorten,
         deep_replace;
@@ -15,7 +16,7 @@ var utils = (function () {
         if (xs.length <= n) {
             return xs;
         }
-        if (typeof(f) !== 'function') {
+        if (typeof f !== 'function') {
             accessor = function (a, i) { return a[i]; };
         }
 
@@ -38,18 +39,23 @@ var utils = (function () {
     // repl: the source of replacements
 
     deep_replace = function (x, repl) {
-        var result = x;
+        var prop, result = x;
         if (repl === undefined) {
             return x;
-        } else if (x === undefined) {
+        }
+
+        if (x === undefined) {
             return repl;
-        } else if (typeof(repl) === "object") {
+        }
+
+        if (typeof repl === "object") {
             for (prop in repl) {
-                if (repl.hasOwnProperty(prop) && typeof(repl[prop] !== 'function')) {
+                if (repl.hasOwnProperty(prop)
+                        && typeof repl[prop] !== 'function') {
                     result[prop] = deep_replace(x[prop], repl[prop]);
                 }
             }
-        } else if (typeof(repl) !== 'function') {
+        } else if (typeof repl !== 'function') {
             result = repl;
         }
         return result;
@@ -57,4 +63,4 @@ var utils = (function () {
     that.deep_replace = deep_replace;
 
     return that;
-})();
+}());
