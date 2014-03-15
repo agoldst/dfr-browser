@@ -1,4 +1,5 @@
-/*global d3, model */
+/*global d3, $, JSZip, model, utils, dfb, window, document */
+"use strict";
 
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
@@ -29,10 +30,10 @@ var VIS = {
         },
         bar_width: 300, // in days!
         ticks: 10 // applied to both x and y axes
-    }, 
+    },
     doc_view: {
         topics: 10,         // should be divisible by...
-        topics_increment: 2 
+        topics_increment: 2
     },
     float_format: function (x) {
         return d3.round(x, 3);
@@ -85,8 +86,11 @@ bib_sort = function (m, major, minor) {
             docs: []
         },
         docs,
-        major_key, minor_key,
-        cur_major, i, last,
+        major_key,
+        minor_key,
+        cur_major,
+        i,
+        last,
         partition = [];
 
     if (major === "decade") {
@@ -114,23 +118,22 @@ bib_sort = function (m, major, minor) {
         minor_key = function (i) {
             return +m.meta(i).date;
         };
-    } else if (minor == "journal") {
+    } else if (minor === "journal") {
         minor_key = function (i) {
             var doc = m.meta(i),
-                result = doc.journaltitle;
+                result_m = doc.journaltitle;
 
-            result += d3.format("05d")(doc.volume);
-            result += d3.format("05d")(doc.issue ? 0
+            result_m += d3.format("05d")(doc.volume);
+            result_m += d3.format("05d")(doc.issue ? 0
                     : doc.issue.replace(/\/.*$/, ""));
             if (doc.pagerange.search(/^\d/) !== -1) {
-                result += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
+                result_m += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
             } else {
-                result += doc.pagerange;
+                result_m += doc.pagerange;
             }
-            return result;
+            return result_m;
         };
-    }
-    else {
+    } else {
         // default to alphabetical by author then title
         minor_key = function (i) {
             return doc_author_string(m, i) + m.meta(i).title;
@@ -162,10 +165,9 @@ bib_sort = function (m, major, minor) {
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
         result.docs.push(docs.slice(last, partition[i])
-                .map(function (d) {
-                    return d.id;
-                })
-        );
+            .map(function (d) {
+                return d.id;
+            }));
         last = partition[i];
     }
 
@@ -192,10 +194,11 @@ topic_link = function (t) {
 
 doc_author_string = function (m, i) {
     var doc = m.meta(i),
-        lead, lead_trail,
+        lead,
+        lead_trail,
         result;
 
-    if(doc.authors.length > 0) {
+    if (doc.authors.length > 0) {
         lead = doc.authors[0].replace(/,/g, "").split(" ");
         // check for Jr., Sr., 2nd, etc.
         // Can mess up if last name is actually the letter I, X, or V.
@@ -204,9 +207,7 @@ doc_author_string = function (m, i) {
                 && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
             result = lead.pop().replace(/_$/, "");
             lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-            
-        }
-        else {
+        } else {
             result = lead_trail;
             lead_trail = "";
         }
@@ -234,13 +235,13 @@ doc_author_string = function (m, i) {
 };
 
 cite_doc = function (m, d) {
-    var doc, lead, result;
+    var doc, result;
 
     doc = m.meta(d);
     result = doc_author_string(m, d);
 
     // don't duplicate trailing period on middle initial etc.
-    result = result.replace(/\.?$/,". ");
+    result = result.replace(/\.?$/, ". ");
     result += '"' + doc.title + '."';
     result += " <em>" + doc.journaltitle + "</em> ";
     result += doc.volume;
@@ -269,6 +270,9 @@ doc_uri = function (m, d) {
 // utility for views
 // -----------------
 
+// Renders buttons for incrementing and decrementing a counter. The state
+// of the counter is stored privately by making it a variable within a closure
+// that is immediately evaluated.
 render_updown = function (selector, start, min, max, increment, render) {
     return (function () {
         var counter = start;
@@ -302,7 +306,7 @@ render_updown = function (selector, start, min, max, increment, render) {
             });
 
         render(counter);
-    })();
+    }());
 };
 
 // Principal view-generating functions
@@ -321,15 +325,17 @@ topic_view = function (m, t) {
     // TODO don't need anything but tw to show topic words h2 and div; so can 
     // have div-specific loading messages instead
 
+    // if the topic is missing or unspecified, show the help
     if (!isFinite(t) || t < 0 || t >= m.n()) {
         d3.select("#topic_view_help").classed("hidden", false);
         d3.select("#topic_view_main").classed("hidden", true);
         view_loading(false);
         return true;
-    } else {
-        d3.select("#topic_view_help").classed("hidden", true);
-        d3.select("#topic_view_main").classed("hidden", false);
     }
+
+    // otherwise, proceed to render the view
+    d3.select("#topic_view_help").classed("hidden", true);
+    d3.select("#topic_view_main").classed("hidden", false);
 
     // heading information
     // -------------------
@@ -344,25 +350,31 @@ topic_view = function (m, t) {
     // ------------------------------
 
     // with up/down buttons
-    render_updown("button#topic_words", VIS.topic_view.words,
-            VIS.topic_view.words_increment, m.n_top_words(),
-            VIS.topic_view.words_increment, function (n) {
-                topic_view_words(m, t, n);
-                // Ensure the initial count persists in another topic view
-                VIS.topic_view.words = n;
-            });
+    render_updown("button#topic_words",
+        VIS.topic_view.words,
+        VIS.topic_view.words_increment,
+        m.n_top_words(),
+        VIS.topic_view.words_increment,
+        function (n) {
+            topic_view_words(m, t, n);
+            // Ensure the initial count persists in another topic view
+            VIS.topic_view.words = n;
+        });
 
     // table of top articles
     // ---------------------
 
     // with up/down buttons
-    render_updown("button#topic_docs", VIS.topic_view.docs,
-            VIS.topic_view.docs_increment, m.n_docs(),
-            VIS.topic_view.docs_increment, function (n) {
-                topic_view_docs(m, t, n);
-                // Ensure the initial count persists in another topic view
-                VIS.topic_view.docs = n;
-            });
+    render_updown("button#topic_docs",
+        VIS.topic_view.docs,
+        VIS.topic_view.docs_increment,
+        m.n_docs(),
+        VIS.topic_view.docs_increment,
+        function (n) {
+            topic_view_docs(m, t, n);
+            // Ensure the initial count persists in another topic view
+            VIS.topic_view.docs = n;
+        });
 
     // Plot topic over time
     // --------------------
@@ -370,14 +382,13 @@ topic_view = function (m, t) {
     if (VIS.prefab_plots) {
         // Set image link
         img = d3.select("#topic_plot img");
-        if(img.empty()) {
-            img = d3.select("#topic_plot").append("img"); 
+        if (img.empty()) {
+            img = d3.select("#topic_plot").append("img");
         }
 
         img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
             .attr("title", "yearly proportion of topic " + (t + 1));
-    }
-    else {
+    } else {
         plot_topic_yearly(m, t);
     }
     view_loading(false);
@@ -467,10 +478,12 @@ topic_view_docs = function (m, t, n) {
         });
 };
 
-plot_topic_yearly = function(m, t) {
-    var year_seq, series = [],
-        w, scale_x, scale_y,
-        rects, axis_x, axis_y, 
+plot_topic_yearly = function (m, t) {
+    var series = [],
+        w,
+        scale_x,
+        scale_y,
+        rects,
         spec = VIS.topic_view,
         svg;
 
@@ -488,7 +501,7 @@ plot_topic_yearly = function(m, t) {
         .range([0, VIS.topic_view.w]);
         //.nice();
 
-    w = scale_x(d3.time.day.offset(series[0][0],VIS.topic_view.bar_width)) -
+    w = scale_x(d3.time.day.offset(series[0][0], VIS.topic_view.bar_width)) -
         scale_x(series[0][0]);
 
 
@@ -507,9 +520,9 @@ plot_topic_yearly = function(m, t) {
 
     // x axis
     svg.append("g")
-        .classed("axis",true)
-        .classed("x",true)
-        .attr("transform","translate(0," + VIS.topic_view.h + ")")
+        .classed("axis", true)
+        .classed("x", true)
+        .attr("transform", "translate(0," + VIS.topic_view.h + ")")
         .call(d3.svg.axis()
             .scale(scale_x)
             .orient("bottom")
@@ -517,8 +530,8 @@ plot_topic_yearly = function(m, t) {
 
     // y axis
     svg.append("g")
-        .classed("axis",true)
-        .classed("y",true)
+        .classed("axis", true)
+        .classed("y", true)
         .call(d3.svg.axis()
             .scale(scale_y)
             .orient("left")
@@ -527,7 +540,7 @@ plot_topic_yearly = function(m, t) {
             .tickFormat(VIS.percent_format)
             .ticks(VIS.topic_view.ticks));
 
-    svg.selectAll("g.axis.y g").filter(function(d) { return d; })
+    svg.selectAll("g.axis.y g").filter(function (d) { return d; })
         .classed("minor", true);
 
     // bars
@@ -541,14 +554,14 @@ plot_topic_yearly = function(m, t) {
 
     rects.enter().append("rect");
 
-    rects.classed("topic_proportion",true)
+    rects.classed("topic_proportion", true)
         .attr("x", function (d) {
             return scale_x(d[0]);
         })
         .attr("y", function (d) {
             return scale_y(d[1]);
         })
-        .attr("width",w)
+        .attr("width", w)
         .attr("height", function (d) {
             return VIS.topic_view.h - scale_y(d[1]);
         });
@@ -560,7 +573,8 @@ plot_topic_yearly = function(m, t) {
 word_view = function (m, w) {
     var view = d3.select("div#word_view"),
         word = w,
-        trs, topics;
+        trs,
+        topics;
 
     if (!m.tw()) {
         view_loading(true);
@@ -584,9 +598,9 @@ word_view = function (m, w) {
         view.select("#word_view_help").classed("hidden", false);
         if (VIS.last.word) {
             word = VIS.last.word; // fall back to last word if available
-            view.select("a#last_word") 
+            view.select("a#last_word")
                 .attr("href", "#/word/" + word)
-                .text(document.URL.replace(/#.*$/,"") + "#/word/" + word);
+                .text(document.URL.replace(/#.*$/, "") + "#/word/" + word);
             view.select("#last_word_help").classed("hidden", false);
         } else {
             view.select("#word_view_main").classed("hidden", true);
@@ -659,27 +673,31 @@ words_view = function (m) {
 doc_view = function (m, d) {
     var view = d3.select("div#doc_view"),
         doc = d,
-        topics, trs;
+        topics,
+        trs;
 
     if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         view_loading(true);
         return true;
     }
-    
+
     view_loading(false);
 
     if (!isFinite(doc) || doc < 0 || doc >= m.n_docs()) {
         d3.select("#doc_view_help").classed("hidden", false);
+
+        // if doc is un- or misspecified and there is no last doc, bail
         if (VIS.last.doc === undefined) {
             d3.select("#doc_view_main").classed("hidden", true);
             return true;
-        } else {
-            doc = VIS.last.doc; // fall back to last doc if none entered
-            view.select("a#last_doc") 
-                .attr("href", "#/doc/" + doc)
-                .text(document.URL.replace(/#.*$/,"") + "#/doc/" + doc);
-            view.select("#last_doc_help").classed("hidden", false);
         }
+
+        // otherwise, fall back to last doc if none entered
+        doc = VIS.last.doc;
+        view.select("a#last_doc")
+            .attr("href", "#/doc/" + doc)
+            .text(document.URL.replace(/#.*$/, "") + "#/doc/" + doc);
+        view.select("#last_doc_help").classed("hidden", false);
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
         VIS.last.doc = doc;
@@ -742,8 +760,12 @@ doc_view = function (m, d) {
 
 bib_view = function (m, maj, min) {
     var view = d3.select("div#bib_view"),
-        major = maj, minor = min,
-        ordering, nav_as, sections, panels, as;
+        major = maj,
+        minor = min,
+        ordering,
+        sections,
+        panels,
+        as;
 
     if (major === undefined) {
         major = VIS.bib_sort.major;
@@ -756,7 +778,7 @@ bib_view = function (m, maj, min) {
         if (VIS.last.bib.major === major && VIS.last.bib.minor === minor) {
             return true;
         }
-    } 
+    }
 
     if (!m.meta()) {
         view_loading(true);
@@ -781,7 +803,7 @@ bib_view = function (m, maj, min) {
                     sorting = this.value;
                 }
             });
-            window.location.hash = "/bib/" + sorting.replace(/_/,"/");
+            window.location.hash = "/bib/" + sorting.replace(/_/, "/");
         });
 
     // set up rest of toolbar
@@ -796,13 +818,13 @@ bib_view = function (m, maj, min) {
     d3.select("button#bib_sort_dir")
         .on("click", (function () {
             var descend = true;
-            return (function () {
+            return function () {
                 d3.selectAll("div#bib_main div.panel-default")
                     .sort(descend ? d3.descending : d3.ascending)
                     .order();
                 descend = !descend;
-            });
-        })()); // up/down state is preserved in the closure
+            };
+        }())); // up/down state is preserved in the closure
 
     ordering = bib_sort(m, major, minor);
 
@@ -818,7 +840,7 @@ bib_view = function (m, maj, min) {
         .classed("panel-default", true);
 
     panels.append("div")
-        .classed("panel-heading", true) 
+        .classed("panel-heading", true)
         .on("click", function (i) {
             $("#" + ordering.headings[i]).collapse("toggle");
         })
@@ -1142,7 +1164,7 @@ topic_coords_grid = function (n) {
 
     // Rectangular grid. TODO: closest possible packing?
     for (i = n_row - 1; i >= 0; i -= 1, remain -= 1) {
-        for (j = 0; j < n_col + (remain > 0) ? 1 : 0; j += 1) {
+        for (j = 0; j < n_col + ((remain > 0) ? 1 : 0); j += 1) {
             result.push([j + 0.5, i + 0.5]);
         }
     }
@@ -1230,10 +1252,7 @@ view_refresh = function (m, v) {
 
 // global visualization setup
 setup_vis = function (m) {
-    var key, tab_click;
-
     // load any preferences stashed in model info
-
     VIS = utils.deep_replace(VIS, m.info().VIS);
 
     // model title
@@ -1289,23 +1308,28 @@ var load_data = function (target, callback) {
                 document.getElementById(target_id).innerHTML);
     }
     
-    // otherwise, we have to fetch it, and possibly unzip it
+    // otherwise, we have to fetch it
+
+    // If the request is for a zip file, we'll unzip.
+    // N.B. client-side unzipping only needed if you don't have control
+    // over whether the server zips files
     if (target.search(/\.zip$/) > 0) {
         return d3.xhr(target)
             .responseType("arraybuffer")
             .get(function (error, response) {
                 var zip, text;
-                if (response.status == 200) {
+                if (response.status === 200) {
                     zip = new JSZip(response.response);
                     text = zip.file(target_base.replace(/\.zip$/, "")).asText();
                 }
                 return callback(error, text);
             });
-    } else {
-        return d3.text(target, function (error, s) {
-            return callback(error, s);
-        });
     }
+    
+    // Otherwise, no unzipping
+    return d3.text(target, function (error, s) {
+        return callback(error, s);
+    });
 };
 
 
@@ -1332,7 +1356,7 @@ main = function () {
             view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.tw, function (error, tw_s) {
-            if (typeof(tw_s) === 'string') {
+            if (typeof tw_s === 'string') {
                 m.set_tw(tw_s);
 
                 // Set up topic menu: remove loading message
@@ -1356,7 +1380,7 @@ main = function () {
             view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
-            if (typeof(s) === 'string') {
+            if (typeof s  === 'string') {
                 m.set_topic_scaled(s);
             } else {
                 // if missing, just gray out the button for the view
