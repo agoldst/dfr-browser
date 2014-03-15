@@ -46,7 +46,7 @@ model.zip: model.html
 	zip $@ model.html $(model_js) css/* $(model_lib) $(included_plots)
 
 lint:
-	jsl -conf jsl.conf
+	jslint --regexp --todo --white js/*
 
 prepare:
 	R -e 'source("prepare_data.R"); prepare_data($(meta_dirs_vector),"$(out_dir)",no_zip=$(no_zip))'
