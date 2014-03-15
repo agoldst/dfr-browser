@@ -1342,6 +1342,7 @@ main = function () {
         var m = model({ info: JSON.parse(info_s) });
         setup_vis(m);
 
+        // TODO no need to globally expose the model, but handy for debugging
         // __DEV_ONLY__
         VIS.m = m;
         // __END_DEV_ONLY__
@@ -1380,7 +1381,7 @@ main = function () {
             view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
-            if (typeof s  === 'string') {
+            if (typeof s === 'string') {
                 m.set_topic_scaled(s);
             } else {
                 // if missing, just gray out the button for the view
