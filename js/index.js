@@ -40,8 +40,7 @@ var VIS = {
     },
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format("%B %Y"),
-    uri_proxy: "",
-    prefab_plots: false // use SVG or look for image files for plots?
+    uri_proxy: ""
 };
 
 /* declaration of functions */
@@ -313,8 +312,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 // -----------------------------------
 
 topic_view = function (m, t) {
-    var view = d3.select("div#topic_view"),
-        img;
+    var view = d3.select("div#topic_view");
 
     if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
         // not ready yet; show loading message
@@ -378,19 +376,11 @@ topic_view = function (m, t) {
 
     // Plot topic over time
     // --------------------
+    //
+    // Skip this if year specified
+    // FIXME year check goes elsewhere
 
-    if (VIS.prefab_plots) {
-        // Set image link
-        img = d3.select("#topic_plot img");
-        if (img.empty()) {
-            img = d3.select("#topic_plot").append("img");
-        }
-
-        img.attr("src", "topic_plot/" + d3.format("03d")(t + 1) + ".png")
-            .attr("title", "yearly proportion of topic " + (t + 1));
-    } else {
-        plot_topic_yearly(m, t);
-    }
+    plot_topic_yearly(m, t);
     view_loading(false);
 
     return true;
@@ -441,12 +431,29 @@ add_weight_cells = function (sel, wt, max) {
                 });
 };
 
-topic_view_docs = function (m, t, n) {
-    var trs_d;
+topic_view_docs = function (m, t, n, year) {
+    var trs_d, docs, header_text;
+
+    // FIXME transition the table items
+
+    if(isFinite(year)) {
+        // TODO cache this
+        docs = m.topic_docs(t, m.n_docs()).filter(function (d) {
+            return m.doc_year(d.doc) === +year;
+        });
+        docs = utils.shorten(docs, n);
+        header_text = "Top documents in " + year;
+    } else {
+        docs = m.topic_docs(t, n);
+        header_text = "Top documents";
+    }
+
+    d3.select("h3#topic_docs_header")
+        .text(header_text);
 
     trs_d = d3.select("table#topic_docs tbody")
         .selectAll("tr")
-        .data(m.topic_docs(t, n));
+        .data(docs);
 
     trs_d.enter().append("tr");
     trs_d.exit().remove();
@@ -484,6 +491,7 @@ plot_topic_yearly = function (m, t) {
         scale_x,
         scale_y,
         rects,
+        tooltip,
         spec = VIS.topic_view,
         svg;
 
@@ -566,7 +574,70 @@ plot_topic_yearly = function (m, t) {
             return VIS.topic_view.h - scale_y(d[1]);
         });
 
-    // TODO make bars clickable in order to condition on years
+    // interactivity for the bars
+    //
+    // first, construct a tooltip object we'll update on mouse events
+
+    tooltip = {
+        div: d3.select("div#topic_year_hover"),
+        container: d3.select("div#topic_plot").node(),
+        selected: false
+    };
+    tooltip.update_pos = function () {
+        var mouse_pos = d3.mouse(this.container);
+        this.div.style({
+                left: (mouse_pos[0] + 30) + 'px',
+                top: mouse_pos[1] + 'px',
+                position: "absolute"
+            });
+    };
+    tooltip.text = function (date) {
+        if (this.selected) {
+            this.div.select("p")
+                .text("Click for topic top documents in all years");
+        } else {
+            this.div.select("p")
+                .text("Click for topic top documents in " + date.getFullYear());
+        }
+    };
+    tooltip.show = function () {
+        this.div.classed("hidden", false);
+    };
+    tooltip.hide = function () {
+        this.div.classed("hidden", true);
+    };
+
+    // now set mouse event handlers
+
+    rects.on("mouseover", function (d) {
+            tooltip.selected = d3.select(this).classed("selected_year");
+            tooltip.text(d[0]);
+            tooltip.update_pos();
+            tooltip.show();
+        })
+        .on("mousemove", function (d) {
+            tooltip.update_pos();
+        })
+        .on("mouseout", function (d) {
+            tooltip.hide();
+        })
+        .on("click", function (d) {
+            if(d3.select(this).classed("selected_year")) {
+                d3.select(this).classed("selected_year", false);
+                tooltip.selected = false;
+                tooltip.text(d[0]);
+                topic_view_docs(m, t, VIS.topic_view.docs);
+            } else {
+                // TODO selection of multiple years
+                d3.selectAll(".selected_year")
+                    .classed("selected_year", false);
+                d3.select(this).classed("selected_year", true);
+                tooltip.selected = true;
+                tooltip.text(d[0]);
+                topic_view_docs(m, t, VIS.topic_view.docs, d[0].getFullYear());
+            }
+        });
+
 };
 
 
@@ -1058,13 +1129,18 @@ model_view_plot = function(m, coords) {
                     gs.sort(function (a, b) {
                             if (a.t === b.t) {
                                 return 0;
-                            } else if (a.t === t) {
-                                return 1;
-                            } else if (b.t === t) {
-                                return -1;
-                            } else {
-                                return d3.ascending(a.t, b.t);
                             }
+
+                            if (a.t === t) {
+                                return 1;
+                            }
+
+                            if (b.t === t) {
+                                return -1;
+                            }
+
+                            // otherwise
+                            return d3.ascending(a.t, b.t);
                         })
                         .order();
                     d3.select("p#topic_hover")

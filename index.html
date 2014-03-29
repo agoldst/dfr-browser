@@ -122,8 +122,11 @@
         <div class="col-md-9">
           <div id="topic_plot">
             <h3 class="h-small">Yearly proportion of words in topic</h3>
+            <div id="topic_year_hover" class="bar_tooltip hidden">
+              <p></p>
+            </div>
           </div>
-          <h3 class="h-small">Documents with largest proportion</h3>
+          <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
           <div class="btn-group btn-group-xs">
             <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
             <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>

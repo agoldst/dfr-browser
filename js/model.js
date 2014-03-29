@@ -26,6 +26,7 @@ model = function (spec) {
         topic_scaled,
         topic_yearly, // time-slicing
         doc_year,
+        valid_year,
         yearly_total,
         topic_docs, // most salient _ in _
         topic_words,
@@ -203,6 +204,17 @@ model = function (spec) {
         return my.doc_year[d];
     };
     that.doc_year = doc_year;
+
+    valid_year = function (y) {
+        var d = new Date(+y, 0, 1);
+
+        if (!my.meta) {
+            return undefined;
+        }
+
+        return d >= my.start_date && d <= my.end_date;
+    };
+    that.valid_year = valid_year;
 
     // aggregate vocabulary of all top words in tw
     vocab = function () {
@@ -479,12 +491,19 @@ model = function (spec) {
         s = meta_s.replace(/^\n*/, "")
             .replace(/\n*$/, "\n");
 
+        my.start_date = new Date(1000, 0, 1); // nothing pre-Gutenberg in JSTOR
+        my.end_date = new Date(); // today
+
         my.meta = d3.csv.parseRows(s, function (d, j) {
         // no header, but this is the column order:
         // 0  1     2      3            4      5     6       7      
         // id,title,author,journaltitle,volume,issue,pubdate,pagerange
             var a_str = d[2].trim(), // author
                 date = new Date(d[6].trim()); // pubdate
+
+                // set min and max date range
+                my.start_date = date < my.start_date ? date : my.start_date;
+                my.end_date = date > my.end_date ? date : my.end_date;
 
             return {
                 doi: d[0].trim(), // id
