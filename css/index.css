@@ -193,6 +193,17 @@ div.bar_tooltip {
     border: 1px solid #ddd;
 }
 
+/* topic_view docs */
+
+/* The weight bars for topic documents should have fixed width; otherwise,
+ * when we condition the list on year, the table columns will resize and
+ * the same percentage value will be represented by a different-sized bar.
+ */
+
+#topic_docs td.weight {
+    width: 25em;
+}
+
 /* word_view */
 
 ul#vocab_list {
