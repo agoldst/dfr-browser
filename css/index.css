@@ -135,20 +135,6 @@ text.topic_label {
     shape-rendering: crispEdges;
 }
 
-div.bar_tooltip {
-    background: black;
-    opacity: .95;
-    padding: 5px 5px;
-    border-radius: 2px;
-    text-align: center;
-    position: absolute;
-    z-index: 1001;
-    font-family: sans-serif;
-    font-size: 11px;
-    color: white;
-    border: 1px solid black;
-}
-
 /* horizontal grid lines */
 .axis .minor line {
     stroke: #ddd;
@@ -164,16 +150,40 @@ div.bar_tooltip {
     display: none;
 }
 
-rect.topic_proportion {
+.topic_proportion rect.display {
+    fill: black;
+}
+
+.topic_proportion rect.display.hover {
     fill: #ddd;
 }
 
-rect.topic_proportion:hover {
-    fill: black;
+.selected_year rect.display {
+    fill: #ddd;
 }
 
-rect.selected_year {
-    fill: black;
+.topic_proportion rect.interact {
+    fill: rgba(255,255,255,0);
+}
+
+.topic_proportion rect.interact:hover {
+    stroke: #ddd;
+}
+
+/* tooltip for selected topic-year */
+
+div.bar_tooltip {
+    background: #ddd;
+    opacity: .95;
+    padding: 5px;
+    border-radius: 2px;
+    text-align: center;
+    position: absolute;
+    z-index: 1001;
+    font-family: sans-serif;
+    font-size: 11px;
+    color: black;
+    border: 1px solid #ddd;
 }
 
 /* word_view */

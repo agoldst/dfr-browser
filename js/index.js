@@ -490,7 +490,8 @@ plot_topic_yearly = function (m, t) {
         w,
         scale_x,
         scale_y,
-        rects,
+        bars,
+        bars_click,
         tooltip,
         spec = VIS.topic_view,
         svg;
@@ -555,23 +556,47 @@ plot_topic_yearly = function (m, t) {
     // ----
 
     // clear
-    svg.selectAll("rect.topic_proportion").remove();
+    svg.selectAll("g.topic_proportion").remove();
 
-    rects = svg.selectAll("rect")
+    bars = svg.selectAll("g.topic_proportion")
         .data(series);
 
-    rects.enter().append("rect");
+    // for each year, we will have two rects in a g: one showing the yearly
+    // proportion and an invisible one for mouse interaction,
+    // following the example of http://bl.ocks.org/milroc/9842512
+    bars.enter().append("g")
+        .classed("topic_proportion", true);
 
-    rects.classed("topic_proportion", true)
-        .attr("x", function (d) {
-            return scale_x(d[0]);
-        })
+    // the g sets the x position of each pair of bars
+    bars.attr("transform", function (d) {
+        return "translate(" + scale_x(d[0]) + ",0)";
+    });
+
+    // add the visible bars
+    bars.append("rect")
+        .classed("display", true)
+        .attr("x", 0)
         .attr("y", function (d) {
             return scale_y(d[1]);
         })
         .attr("width", w)
         .attr("height", function (d) {
             return VIS.topic_view.h - scale_y(d[1]);
+        })
+        .on("mouseover", function (d) {
+        })
+        .on("mouseout", function (d) {
+            d3.select(this).classed("hover", false);
+        });
+
+    // add the clickable bars, which are as high as the plot
+    bars_click = bars.append("rect")
+        .classed("interact", true)
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", w)
+        .attr("height", function (d) {
+            return VIS.topic_view.h;
         });
 
     // interactivity for the bars
@@ -609,8 +634,10 @@ plot_topic_yearly = function (m, t) {
 
     // now set mouse event handlers
 
-    rects.on("mouseover", function (d) {
-            tooltip.selected = d3.select(this).classed("selected_year");
+    bars_click.on("mouseover", function (d) {
+            var g = d3.select(this.parentNode);
+            g.select(".display").classed("hover", true); // display bar
+            tooltip.selected = g.classed("selected_year");
             tooltip.text(d[0]);
             tooltip.update_pos();
             tooltip.show();
@@ -619,11 +646,13 @@ plot_topic_yearly = function (m, t) {
             tooltip.update_pos();
         })
         .on("mouseout", function (d) {
+            d3.select(this.parentNode).select(".display") // display bar
+                .classed("hover", false);
             tooltip.hide();
         })
         .on("click", function (d) {
-            if(d3.select(this).classed("selected_year")) {
-                d3.select(this).classed("selected_year", false);
+            if(d3.select(this.parentNode).classed("selected_year")) {
+                d3.select(this.parentNode).classed("selected_year", false);
                 tooltip.selected = false;
                 tooltip.text(d[0]);
                 topic_view_docs(m, t, VIS.topic_view.docs);
@@ -631,7 +660,7 @@ plot_topic_yearly = function (m, t) {
                 // TODO selection of multiple years
                 d3.selectAll(".selected_year")
                     .classed("selected_year", false);
-                d3.select(this).classed("selected_year", true);
+                d3.select(this.parentNode).classed("selected_year", true);
                 tooltip.selected = true;
                 tooltip.text(d[0]);
                 topic_view_docs(m, t, VIS.topic_view.docs, d[0].getFullYear());
