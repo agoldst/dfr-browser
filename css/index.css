@@ -152,14 +152,20 @@ text.topic_label {
 
 .topic_proportion rect.display {
     fill: black;
+    stroke: black;
+    pointer-events: none;
 }
 
 .topic_proportion rect.display.hover {
-    fill: #ddd;
+/*    fill: #ddd;
+    stroke: #ddd;*/
 }
 
 .selected_year rect.display {
-    fill: #ddd;
+    fill: rgb(51,153,255);
+    stroke: rgb(51,153,255);
+/*    fill: #ddd;
+    stroke: #ddd;*/
 }
 
 .topic_proportion rect.interact {
@@ -168,6 +174,7 @@ text.topic_label {
 
 .topic_proportion rect.interact:hover {
     stroke: #ddd;
+    fill: #ddd;
 }
 
 /* tooltip for selected topic-year */

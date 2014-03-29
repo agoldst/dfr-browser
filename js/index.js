@@ -28,7 +28,7 @@ var VIS = {
             top: 20,
             bottom: 20
         },
-        bar_width: 300, // in days!
+        bar_width: 90, // in days!
         ticks: 10 // applied to both x and y axes
     },
     doc_view: {
@@ -437,15 +437,31 @@ topic_view_docs = function (m, t, n, year) {
     // FIXME transition the table items
 
     if(isFinite(year)) {
-        // TODO cache this
+        // TODO cache this?
         docs = m.topic_docs(t, m.n_docs()).filter(function (d) {
             return m.doc_year(d.doc) === +year;
         });
         docs = utils.shorten(docs, n);
         header_text = "Top documents in " + year;
+
+        // the clear-selected-year button
+        d3.select("#topic_year_clear")
+            .on("click", function () {
+                // We know that the next time the tooltip on the bar
+                // chart is displayed, the tooltip object's "selected"
+                // property will be refreshed. Until then, the property
+                // is wrongly still true, but this won't affect anything
+                // the user sees.
+
+                d3.select(".selected_year").classed("selected_year", false);
+                topic_view_docs(m, t, n);
+            })
+            .classed("hidden", false);
     } else {
         docs = m.topic_docs(t, n);
         header_text = "Top documents";
+        d3.select("#topic_year_clear")
+            .classed("hidden", true);
     }
 
     d3.select("h3#topic_docs_header")
@@ -487,9 +503,10 @@ topic_view_docs = function (m, t, n, year) {
 
 plot_topic_yearly = function (m, t) {
     var series = [],
-        w,
         scale_x,
         scale_y,
+        w,
+        w_click,
         bars,
         bars_click,
         tooltip,
@@ -513,6 +530,8 @@ plot_topic_yearly = function (m, t) {
     w = scale_x(d3.time.day.offset(series[0][0], VIS.topic_view.bar_width)) -
         scale_x(series[0][0]);
 
+    w_click = scale_x(d3.time.year.offset(series[0][0], 1)) -
+        scale_x(series[0][0]);
 
     scale_y = d3.scale.linear()
         .domain([0, d3.max(series, function (d) {
@@ -572,10 +591,21 @@ plot_topic_yearly = function (m, t) {
         return "translate(" + scale_x(d[0]) + ",0)";
     });
 
+    // add the clickable bars, which are as high as the plot
+    // and a year wide
+    bars_click = bars.append("rect")
+        .classed("interact", true)
+        .attr("x", -w_click / 2.0)
+        .attr("y", 0)
+        .attr("width", w_click)
+        .attr("height", function (d) {
+            return VIS.topic_view.h;
+        });
+
     // add the visible bars
     bars.append("rect")
         .classed("display", true)
-        .attr("x", 0)
+        .attr("x", -w / 2.0)
         .attr("y", function (d) {
             return scale_y(d[1]);
         })
@@ -587,16 +617,6 @@ plot_topic_yearly = function (m, t) {
         })
         .on("mouseout", function (d) {
             d3.select(this).classed("hover", false);
-        });
-
-    // add the clickable bars, which are as high as the plot
-    bars_click = bars.append("rect")
-        .classed("interact", true)
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", w)
-        .attr("height", function (d) {
-            return VIS.topic_view.h;
         });
 
     // interactivity for the bars
