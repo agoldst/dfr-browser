@@ -205,14 +205,14 @@ model = function (spec) {
     };
     that.doc_year = doc_year;
 
-    valid_year = function (y) {
-        var d = new Date(+y, 0, 1);
-
-        if (!my.meta) {
+    valid_year = function (y, t) {
+        if (!my.meta || !my.dt || !isFinite(y)) {
             return undefined;
         }
 
-        return d >= my.start_date && d <= my.end_date;
+        // This looks egregious, but we're going to cache these results
+        // anyway.
+        return this.topic_yearly(t).has(y);
     };
     that.valid_year = valid_year;
 
