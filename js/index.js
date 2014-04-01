@@ -39,6 +39,12 @@ var VIS = {
     float_format: function (x) {
         return d3.round(x, 3);
     },
+    tooltip: {              // tooltip div parameters
+        offset: {
+            x: 10,          // px
+            y: 0
+        }
+    },
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format("%B %Y"),
     uri_proxy: ""
@@ -640,26 +646,29 @@ plot_topic_yearly = function (m, t, year) {
     // first, construct a tooltip object we'll update on mouse events
 
     tooltip = {
-        div: d3.select("div#topic_year_hover"),
-        container: d3.select("div#topic_plot").node(),
+        div: d3.select("div#tooltip"),
+        container: d3.select("body").node(),
         selected: false
     };
+    if (tooltip.div.empty()) {
+        tooltip.div = d3.select("body").append("div")
+            .attr("id", "tooltip")
+            .classed("bar_tooltip", true);
+        tooltip.div.append("p");
+    }
+
     tooltip.update_pos = function () {
         var mouse_pos = d3.mouse(this.container);
         this.div.style({
-                left: (mouse_pos[0] + 30) + 'px',
-                top: mouse_pos[1] + 'px',
+                left: (mouse_pos[0] + VIS.tooltip.offset.x) + 'px',
+                top: (mouse_pos[1] + VIS.tooltip.offset.y) + 'px',
                 position: "absolute"
             });
     };
-    tooltip.text = function (date) {
-        if (this.selected) {
-            this.div.select("p")
-                .text("Click for topic top documents in all years");
-        } else {
-            this.div.select("p")
-                .text("Click for topic top documents in " + date.getFullYear());
-        }
+    tooltip.text = function (d) {
+        // could condition on this.selected, but it gets too talky
+        this.div.select("p")
+            .text(d[0].getFullYear());
     };
     tooltip.show = function () {
         this.div.classed("hidden", false);
@@ -674,7 +683,7 @@ plot_topic_yearly = function (m, t, year) {
             var g = d3.select(this.parentNode);
             g.select(".display").classed("hover", true); // display bar
             tooltip.selected = g.classed("selected_year");
-            tooltip.text(d[0]);
+            tooltip.text(d);
             tooltip.update_pos();
             tooltip.show();
         })

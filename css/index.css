@@ -182,13 +182,16 @@ text.topic_label {
 div.bar_tooltip {
     background: #ddd;
     opacity: .95;
-    padding: 5px;
-    border-radius: 2px;
+    padding-left: 5px;
+    padding-right: 5px;
+    vertical-align: middle;
+    border-radius: 4px;
     text-align: center;
     position: absolute;
     z-index: 1001;
     font-family: sans-serif;
     font-size: 11px;
+    height: 18px;
     color: black;
     border: 1px solid #ddd;
 }
