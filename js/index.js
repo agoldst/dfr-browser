@@ -5,6 +5,7 @@
 var VIS = {
     ready: { }, // which viz already generated?
     last: { }, // which subviews last shown?
+    view_updating: false, // do we need to redraw the whole view?
     bib_sort: {
         major: "year",
         minor: "alpha"
@@ -311,7 +312,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (m, t) {
+topic_view = function (m, t, year) {
     var view = d3.select("div#topic_view");
 
     if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
@@ -331,6 +332,11 @@ topic_view = function (m, t) {
         return true;
     }
 
+    // if the year is invalid, we'll just ignore it
+    if (!m.valid_year(year, t)) {
+        year = undefined;
+    }
+
     // otherwise, proceed to render the view
     d3.select("#topic_view_help").classed("hidden", true);
     d3.select("#topic_view_main").classed("hidden", false);
@@ -347,17 +353,19 @@ topic_view = function (m, t) {
     // table of top words and weights
     // ------------------------------
 
-    // with up/down buttons
-    render_updown("button#topic_words",
-        VIS.topic_view.words,
-        VIS.topic_view.words_increment,
-        m.n_top_words(),
-        VIS.topic_view.words_increment,
-        function (n) {
-            topic_view_words(m, t, n);
-            // Ensure the initial count persists in another topic view
-            VIS.topic_view.words = n;
-        });
+    if (!VIS.view_updating) {
+        // with up/down buttons
+        render_updown("button#topic_words",
+            VIS.topic_view.words,
+            VIS.topic_view.words_increment,
+            m.n_top_words(),
+            VIS.topic_view.words_increment,
+            function (n) {
+                topic_view_words(m, t, n);
+                // Ensure the initial count persists in another topic view
+                VIS.topic_view.words = n;
+            });
+    }
 
     // table of top articles
     // ---------------------
@@ -369,7 +377,7 @@ topic_view = function (m, t) {
         m.n_docs(),
         VIS.topic_view.docs_increment,
         function (n) {
-            topic_view_docs(m, t, n);
+            topic_view_docs(m, t, n, year);
             // Ensure the initial count persists in another topic view
             VIS.topic_view.docs = n;
         });
@@ -377,14 +385,15 @@ topic_view = function (m, t) {
     // Plot topic over time
     // --------------------
     //
-    // Skip this if year specified
-    // FIXME year check goes elsewhere
 
-    plot_topic_yearly(m, t);
+    if (!VIS.view_updating) {
+        plot_topic_yearly(m, t, year);
+    }
+
+    VIS.topic_view.updating = false;
     view_loading(false);
 
     return true;
-    // TODO visualize word and doc weights as lengths
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
@@ -446,6 +455,7 @@ topic_view_docs = function (m, t, n, year) {
 
         // the clear-selected-year button
         d3.select("#topic_year_clear")
+            .classed("disabled", false)
             .on("click", function () {
                 // We know that the next time the tooltip on the bar
                 // chart is displayed, the tooltip object's "selected"
@@ -454,14 +464,15 @@ topic_view_docs = function (m, t, n, year) {
                 // the user sees.
 
                 d3.select(".selected_year").classed("selected_year", false);
-                topic_view_docs(m, t, n);
+                VIS.view_updating = true;
+                window.location.hash = "/topic/" + (t + 1);
             })
             .classed("hidden", false);
     } else {
         docs = m.topic_docs(t, n);
         header_text = "Top documents";
         d3.select("#topic_year_clear")
-            .classed("hidden", true);
+            .classed("disabled", true);
     }
 
     d3.select("h3#topic_docs_header")
@@ -501,7 +512,7 @@ topic_view_docs = function (m, t, n, year) {
         });
 };
 
-plot_topic_yearly = function (m, t) {
+plot_topic_yearly = function (m, t, year) {
     var series = [],
         scale_x,
         scale_y,
@@ -591,6 +602,11 @@ plot_topic_yearly = function (m, t) {
         return "translate(" + scale_x(d[0]) + ",0)";
     });
 
+    // set a selected year if any
+    bars.classed("selected_year", function (d) {
+        return String(d[0].getFullYear()) === year;
+    });
+
     // add the clickable bars, which are as high as the plot
     // and a year wide
     bars_click = bars.append("rect")
@@ -674,16 +690,19 @@ plot_topic_yearly = function (m, t) {
             if(d3.select(this.parentNode).classed("selected_year")) {
                 d3.select(this.parentNode).classed("selected_year", false);
                 tooltip.selected = false;
-                tooltip.text(d[0]);
-                topic_view_docs(m, t, VIS.topic_view.docs);
+                tooltip.text(d);
+                VIS.view_updating = true;
+                window.location.hash = "/topic/" + (t + 1);
             } else {
                 // TODO selection of multiple years
                 d3.selectAll(".selected_year")
                     .classed("selected_year", false);
                 d3.select(this.parentNode).classed("selected_year", true);
                 tooltip.selected = true;
-                tooltip.text(d[0]);
-                topic_view_docs(m, t, VIS.topic_view.docs, d[0].getFullYear());
+                tooltip.text(d);
+                VIS.view_updating = true;
+                window.location.hash = "/topic/" + (t + 1) + "/" +
+                    d[0].getFullYear();
             }
         });
 
@@ -1317,7 +1336,7 @@ view_refresh = function (m, v) {
     view_parsed = v.split("/");
     param = view_parsed[2];
 
-    if (VIS.cur_view !== undefined) {
+    if (VIS.cur_view !== undefined && !VIS.view_updating) {
         VIS.cur_view.classed("hidden", true);
     }
 
@@ -1337,7 +1356,7 @@ view_refresh = function (m, v) {
             break;
         case "topic":
             param = +param - 1;
-            success = topic_view(m, param);
+            success = topic_view(m, param, view_parsed[3]);
             break;
         case "word":
             success = word_view(m, param);
@@ -1363,6 +1382,8 @@ view_refresh = function (m, v) {
             model_view(m);
         } 
     }
+
+    VIS.view_updating = false;
 
     VIS.cur_view.classed("hidden", false);
 

@@ -122,17 +122,18 @@
         <div class="col-md-9">
           <div id="topic_plot">
             <h3 class="h-small">Yearly proportion of words in topic</h3>
-            <div id="topic_year_hover" class="bar_tooltip hidden">
-              <p></p>
+            <p class="pull-left help">
+              Click a bar to limit documents to that year
+            </p>
+            <div class="pull-right">
+              <button class="btn btn-default disabled" type="button"
+                id="topic_year_clear">clear selected year</button>
             </div>
           </div>
           <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
           <div class="btn-group btn-group-xs">
             <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
             <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
-            <button id="topic_year_clear" class="btn btn-default" type="button">
-              show all years
-            </button>
           </div>
           <table class="table table-condensed" id="topic_docs">
             <thead>
