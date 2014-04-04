@@ -33,6 +33,7 @@ model = function (spec) {
         topic_words,
         doc_topics,
         word_topics,
+        year_topics,
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
@@ -448,6 +449,29 @@ model = function (spec) {
         });
     };
     that.word_topics = word_topics;
+
+    year_topics = function (year, n) {
+        var t, series, result = [];
+
+        // *Could* calculate totals just for this year, but that still
+        // requires running over all the documents to find those that
+        // belong to the right year, and since we're comparing topics
+        // we're cursed to traverse all of the doc-topics matrix anyway.
+
+        for (t = 0; t < this.n(); t += 1) {
+            series = this.topic_yearly(t);
+            result.push({
+                topic: t,
+                weight: series.get(year) || 0 // TODO raw weighting or...?
+            });
+        }
+        result.sort(function (a, b) {
+            return d3.descending(a.weight, b.weight);
+        });
+
+        return utils.shorten(result, n);
+    };
+    that.year_topics = year_topics;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {
