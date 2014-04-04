@@ -119,6 +119,13 @@ text.topic_label {
     fill: rgba(51,153,255,0.9);
 }
 
+/* model_view_list */
+
+#model_view_list tr:hover {
+    background-color: #eee;
+    text-decoration: underline;
+}
+
 /* model_view_yearly */
 
 #year_topics {
@@ -225,8 +232,8 @@ g.arc path.highlight {
 }
 
 .topic_proportion rect.interact:hover {
-    stroke: #ddd;
-    fill: #ddd;
+    stroke: #eee;
+    fill: #eee;
 }
 
 /* tooltip for selected topic-year */

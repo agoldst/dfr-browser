@@ -20,15 +20,27 @@ var VIS = {
             words: 3,
             pie: 25        // pie diameter (pixels)
         },
-        list: { }
+        list: {
+            spark: {
+                w: 50,
+                h: 20,
+                m: {
+                    left: 2,
+                    right: 2,
+                    top: 2,
+                    bottom: 2
+                },
+                bar_width: 300
+            }
+        }
     },
     topic_view: {
         words: 50,
         words_increment: 5,
         docs: 20,           // should be divisible by docs_increment
         docs_increment: 5,
-        w: 640, // initial guess, adjusted to proportion of container width
-        h: 300, // fixed
+        w: 640, // fixed dimensions; this will need tweaking
+        h: 300,
         m: {
             left: 40,
             right: 20,
@@ -85,6 +97,7 @@ var bib_sort,   // bibliography sorting
     view_error,
     setup_vis,          // initialization
     plot_svg,
+    append_svg,
     read_files,
     main;               // main program
 
@@ -104,6 +117,7 @@ bib_sort = function (m, major, minor) {
         cur_major,
         i,
         last,
+        get_id = function (d) { return d.id; },
         partition = [];
 
     if (major === "decade") {
@@ -177,10 +191,7 @@ bib_sort = function (m, major, minor) {
     partition.push(docs.length); // make sure we get the tail 
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
-        result.docs.push(docs.slice(last, partition[i])
-            .map(function (d) {
-                return d.id;
-            }));
+        result.docs.push(docs.slice(last, partition[i]).map(get_id));
         last = partition[i];
     }
 
@@ -400,7 +411,13 @@ topic_view = function (m, t, year) {
     //
 
     if (!VIS.view_updating) {
-        plot_topic_yearly(m, t, year);
+        plot_topic_yearly(m, t, {
+            svg: plot_svg("div#topic_plot", VIS.topic_view),
+            axes: true,
+            clickable: true,
+            year: year,
+            spec: VIS.topic_view
+        });
     }
 
     VIS.topic_view.updating = false;
@@ -525,7 +542,7 @@ topic_view_docs = function (m, t, n, year) {
         });
 };
 
-plot_topic_yearly = function (m, t, year) {
+plot_topic_yearly = function (m, t, param) {
     var series = [],
         scale_x,
         scale_y,
@@ -534,11 +551,8 @@ plot_topic_yearly = function (m, t, year) {
         bars,
         bars_click,
         tooltip,
-        spec = VIS.topic_view,
-        svg;
-
-    spec.w = $("#main_container").width() * 0.6667;
-    svg = plot_svg("div#topic_plot", spec);
+        svg = param.svg,
+        spec = param.spec;
 
     series = m.topic_yearly(t).keys().sort().map(function (y) {
         return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
@@ -547,11 +561,11 @@ plot_topic_yearly = function (m, t, year) {
     scale_x = d3.time.scale()
         .domain([series[0][0],
                 d3.time.day.offset(series[series.length - 1][0],
-                    VIS.topic_view.bar_width)])
-        .range([0, VIS.topic_view.w]);
+                    spec.bar_width)])
+        .range([0, spec.w]);
         //.nice();
 
-    w = scale_x(d3.time.day.offset(series[0][0], VIS.topic_view.bar_width)) -
+    w = scale_x(d3.time.day.offset(series[0][0], spec.bar_width)) -
         scale_x(series[0][0]);
 
     w_click = scale_x(d3.time.year.offset(series[0][0], 1)) -
@@ -561,39 +575,41 @@ plot_topic_yearly = function (m, t, year) {
         .domain([0, d3.max(series, function (d) {
             return d[1];
         })])
-        .range([VIS.topic_view.h, 0])
+        .range([spec.h, 0])
         .nice();
 
     // axes
     // ----
 
-    // clear
-    svg.selectAll("g.axis").remove();
+    if (param.axes) {
+        // clear
+        svg.selectAll("g.axis").remove();
 
-    // x axis
-    svg.append("g")
-        .classed("axis", true)
-        .classed("x", true)
-        .attr("transform", "translate(0," + VIS.topic_view.h + ")")
-        .call(d3.svg.axis()
-            .scale(scale_x)
-            .orient("bottom")
-            .ticks(d3.time.years, VIS.topic_view.ticks));
+        // x axis
+        svg.append("g")
+            .classed("axis", true)
+            .classed("x", true)
+            .attr("transform", "translate(0," + spec.h + ")")
+            .call(d3.svg.axis()
+                .scale(scale_x)
+                .orient("bottom")
+                .ticks(d3.time.years, spec.ticks));
 
-    // y axis
-    svg.append("g")
-        .classed("axis", true)
-        .classed("y", true)
-        .call(d3.svg.axis()
-            .scale(scale_y)
-            .orient("left")
-            .tickSize(-VIS.topic_view.w)
-            .outerTickSize(0)
-            .tickFormat(VIS.percent_format)
-            .ticks(VIS.topic_view.ticks));
+        // y axis
+        svg.append("g")
+            .classed("axis", true)
+            .classed("y", true)
+            .call(d3.svg.axis()
+                .scale(scale_y)
+                .orient("left")
+                .tickSize(-spec.w)
+                .outerTickSize(0)
+                .tickFormat(VIS.percent_format)
+                .ticks(spec.ticks));
 
-    svg.selectAll("g.axis.y g").filter(function (d) { return d; })
-        .classed("minor", true);
+        svg.selectAll("g.axis.y g").filter(function (d) { return d; })
+            .classed("minor", true);
+    }
 
     // bars
     // ----
@@ -617,19 +633,21 @@ plot_topic_yearly = function (m, t, year) {
 
     // set a selected year if any
     bars.classed("selected_year", function (d) {
-        return String(d[0].getFullYear()) === year;
+        return String(d[0].getFullYear()) === param.year;
     });
 
-    // add the clickable bars, which are as high as the plot
-    // and a year wide
-    bars_click = bars.append("rect")
-        .classed("interact", true)
-        .attr("x", -w_click / 2.0)
-        .attr("y", 0)
-        .attr("width", w_click)
-        .attr("height", function (d) {
-            return VIS.topic_view.h;
-        });
+    if (param.clickable) {
+        // add the clickable bars, which are as high as the plot
+        // and a year wide
+        bars_click = bars.append("rect")
+            .classed("interact", true)
+            .attr("x", -w_click / 2.0)
+            .attr("y", 0)
+            .attr("width", w_click)
+            .attr("height", function (d) {
+                return spec.h;
+            });
+    }
 
     // add the visible bars
     bars.append("rect")
@@ -640,87 +658,91 @@ plot_topic_yearly = function (m, t, year) {
         })
         .attr("width", w)
         .attr("height", function (d) {
-            return VIS.topic_view.h - scale_y(d[1]);
-        })
-        .on("mouseover", function (d) {
-        })
-        .on("mouseout", function (d) {
-            d3.select(this).classed("hover", false);
+            return spec.h - scale_y(d[1]);
         });
 
-    // interactivity for the bars
-    //
-    // first, construct a tooltip object we'll update on mouse events
-
-    tooltip = {
-        div: d3.select("div#tooltip"),
-        container: d3.select("body").node(),
-        selected: false
-    };
-    if (tooltip.div.empty()) {
-        tooltip.div = d3.select("body").append("div")
-            .attr("id", "tooltip")
-            .classed("bar_tooltip", true);
-        tooltip.div.append("p");
-    }
-
-    tooltip.update_pos = function () {
-        var mouse_pos = d3.mouse(this.container);
-        this.div.style({
-                left: (mouse_pos[0] + VIS.tooltip.offset.x) + 'px',
-                top: (mouse_pos[1] + VIS.tooltip.offset.y) + 'px',
-                position: "absolute"
+    if (param.clickable) {
+        bars.on("mouseover", function (d) {
+                d3.select(this).classed("hover", true);
+            })
+            .on("mouseout", function (d) {
+                d3.select(this).classed("hover", false);
             });
-    };
-    tooltip.text = function (d) {
-        // could condition on this.selected, but it gets too talky
-        this.div.select("p")
-            .text(d[0].getFullYear());
-    };
-    tooltip.show = function () {
-        this.div.classed("hidden", false);
-    };
-    tooltip.hide = function () {
-        this.div.classed("hidden", true);
-    };
 
-    // now set mouse event handlers
+        // interactivity for the bars
+        //
+        // first, construct a tooltip object we'll update on mouse events
 
-    bars_click.on("mouseover", function (d) {
-            var g = d3.select(this.parentNode);
-            g.select(".display").classed("hover", true); // display bar
-            tooltip.selected = g.classed("selected_year");
-            tooltip.text(d);
-            tooltip.update_pos();
-            tooltip.show();
-        })
-        .on("mousemove", function (d) {
-            tooltip.update_pos();
-        })
-        .on("mouseout", function (d) {
-            d3.select(this.parentNode).select(".display") // display bar
-                .classed("hover", false);
-            tooltip.hide();
-        })
-        .on("click", function (d) {
-            if(d3.select(this.parentNode).classed("selected_year")) {
-                d3.select(this.parentNode).classed("selected_year", false);
-                tooltip.selected = false;
+        tooltip = {
+            div: d3.select("div#tooltip"),
+            container: d3.select("body").node(),
+            selected: false
+        };
+        if (tooltip.div.empty()) {
+            tooltip.div = d3.select("body").append("div")
+                .attr("id", "tooltip")
+                .classed("bar_tooltip", true);
+            tooltip.div.append("p");
+        }
+
+        tooltip.update_pos = function () {
+            var mouse_pos = d3.mouse(this.container);
+            this.div.style({
+                    left: (mouse_pos[0] + VIS.tooltip.offset.x) + 'px',
+                    top: (mouse_pos[1] + VIS.tooltip.offset.y) + 'px',
+                    position: "absolute"
+                });
+        };
+        tooltip.text = function (d) {
+            // could condition on this.selected, but it gets too talky
+            this.div.select("p")
+                .text(d[0].getFullYear());
+        };
+        tooltip.show = function () {
+            this.div.classed("hidden", false);
+        };
+        tooltip.hide = function () {
+            this.div.classed("hidden", true);
+        };
+
+        // now set mouse event handlers
+
+        bars_click.on("mouseover", function (d) {
+                var g = d3.select(this.parentNode);
+                g.select(".display").classed("hover", true); // display bar
+                tooltip.selected = g.classed("selected_year");
                 tooltip.text(d);
-                VIS.view_updating = true;
-                window.location.hash = "/topic/" + (t + 1);
-            } else {
-                // TODO selection of multiple years
-                d3.selectAll(".selected_year")
-                    .classed("selected_year", false);
-                d3.select(this.parentNode).classed("selected_year", true);
-                tooltip.selected = true;
-                tooltip.text(d);
-                VIS.view_updating = true;
-                window.location.hash = "/topic/" + (t + 1) + "/" +
-                    d[0].getFullYear();
-            }
-        });
+                tooltip.update_pos();
+                tooltip.show();
+            })
+            .on("mousemove", function (d) {
+                tooltip.update_pos();
+            })
+            .on("mouseout", function (d) {
+                d3.select(this.parentNode).select(".display") // display bar
+                    .classed("hover", false);
+                tooltip.hide();
+            })
+            .on("click", function (d) {
+                if(d3.select(this.parentNode).classed("selected_year")) {
+                    d3.select(this.parentNode).classed("selected_year", false);
+                    tooltip.selected = false;
+                    tooltip.text(d);
+                    VIS.view_updating = true;
+                    window.location.hash = "/topic/" + (t + 1);
+                } else {
+                    // TODO selection of multiple years
+                    d3.selectAll(".selected_year")
+                        .classed("selected_year", false);
+                    d3.select(this.parentNode).classed("selected_year", true);
+                    tooltip.selected = true;
+                    tooltip.text(d);
+                    VIS.view_updating = true;
+                    window.location.hash = "/topic/" + (t + 1) + "/" +
+                        d[0].getFullYear();
+                }
+            });
+    }
 
 };
 
@@ -1086,6 +1108,11 @@ model_view = function (m, type) {
     d3.select("#model_view_yearly").classed("hidden", true);
 
     if (type_chosen === "list") {
+        if (!m.meta() || !m.dt()) {
+            view_loading(true);
+            return true;
+        }
+
         model_view_list(m);
         d3.select("button#model_sort_dir").classed("disabled", false);
         d3.select("#model_view_list").classed("hidden", false);
@@ -1127,7 +1154,7 @@ model_view = function (m, type) {
 };
 
 model_view_list = function (m) {
-    var trs;
+    var trs, divs;
 
     d3.select("button#model_sort_dir").on("click", function () {
         d3.selectAll("#model_view_list table tbody tr")
@@ -1148,9 +1175,24 @@ model_view_list = function (m) {
         .data(d3.range(m.n()))
         .enter().append("tr");
 
+    trs.on("click", function (t) {
+            window.location.hash = "/topic/" + String(t + 1);
+        });
+
     trs.append("td").append("a")
         .text(function (t) { return t + 1; }) // sigh
         .attr("href", topic_link);
+
+    divs = trs.append("td").append("div").classed("spark", true);
+    append_svg(divs, VIS.model_view.list.spark)
+        .each(function (t) {
+            plot_topic_yearly(m, t, {
+                svg: d3.select(this),
+                axes: false,
+                clickable: false,
+                spec: VIS.model_view.list.spark
+            });
+        });
 
     trs.append("td").append("a")
         .text(function (t) {
@@ -1628,19 +1670,22 @@ plot_svg = function (selector, spec) {
         return VIS.svg.get(selector);
     }
 
+    svg = append_svg(d3.select(selector), spec);
+
+    VIS.svg.set(selector, svg);
+    return svg;
+};
+
+append_svg = function(selection, spec) {
     // mbostock margin convention
     // http://bl.ocks.org/mbostock/3019563
-    svg = d3.select(selector)
-        .append("svg")
+    return selection.append("svg")
             .attr("width", spec.w + spec.m.left + spec.m.right)
             .attr("height", spec.h + spec.m.top + spec.m.bottom)
         // g element passes on xform to all contained elements
         .append("g")
             .attr("transform",
                   "translate(" + spec.m.left + "," + spec.m.top + ")");
-
-    VIS.svg.set(selector, svg);
-    return svg;
 };
 
 var load_data = function (target, callback) {
