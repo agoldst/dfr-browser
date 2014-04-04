@@ -126,10 +126,10 @@ text.topic_label {
 }
 
 
-#year_topics td div {
+#year_topics td div.pie {
     width: 10%;
     float: left;
-    background-color: rgb(51,153,255);
+    /* background-color: rgb(51,153,255); */
 }
 
 #year_topics td div span.proportion {
@@ -159,6 +159,17 @@ td.year {
     text-decoration: underline;
 }
 
+#year_topics div.pie {
+    margin: 1px;
+}
+
+g.arc path {
+    opacity: 0.25;
+}
+g.arc path.highlight {
+    opacity: 1;
+    stroke: #888;
+}
 
 /* topic_list_view */
 

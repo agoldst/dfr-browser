@@ -17,7 +17,8 @@ var VIS = {
         size_range: [7, 18], // points. may need adjustment
         yearly: {
             topics: 4,
-            words: 3
+            words: 3,
+            pie: 25        // pie diameter (pixels)
         },
         list: { }
     },
@@ -1354,7 +1355,7 @@ model_view_plot = function(m, coords) {
 };
 
 model_view_yearly = function (m) {
-    var topics, trs, tds, colors;
+    var topics, trs, tds, colors, arc, pie, gs;
 
     d3.select("button#model_sort_dir").on("click", function () {
         d3.selectAll("table#year_topics tbody tr")
@@ -1412,17 +1413,21 @@ model_view_yearly = function (m) {
         .classed("year", "true");
 
     tds = trs.selectAll("td.topic")
-        .data(function (d) {
+        .data(function (d, i) {
             return d.topics.map(function (x) {
-                x.year = d.year;
-                return x;
+                return {
+                    topic: x.topic,
+                    weight: x.weight,
+                    i: i // cheapo "pointer" to place in topics array
+                };
             });
         })
         .enter()
         .append("td").classed("topic", true);
 
     tds.on("click", function (d) {
-        window.location.hash = "/topic/" + (d.topic + 1) + "/" + d.year;
+        window.location.hash = "/topic/" + (d.topic + 1) + "/" +
+            topics[d.i].year;
     });
 
     // A visual cue to help spot the same topic in nearby rows
@@ -1431,29 +1436,66 @@ model_view_yearly = function (m) {
     // TODO make better (shape, pattern?)
     colors = d3.scale.category20();
 
-    tds.append("div")
-        .style("margin-top", function (d) {
-            return (1.0 - d.weight / 0.5) * 20.0 + "px";
-            //return (d.weight * 10) + "px";
-            //return d3.format(".1%")(d.weight);
+    arc = d3.svg.arc()
+        .outerRadius(VIS.model_view.yearly.pie / 2)
+        .innerRadius(0);
+
+    pie = d3.layout.pie()
+        .sort(null)
+        .value(function (x) {
+            return x.weight;
+        });
+
+    gs = tds.append("div").classed("pie", true)
+        .append("svg")
+        .attr("height", VIS.model_view.yearly.pie + "px")
+        .attr("width", VIS.model_view.yearly.pie + "px")
+        .append("g")
+        .attr("transform", "translate(" +
+            VIS.model_view.yearly.pie / 2 + "," +
+            VIS.model_view.yearly.pie / 2 + ")")
+        .selectAll("g.arc")
+        .data(function (d) {
+            var total = 0,
+                s = topics[d.i].topics.map(function (x) {
+                    total += x.weight;
+                    return {
+                        weight: x.weight,
+                        highlight: (x.topic === d.topic),
+                        topic: x.topic
+                    };
+                });
+
+            // fill out the pie with a dummy element
+            s.push({
+                weight: 1.0 - total
+            });
+
+            return pie(s);
         })
-        .style("height", function (d) {
-            return d.weight * 20.0 / 0.5 + "px";
+        .enter().append("g").classed("arc", true);
+
+    gs.append("path")
+        .attr("d", arc)
+        .style("fill", function (d) {
+            return isFinite(d.data.topic) ? colors(d.data.topic % 20)
+                : "white";
         })
-        .style("background-color", function (d) {
-            return colors(d.topic % 20);
-        })
-        .append("span")
-        .classed("proportion", true)
-            .html("&nbsp;");
+        .classed("highlight", function (d) {
+            return Boolean(d.data.highlight);
+        });
 
     tds.append("a")
         .text(function (d) {
             return topic_label(m, d.topic, VIS.model_view.yearly.words);
         })
         .attr("href", function (d) {
-            return "#/topic/" + (d.topic + 1) + "/" + d.year;
+            return "#/topic/" + (d.topic + 1) + "/" + topics[d.i].year;
+        })
+        .style("color", function (d) {
+            return colors(d.topic % 20);
         });
+
 
 
 
