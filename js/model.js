@@ -28,6 +28,7 @@ model = function (spec) {
         doc_year,
         valid_year,
         yearly_total,
+        years,
         topic_docs, // most salient _ in _
         topic_words,
         doc_topics,
@@ -255,26 +256,30 @@ model = function (spec) {
     that.topic_scaled = topic_scaled;
 
     // get aggregate topic counts over years
-    yearly_total = function (y) {
-        var result;
+    yearly_total = function (year) {
+        var tally, y;
         // memoization
-        if (my.yearly_total) {
-            return my.yearly_total.get(y);
+        if (!my.yearly_total) {
+            tally = d3.map();
+            for (n = 0; n < my.dt.i.length; n += 1) {
+                y = this.doc_year(my.dt.i[n]);
+                if (tally.has(y)) {
+                    tally.set(y, tally.get(y) + my.dt.x[n]);
+                } else {
+                    tally.set(y, my.dt.x[n]);
+                }
+            }
+            my.yearly_total = tally;
         }
 
-        result = d3.map();
-        for (n = 0; n < my.dt.i.length; n += 1) {
-            y = this.doc_year(my.dt.i[n]);
-            if (result.has(y)) {
-                result.set(y, result.get(y) + my.dt.x[n]);
-            } else {
-                result.set(y, my.dt.x[n]);
-            }
-        }
-        my.yearly_total = result;
-        return result.get(y);
+        return isFinite(year) ? my.yearly_total.get(year) : my.yearly_total;
     };
     that.yearly_total = yearly_total;
+
+    years = function () {
+        return this.yearly_total().keys();
+    };
+    that.years = years;
 
     // yearly proportions for topic t
     topic_yearly = function (t) {
