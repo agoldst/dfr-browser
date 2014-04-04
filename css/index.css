@@ -119,6 +119,47 @@ text.topic_label {
     fill: rgba(51,153,255,0.9);
 }
 
+/* model_view_yearly */
+
+#year_topics {
+    color: black;
+}
+
+
+#year_topics td div {
+    width: 10%;
+    float: left;
+    background-color: rgb(51,153,255);
+}
+
+#year_topics td div span.proportion {
+    background-color: rgba(0,0,0,0);
+}
+
+#year_topics td a {
+    float: right;
+    width: 85%;
+    display: block;
+}
+
+#year_topics td a:hover {
+    float: right;
+    width: 85%;
+    color: black;
+    display: block;
+}
+
+td.year {
+    font-weight: bold;
+    pointer-events: none;
+}
+
+#year_topics td:hover {
+    background: #eee; /* bootstrap's gray-lighter */
+    text-decoration: underline;
+}
+
+
 /* topic_list_view */
 
 /* topic_view */

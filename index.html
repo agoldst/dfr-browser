@@ -66,11 +66,19 @@
           <li id="nav_model_list">
             <a href="#/model/list">List</a>
           </li>
+          <li id="nav_model_yearly">
+            <a href="#/model/yearly">Years</a>
+          </li>
         </ul>
         <p id="topic_hover" class="navbar-text help">Click a topic for more detail</p>
         <div class="navbar-right">
           <p id="model_view_plot_help" class="navbar-text help">Drag to pan; scroll to zoom</p>
           <button id="reset_zoom" type="button" class="btn btn-default navbar-btn">Reset zoom</button>
+          <button id="model_sort_dir"
+            class="btn btn-default navbar-btn"
+            type="button">
+            Reverse order
+          </button>
         </div>
       </div>
     </nav>
@@ -88,6 +96,17 @@
       </table>
     </div>
     <div id="model_view_plot" class="hidden">
+    </div>
+    <div id="model_view_yearly" class="hidden">
+      <table id="year_topics" class="table table-condensed">
+        <thead>
+          <tr>
+            <th>year</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
     </div>
   </div>
 

@@ -14,7 +14,12 @@ var VIS = {
     model_view: {
         aspect: 1.3333,
         words: 4,           // may need adjustment
-        size_range: [7, 18] // points. may need adjustment
+        size_range: [7, 18], // points. may need adjustment
+        yearly: {
+            topics: 4,
+            words: 3
+        },
+        list: { }
     },
     topic_view: {
         words: 50,
@@ -72,6 +77,7 @@ var bib_sort,   // bibliography sorting
     model_view,
     model_view_list,
     model_view_plot,
+    model_view_yearly,
     topic_coords_grid,
     view_refresh,
     view_loading,
@@ -903,7 +909,7 @@ doc_view = function (m, d) {
 
     return true;
 
-    // (later: nearby documents)
+    // TODO nearby documents list
 };
 
 bib_view = function (m, maj, min) {
@@ -1066,14 +1072,39 @@ model_view = function (m, type) {
         return true;
     }
 
+    // ensure pill highlighting
+    d3.selectAll("#nav_model li.active").classed("active",false);
+    d3.select("#nav_model_" + type_chosen).classed("active",true);
+
+    // hide all subviews; we'll reveal the chosen one
+    d3.select("#model_view_plot").classed("hidden", true);
+    d3.select("#model_view_plot_help").classed("hidden", true);
+    d3.select("#model_view_list").classed("hidden", true);
+    d3.select("#reset_zoom").classed("disabled", true);
+    d3.select("button#model_sort_dir").classed("disabled", true);
+    d3.select("#model_view_yearly").classed("hidden", true);
+
     if (type_chosen === "list") {
-        d3.select("#model_view_plot").classed("hidden", true);
-        d3.select("#model_view_plot_help").classed("hidden", true);
-        d3.select("#reset_zoom").classed("disabled", true);
         model_view_list(m);
+        d3.select("button#model_sort_dir").classed("disabled", false);
         d3.select("#model_view_list").classed("hidden", false);
+    } else if (type_chosen === "yearly") {
+        if (!m.meta() || !m.dt()) {
+            view_loading(true);
+            return true;
+        }
+
+        model_view_yearly(m);
+        d3.select("button#model_sort_dir").classed("disabled", false);
+        d3.select("#model_view_yearly", "hidden", false);
     } else {
-        d3.select("#model_view_list").classed("hidden", true);
+        // if loading scaled coordinates failed,
+        // we expect m.topic_scaled() to be defined but empty
+        if (!m.topic_scaled()) {
+            view_loading(true);
+            return true;
+        }
+
         if (type_chosen === "scaled" && m.topic_scaled().length === m.n()) {
             coords = m.topic_scaled();
         } else if (type_chosen === "grid") {
@@ -1090,15 +1121,26 @@ model_view = function (m, type) {
     }
     VIS.last.model = type_chosen;
 
-    // ensure pill highlighting
-    d3.selectAll("#nav_model li.active").classed("active",false);
-    d3.select("#nav_model_" + type_chosen).classed("active",true);
     view_loading(false);
     return true;
 };
 
 model_view_list = function (m) {
     var trs;
+
+    d3.select("button#model_sort_dir").on("click", function () {
+        d3.selectAll("#model_view_list table tbody tr")
+            .sort(VIS.model_view.list.descend ?
+                        d3.descending : d3.ascending)
+            .order();
+        VIS.model_view.list.descend = !VIS.model_view.list.descend;
+    });
+
+    if (VIS.ready.model_list) {
+        return true;
+    }
+
+    VIS.model_view.list.descend = true;
 
     trs = d3.select("#model_view_list table tbody")
         .selectAll("tr")
@@ -1119,6 +1161,9 @@ model_view_list = function (m) {
         .text(function (t) {
             return VIS.float_format(m.alpha(t));
         });
+
+    VIS.ready.model_list = true;
+    return true;
 };
 
 model_view_plot = function(m, coords) {
@@ -1306,6 +1351,115 @@ model_view_plot = function(m, coords) {
 
 
     zoom(svg);
+};
+
+model_view_yearly = function (m) {
+    var topics, trs, tds, colors;
+
+    d3.select("button#model_sort_dir").on("click", function () {
+        d3.selectAll("table#year_topics tbody tr")
+            .sort(function(a, b) {
+                return VIS.model_view.yearly.descend ?
+                        d3.descending(a.year, b.year)
+                        : d3.ascending(a.year, b.year);
+            })
+            .order();
+        VIS.model_view.yearly.descend = !VIS.model_view.yearly.descend;
+    });
+
+    if (VIS.ready.model_yearly) {
+        d3.select("div#model_view_yearly").classed("hidden", false);
+        return true;
+    }
+
+    // default initial order is ascending
+    VIS.model_view.yearly.descend = true;
+
+    topics = m.years().sort().map(function (y) {
+        return {
+            year: y,
+            topics: m.year_topics(y, VIS.model_view.yearly.topics),
+            total: m.yearly_total(y)
+        };
+    });
+
+    d3.select("table#year_topics thead tr")
+        .selectAll("th.topic")
+        .data(d3.range(VIS.model_view.yearly.topics))
+        .enter().append("th")
+        .text(function (i) {
+            var ord = "";
+            // range goes from zero; not valid for i > 20
+            if (i === 0) {
+                ord = "";
+            } else if (i === 1) {
+                ord = "2nd ";
+            } else if (i === 2) {
+                ord = "3rd ";
+            } else {
+                ord = (i + 1) + "th ";
+            }
+            return ord + "most prominent topic";
+        });
+
+
+    trs = d3.select("table#year_topics tbody").selectAll("tr")
+        .data(topics)
+        .enter().append("tr");
+
+    trs.append("td")
+        .text(function (d) { return d.year; })
+        .classed("year", "true");
+
+    tds = trs.selectAll("td.topic")
+        .data(function (d) {
+            return d.topics.map(function (x) {
+                x.year = d.year;
+                return x;
+            });
+        })
+        .enter()
+        .append("td").classed("topic", true);
+
+    tds.on("click", function (d) {
+        window.location.hash = "/topic/" + (d.topic + 1) + "/" + d.year;
+    });
+
+    // A visual cue to help spot the same topic in nearby rows
+    // Unfortunately, 20 colors is as far as any sane person would go,
+    // so we'll just stupidly repeat colors at intervals of 20
+    // TODO make better (shape, pattern?)
+    colors = d3.scale.category20();
+
+    tds.append("div")
+        .style("margin-top", function (d) {
+            return (1.0 - d.weight / 0.5) * 20.0 + "px";
+            //return (d.weight * 10) + "px";
+            //return d3.format(".1%")(d.weight);
+        })
+        .style("height", function (d) {
+            return d.weight * 20.0 / 0.5 + "px";
+        })
+        .style("background-color", function (d) {
+            return colors(d.topic % 20);
+        })
+        .append("span")
+        .classed("proportion", true)
+            .html("&nbsp;");
+
+    tds.append("a")
+        .text(function (d) {
+            return topic_label(m, d.topic, VIS.model_view.yearly.words);
+        })
+        .attr("href", function (d) {
+            return "#/topic/" + (d.topic + 1) + "/" + d.year;
+        });
+
+
+
+    VIS.ready.model_yearly = true;
+    d3.select("div#model_view_yearly").classed("hidden", false);
+    return true;
 };
 
 topic_coords_grid = function (n) {
