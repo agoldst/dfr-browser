@@ -470,9 +470,7 @@ add_weight_cells = function (sel, wt, max) {
             })
             .append("span")
                 .classed("proportion", true)
-                .text(function (w) {
-                    return w.weight;
-                });
+                .html("&nbsp;");
 };
 
 topic_view_docs = function (m, t, n, year) {
