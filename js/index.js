@@ -15,6 +15,7 @@ var VIS = {
         aspect: 1.3333,
         words: 4,           // may need adjustment
         size_range: [7, 18], // points. may need adjustment
+        stroke_range: 4,    // max. perimeter thickness
         yearly: {
             topics: 4,
             words: 3,
@@ -1230,7 +1231,7 @@ model_view_list = function (m) {
 model_view_plot = function(m, coords) {
     var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
         domain_x, domain_y,
-        scale_x, scale_y, scale_size,
+        scale_x, scale_y, scale_size, scale_stroke,
         gs, translation, zoom;
 
     svg_w  = $("#main_container").width();
@@ -1282,6 +1283,10 @@ model_view_plot = function(m, coords) {
         .domain([0, 1])
         .range(VIS.model_view.size_range);
 
+    scale_stroke = d3.scale.linear()
+        .domain([0,d3.max(m.alpha())])
+        .range([0,VIS.model_view.stroke_range]);
+
     gs = svg.selectAll("g")
         .data(coords.map(function (p, j) {
             return { x: p[0], y: p[1], t: j };
@@ -1303,8 +1308,13 @@ model_view_plot = function(m, coords) {
             g.append("circle")
                 .attr("cx", 0)
                 .attr("cy", 0)
-                .attr("r", circle_radius)
+                .attr("r", function (p) {
+                    return circle_radius - scale_stroke(m.alpha(p.t)) / 2;
+                })
                 .classed("topic_cloud", true)
+                .attr("stroke-width", function (p) {
+                    return scale_stroke(m.alpha(p.t));
+                })
                 .on("click", function (p) {
                     window.location.hash = topic_hash(t);
                 })
