@@ -119,19 +119,23 @@ text.topic_label {
     fill: rgba(51,153,255,0.9);
 }
 
-/* model_view_list */
-
-#model_view_list tr:hover {
-    background-color: #eee;
-    text-decoration: underline;
-}
-
 /* model_view_yearly */
 
 #year_topics {
     color: black;
 }
 
+#year_topics tr:hover {
+    background-color: inherit;
+}
+
+#year_topics tr:hover a {
+    text-decoration: none;
+}
+
+#year_topics tr td:hover a {
+    text-decoration: underline;
+}
 
 #year_topics td div.pie {
     width: 10%;
@@ -162,7 +166,7 @@ td.year {
 }
 
 #year_topics td:hover {
-    background: #eee; /* bootstrap's gray-lighter */
+    background-color: #eee; /* bootstrap's gray-lighter */
     text-decoration: underline;
 }
 
@@ -178,12 +182,18 @@ g.arc path.highlight {
     stroke: #888;
 }
 
-/* topic_list_view */
-
 /* topic_view */
 
 #topic_words a {
     font-size: 1em;
+}
+
+tr:hover {
+    background-color: #eee;
+}
+
+tr:hover a {
+    text-decoration: underline;
 }
 
 /* topic_plot */
