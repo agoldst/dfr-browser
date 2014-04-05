@@ -448,6 +448,10 @@ topic_view_words = function (m, t, n) {
     trs_w.enter().append("tr");
     trs_w.exit().remove();
 
+    trs_w.on("click", function (w) {
+        window.location.hash ="/word/" + w.word;
+    });
+
     // clear rows
     trs_w.selectAll("td").remove();
 
@@ -529,6 +533,10 @@ topic_view_docs = function (m, t, n, year) {
         .html(function (d) {
             return cite_doc(m, d.doc);
         });
+
+    trs_d.on("click", function (d) {
+        window.location.hash = "/doc/" + d.doc;
+    });
 
     add_weight_cells(trs_d, "frac", 1);
 
@@ -821,6 +829,9 @@ word_view = function (m, w) {
             return topic_link(d.topic);
         });
 
+    trs.on("click", function (d) {
+        window.location.hash = topic_hash(d.topic);
+    });
         // TODO visualize rank by instead using bars in columns as in the left-hand-size 
         // of the topic view. Column headers are links to topics, words are word links,
         // highlight the word that's in focus. thicker column borders between topics. 
@@ -920,6 +931,10 @@ doc_view = function (m, d) {
                     .text(function (t) {
                         return topic_label(m, t.topic, VIS.overview_words);
                     });
+
+            trs.on("click", function (t) {
+                window.location.hash = topic_hash(t.topic);
+            });
 
             add_weight_cells(trs, "weight", m.doc_len(doc));
 
