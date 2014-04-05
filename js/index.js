@@ -1248,6 +1248,14 @@ model_view_plot = function(m, type) {
 
     svg = plot_svg("#model_view_plot", spec);
 
+    // rough attempt to fill total circle area in plot window 
+    // 2.25 rather than 2 is pure fudge factor
+    circle_radius = Math.floor(spec.w /
+            (2.25 * Math.sqrt(VIS.model_view.aspect * m.n())));
+    // Allow the cloud to spill outside circle a little
+    cloud_size = Math.floor(circle_radius * 2.1);
+    range_padding = 1.1 * circle_radius;
+
     // zoom-target rectangle
     svg.selectAll("rect.bg")
         .data([1])
@@ -1257,25 +1265,47 @@ model_view_plot = function(m, type) {
             .classed("bg", true);
 
     if (type === "scaled") {
-        coords = m.topic_scaled();
+        coords = m.topic_scaled().map(function (p, j) {
+            return {
+                x: p[0],
+                y: p[1],
+                t: j,
+                r: circle_radius
+            };
+        });
     } else {
         // default to grid
-        coords = topic_coords_grid(m.n());
+        /*
+        coords = topic_coords_grid(m.n()).map(function (p, j) {
+            return {
+                x: p.x,
+                y: p.y,
+                t: j,
+                r: circle_radius
+            };
+        });
+        */
+        // flat "pack" actually lays the circles out in a spiral;
+        // better at filling space than the grid
+        //
+        // bubble-chart code from
+        // http://bl.ocks.org/mbostock/4063269
+        coords = d3.layout.pack()
+            .sort(null)
+            .padding(1.5)
+            .radius(circle_radius) // radius adjusted by stroke-width below
+            .nodes({
+                children: d3.range(m.n()).map(function (t) {
+                    return { t: t, value: 1 };
+                })
+            }).filter(function (x) {
+                return !x.children;
+            });
     }
 
-    domain_x = d3.extent(coords, function (d) {
-            return d[0];
-    });
-    domain_y = d3.extent(coords, function (d) {
-            return d[1];
-    });
+    domain_x = d3.extent(coords, function (d) { return d.x; });
+    domain_y = d3.extent(coords, function (d) { return d.y; });
 
-    circle_radius = Math.floor(spec.w /
-            (2 * Math.sqrt(VIS.model_view.aspect * m.n())));
-     // Allow the cloud to spill outside circle a little
-    cloud_size = Math.floor(circle_radius * 2.1);
-
-    range_padding = 1.1 * circle_radius;
 
     scale_x = d3.scale.linear()
         .domain(domain_x)
@@ -1294,9 +1324,7 @@ model_view_plot = function(m, type) {
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
-        .data(coords.map(function (p, j) {
-            return { x: p[0], y: p[1], t: j };
-        }));
+        .data(coords);
 
     gs.enter().append("g")
         .each(function (p, t) {
@@ -1315,7 +1343,7 @@ model_view_plot = function(m, type) {
                 .attr("cx", 0)
                 .attr("cy", 0)
                 .attr("r", function (p) {
-                    return circle_radius - scale_stroke(m.alpha(p.t)) / 2;
+                    return p.r - scale_stroke(m.alpha(p.t)) / 2;
                 })
                 .classed("topic_cloud", true)
                 .attr("stroke-width", function (p) {
@@ -1590,7 +1618,7 @@ topic_coords_grid = function (n) {
     // Rectangular grid. TODO: closest possible packing?
     for (i = n_row - 1; i >= 0; i -= 1, remain -= 1) {
         for (j = 0; j < n_col + ((remain > 0) ? 1 : 0); j += 1) {
-            result.push([j + 0.5, i + 0.5]);
+            result.push({ x: j + 0.5, y: i + 0.5 });
         }
     }
 
