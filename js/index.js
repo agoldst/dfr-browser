@@ -73,6 +73,7 @@ var VIS = {
 var bib_sort,   // bibliography sorting
     topic_label,        // stringifiers
     topic_link,
+    topic_hash,
     doc_author_string,
     cite_doc,
     doc_uri,
@@ -213,7 +214,11 @@ topic_label = function (m, t, n) {
 };
 
 topic_link = function (t) {
-    return "#/topic/" + (t + 1);
+    return "#" + topic_hash(t);
+};
+
+topic_hash = function (t) {
+    return "/topic/" + String(t + 1);
 };
 
 doc_author_string = function (m, i) {
@@ -495,7 +500,7 @@ topic_view_docs = function (m, t, n, year) {
 
                 d3.select(".selected_year").classed("selected_year", false);
                 VIS.view_updating = true;
-                window.location.hash = "/topic/" + (t + 1);
+                window.location.hash = topic_hash(t);
             })
             .classed("hidden", false);
     } else {
@@ -729,7 +734,7 @@ plot_topic_yearly = function (m, t, param) {
                     tooltip.selected = false;
                     tooltip.text(d);
                     VIS.view_updating = true;
-                    window.location.hash = "/topic/" + (t + 1);
+                    window.location.hash = topic_hash(t);
                 } else {
                     // TODO selection of multiple years
                     d3.selectAll(".selected_year")
@@ -738,7 +743,7 @@ plot_topic_yearly = function (m, t, param) {
                     tooltip.selected = true;
                     tooltip.text(d);
                     VIS.view_updating = true;
-                    window.location.hash = "/topic/" + (t + 1) + "/" +
+                    window.location.hash = topic_hash(t) + "/" +
                         d[0].getFullYear();
                 }
             });
@@ -1176,7 +1181,7 @@ model_view_list = function (m) {
         .enter().append("tr");
 
     trs.on("click", function (t) {
-            window.location.hash = "/topic/" + String(t + 1);
+            window.location.hash = topic_hash(t);
         });
 
     trs.append("td").append("a")
@@ -1288,7 +1293,7 @@ model_view_plot = function(m, coords) {
                 .attr("r", circle_radius)
                 .classed("topic_cloud", true)
                 .on("click", function (p) {
-                    window.location.hash = "/topic/" + (t + 1);
+                    window.location.hash = topic_hash(t);
                 })
                 .on("mouseover", function (p) {
                     gs.sort(function (a, b) {
@@ -1352,7 +1357,7 @@ model_view_plot = function(m, coords) {
                         return wd.y;
                     })
                     .on("click", function (wd) {
-                        window.location.hash = "/topic/" + (t + 1);
+                        window.location.hash = topic_hash(t);
                     }) 
                     .classed("topic_label", true);
                     // TODO coloring
