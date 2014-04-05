@@ -1152,16 +1152,11 @@ model_view = function (m, type) {
             return true;
         }
 
-        if (type_chosen === "scaled" && m.topic_scaled().length === m.n()) {
-            coords = m.topic_scaled();
-        } else if (type_chosen === "grid") {
-            coords = topic_coords_grid(m.n());
-        } else {
-            // default to grid
+        if (type_chosen === "scaled" && m.topic_scaled().length !== m.n()) {
+            // default to grid if there are no scaled coords to be found
             type_chosen = "grid";
-            coords = topic_coords_grid(m.n());
         }
-        model_view_plot(m, coords);
+        model_view_plot(m, type_chosen);
         d3.select("#model_view_plot_help").classed("hidden", false);
         d3.select("#reset_zoom").classed("disabled", false);
         d3.select("#model_view_plot").classed("hidden", false);
@@ -1228,12 +1223,16 @@ model_view_list = function (m) {
     return true;
 };
 
-model_view_plot = function(m, coords) {
+model_view_plot = function(m, type) {
     var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
+        coords,
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, translation, zoom;
 
+    // TODO need visual indication of stroke ~ alpha mapping
+
+    // TODO really the best way to size this plot?
     svg_w  = $("#main_container").width();
 
     spec = {
@@ -1256,6 +1255,13 @@ model_view_plot = function(m, coords) {
             .attr("width", spec.w)
             .attr("height", spec.h)
             .classed("bg", true);
+
+    if (type === "scaled") {
+        coords = m.topic_scaled();
+    } else {
+        // default to grid
+        coords = topic_coords_grid(m.n());
+    }
 
     domain_x = d3.extent(coords, function (d) {
             return d[0];
