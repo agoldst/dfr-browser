@@ -1275,7 +1275,6 @@ model_view_plot = function(m, type) {
         });
     } else {
         // default to grid
-        /*
         coords = topic_coords_grid(m.n()).map(function (p, j) {
             return {
                 x: p.x,
@@ -1284,23 +1283,6 @@ model_view_plot = function(m, type) {
                 r: circle_radius
             };
         });
-        */
-        // flat "pack" actually lays the circles out in a spiral;
-        // better at filling space than the grid
-        //
-        // bubble-chart code from
-        // http://bl.ocks.org/mbostock/4063269
-        coords = d3.layout.pack()
-            .sort(null)
-            .padding(1.5)
-            .radius(circle_radius) // radius adjusted by stroke-width below
-            .nodes({
-                children: d3.range(m.n()).map(function (t) {
-                    return { t: t, value: 1 };
-                })
-            }).filter(function (x) {
-                return !x.children;
-            });
     }
 
     domain_x = d3.extent(coords, function (d) { return d.x; });
@@ -1612,13 +1594,38 @@ topic_coords_grid = function (n) {
     var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
         n_row = Math.floor(n / n_col),
         remain = n - n_row * n_col,
+        remain_odd = Math.max(remain - Math.floor(n_row / 2), 0),
+        cols,
+        vskip,
         i, j,
         result = [];
 
-    // Rectangular grid. TODO: closest possible packing?
-    for (i = n_row - 1; i >= 0; i -= 1, remain -= 1) {
-        for (j = 0; j < n_col + ((remain > 0) ? 1 : 0); j += 1) {
-            result.push({ x: j + 0.5, y: i + 0.5 });
+    // for circles of equal size, closest possible packing is hexagonal grid
+    // centers are spaced 1 unit apart on horizontal, sqrt(3) / 2 on vertical.
+    // Alternate rows are displaced 1/2 unit on horizontal.
+    vskip = Math.sqrt(3.0) / 2.0;
+
+    // if n is not exactly n_row * n_col, we'll do our best sticking
+    // things on the right-side margin
+
+    for (i = 0; i < n_row; i += 1) {
+        cols = n_col;
+        if (remain > 0) {
+            remain -= 1;
+            if (i % 2 === 0) {
+                cols = n_col + 1;
+            } else {
+                if (remain_odd > 0) {
+                    remain_odd -= 1;
+                    cols = n_col + 1;
+                }
+            }
+        }
+
+        for (j = 0; j < cols; j += 1) {
+            result.push({
+                x: j + 0.5 + ((i % 2 === 0) ? 0 : 0.5),
+                y: (n_row - i) * vskip + 0.5 });
         }
     }
 
