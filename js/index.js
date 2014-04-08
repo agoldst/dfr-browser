@@ -671,7 +671,9 @@ plot_topic_yearly = function (m, t, param) {
         .attr("width", w)
         .attr("height", function (d) {
             return spec.h - scale_y(d[1]);
-        });
+        })
+        .style("fill", param.color)
+        .style("stroke", param.color);
 
     if (param.clickable) {
         bars.on("mouseover", function (d) {
@@ -1168,7 +1170,7 @@ model_view = function (m, type) {
 };
 
 model_view_list = function (m) {
-    var trs, divs;
+    var trs, divs, scale_opacity;
 
     d3.select("button#model_sort_dir").on("click", function () {
         d3.selectAll("#model_view_list table tbody tr")
@@ -1197,6 +1199,10 @@ model_view_list = function (m) {
         .text(function (t) { return t + 1; }) // sigh
         .attr("href", topic_link);
 
+    scale_opacity = d3.scale.linear()
+        .domain(d3.extent(m.alpha()))
+        .range([0.4, 1.0]);
+
     divs = trs.append("td").append("div").classed("spark", true);
     append_svg(divs, VIS.model_view.list.spark)
         .each(function (t) {
@@ -1204,7 +1210,8 @@ model_view_list = function (m) {
                 svg: d3.select(this),
                 axes: false,
                 clickable: false,
-                spec: VIS.model_view.list.spark
+                spec: VIS.model_view.list.spark,
+                color: "rgba(51,153,255," + scale_opacity(m.alpha(t)) + ")"
             });
         });
 
