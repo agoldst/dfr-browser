@@ -15,7 +15,7 @@ var VIS = {
         aspect: 1.3333,
         words: 4,           // may need adjustment
         size_range: [7, 18], // points. may need adjustment
-        stroke_range: 4,    // max. perimeter thickness
+        stroke_range: 6,    // max. perimeter thickness
         yearly: {
             topics: 4,
             words: 3,
