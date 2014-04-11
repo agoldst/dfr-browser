@@ -126,6 +126,9 @@ text.topic_label {
     stroke: none;
 }
 
+#model_view_list td.weight {
+    width: 12em;
+}
 
 /* model_view_yearly */
 
