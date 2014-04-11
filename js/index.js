@@ -462,16 +462,18 @@ topic_view_words = function (m, t, n) {
         })
         .text(function (w) { return w.word; });
 
-    add_weight_cells(trs_w, "weight", words[0].weight);
+    add_weight_cells(trs_w, function (w) {
+        return w.weight / words[0].weight;
+    });
 
 };
 
-add_weight_cells = function (sel, wt, max) {
+add_weight_cells = function (sel, f) {
     sel.append("td").classed("weight", true)
         .append("div")
             .classed("proportion", true)
             .style("margin-left", function (w) {
-                return d3.format(".1%")(1 - w[wt] / max);
+                return d3.format(".1%")(1 - f(w));
             })
             .append("span")
                 .classed("proportion", true)
@@ -539,7 +541,7 @@ topic_view_docs = function (m, t, n, year) {
         window.location.hash = "/doc/" + d.doc;
     });
 
-    add_weight_cells(trs_d, "frac", 1);
+    add_weight_cells(trs_d, function (d) { return d.frac; });
 
     trs_d
         .append("td")
@@ -939,7 +941,9 @@ doc_view = function (m, d) {
                 window.location.hash = topic_hash(t.topic);
             });
 
-            add_weight_cells(trs, "weight", m.doc_len(doc));
+            add_weight_cells(trs, function (t) {
+                return t.weight / m.doc_len(doc);
+            });
 
             trs.append("td")
                 .text(function (t) {
