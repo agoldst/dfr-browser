@@ -74,7 +74,7 @@ model = function (spec) {
         // if there is no d entry for column t, return 0
         return (my.dt.i[p + p0] === d) ? my.dt.x[p + p0] : 0;
     };
-    // a row_sum method for the dt object
+    // a naive row_sum method for the dt object
     dt.row_sum = function (d) {
         var result, t;
         if (!my.dt) {
@@ -85,6 +85,23 @@ model = function (spec) {
             result += this(d, t);
         }
         return result;
+    };
+    // a col_sum method: this takes advantages of the column compression
+    dt.col_sum = function (t) {
+        var i;
+
+        // memoization
+        if (!my.col_sums) {
+            my.col_sums = [];
+        }
+
+        if (!my.col_sums[t]) {
+            my.col_sums[t] = 0;
+            for (i = my.dt.p[t]; i < my.dt.p[t + 1]; i += 1) {
+                my.col_sums[t] += my.dt.x[i];
+            }
+        }
+        return my.col_sums[t];
     };
     that.dt = dt;
 
