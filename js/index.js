@@ -1174,7 +1174,7 @@ model_view = function (m, type) {
 };
 
 model_view_list = function (m) {
-    var trs, divs, scale_opacity;
+    var trs, divs, alpha_max, topic_totals, token_total;
 
     d3.select("button#model_sort_dir").on("click", function () {
         d3.selectAll("#model_view_list table tbody tr")
@@ -1223,10 +1223,15 @@ model_view_list = function (m) {
         })
         .attr("href", topic_link);
 
-    trs.append("td")
-        .text(function (t) {
-            return VIS.float_format(m.alpha(t));
-        });
+    alpha_max = d3.max(m.alpha());
+    topic_totals = d3.range(m.n()).map(m.dt.col_sum);
+    token_total = d3.sum(topic_totals);
+    add_weight_cells(trs, function (t) {
+        return m.alpha(t) / alpha_max;
+    });
+    add_weight_cells(trs, function (t) {
+        return topic_totals[t] / token_total;
+    });
 
     VIS.ready.model_list = true;
     return true;
