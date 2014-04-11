@@ -23,7 +23,7 @@ var VIS = {
         },
         list: {
             spark: {
-                w: 50,
+                w: 70,
                 h: 20,
                 m: {
                     left: 2,
@@ -1186,6 +1186,9 @@ model_view_list = function (m) {
 
     VIS.model_view.list.descend = true;
 
+    d3.select("#model_view_list th#years_head")
+        .text(d3.min(m.years()) + "—" + d3.max(m.years()));
+
     trs = d3.select("#model_view_list table tbody")
         .selectAll("tr")
         .data(d3.range(m.n()))
@@ -1199,10 +1202,6 @@ model_view_list = function (m) {
         .text(function (t) { return t + 1; }) // sigh
         .attr("href", topic_link);
 
-    scale_opacity = d3.scale.linear()
-        .domain(d3.extent(m.alpha()))
-        .range([0.4, 1.0]);
-
     divs = trs.append("td").append("div").classed("spark", true);
     append_svg(divs, VIS.model_view.list.spark)
         .each(function (t) {
@@ -1210,8 +1209,7 @@ model_view_list = function (m) {
                 svg: d3.select(this),
                 axes: false,
                 clickable: false,
-                spec: VIS.model_view.list.spark,
-                color: "rgba(51,153,255," + scale_opacity(m.alpha(t)) + ")"
+                spec: VIS.model_view.list.spark
             });
         });
 

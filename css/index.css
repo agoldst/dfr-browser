@@ -119,6 +119,14 @@ text.topic_label {
     fill: rgba(51,153,255,0.9);
 }
 
+/* model_view_list */
+
+.spark rect {
+    fill: black;
+    stroke: none;
+}
+
+
 /* model_view_yearly */
 
 #year_topics {
