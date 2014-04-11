@@ -1153,7 +1153,7 @@ model_view = function (m, type) {
     } else {
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
-        if (!m.topic_scaled()) {
+        if (!m.topic_scaled() || !m.dt()) {
             view_loading(true);
             return true;
         }
@@ -1241,7 +1241,7 @@ model_view_list = function (m) {
 model_view_plot = function(m, type) {
     var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
         coords,
-        domain_x, domain_y,
+        domain_x, domain_y, topic_totals,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, translation, zoom;
 
@@ -1316,8 +1316,10 @@ model_view_plot = function(m, type) {
         .domain([0, 1])
         .range(VIS.model_view.size_range);
 
+    topic_totals = d3.range(m.n()).map(m.dt.col_sum);
+
     scale_stroke = d3.scale.linear()
-        .domain([0,d3.max(m.alpha())])
+        .domain([0,d3.max(topic_totals)])
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
@@ -1340,11 +1342,11 @@ model_view_plot = function(m, type) {
                 .attr("cx", 0)
                 .attr("cy", 0)
                 .attr("r", function (p) {
-                    return p.r - scale_stroke(m.alpha(p.t)) / 2;
+                    return p.r;
                 })
                 .classed("topic_cloud", true)
                 .attr("stroke-width", function (p) {
-                    return scale_stroke(m.alpha(p.t));
+                    return scale_stroke(topic_totals[p.t]);
                 })
                 .on("click", function (p) {
                     window.location.hash = topic_hash(t);
