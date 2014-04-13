@@ -85,12 +85,27 @@
     <div id="model_view_list" class="hidden">
       <table class="table table-condensed">
         <thead>
-          <tr>
-            <th>topic</th>
-            <th id="years_head">over time</th>
-            <th>top words</th>
-            <th class="text-right">proportion of corpus</th>
-            <th class="text-right">(%)</th>
+          <tr class="info">
+            <th id="model_view_list_topic" class="sort">
+              <a href="#/model/list/topic" title="click to sort">
+                topic
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th id="model_view_list_year" class="sort">
+              <a href="#/model/list/year" title="click to sort by max year">
+              over time
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th id="model_view_list_words" class="sort">
+              <a href="#/model/list/words" title="click to sort">
+                top words
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th colspan="2" id="model_view_list_frac" class="sort text-right">
+              <a href="#/model/list/frac" title="click to sort">
+                proportion of corpus
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
           </tr>
         </thead>
         <tbody>
