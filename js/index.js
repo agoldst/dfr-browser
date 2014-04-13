@@ -378,7 +378,10 @@ topic_view = function (m, t, year) {
         .text(topic_label(m, t, VIS.overview_words));
 
     view.select("p#topic_remark")
-        .text("α = " + VIS.float_format(m.alpha(t)));
+        .text("α = " + VIS.float_format(m.alpha(t))
+                + "; "
+                + VIS.percent_format(m.dt.col_sum(t) / m.total_tokens())
+                + " of corpus.");
 
     // table of top words and weights
     // ------------------------------
