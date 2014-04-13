@@ -96,6 +96,12 @@ model = function (spec) {
             my.col_sums = [];
         }
 
+        // dt.col_sum() returns an array of sums
+        if (t === undefined) {
+            return d3.range(my.n).map(this.col_sum);
+        }
+
+        // otherwise, return the sum for column t
         if (!my.col_sums[t]) {
             my.col_sums[t] = 0;
             for (i = my.dt.p[t]; i < my.dt.p[t + 1]; i += 1) {
