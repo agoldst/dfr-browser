@@ -1,0 +1,3 @@
+- uglifyjs into a single versioned file linked in index.html
+- stricter "namespacing": everything under dfb object?
+- refactor infinitely-long index.js
