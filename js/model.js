@@ -20,6 +20,7 @@ model = function (spec) {
         tw,
         n,
         n_top_words,
+        total_tokens,
         alpha,
         meta,
         vocab,
@@ -182,6 +183,19 @@ model = function (spec) {
         return my.tw[0].keys().length;
     };
     that.n_top_words = n_top_words;
+
+    total_tokens = function () {
+        if (!this.dt()) {
+            return undefined;
+        }
+
+        if (!my.total_tokens) {
+            my.total_tokens = d3.sum(my.dt.x);
+        }
+
+        return my.total_tokens;
+    };
+    that.total_tokens = total_tokens;
 
     // alpha hyperparameters
     alpha = function (t) {
