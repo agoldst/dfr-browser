@@ -1305,7 +1305,7 @@ model_view_list = function (m, sort, dir) {
 model_view_plot = function(m, type) {
     var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
         coords,
-        domain_x, domain_y, topic_totals,
+        domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, translation, zoom;
 
@@ -1380,10 +1380,8 @@ model_view_plot = function(m, type) {
         .domain([0, 1])
         .range(VIS.model_view.size_range);
 
-    topic_totals = d3.range(m.n()).map(m.dt.col_sum);
-
     scale_stroke = d3.scale.linear()
-        .domain([0,d3.max(topic_totals)])
+        .domain([0,d3.max(m.dt.col_sum())])
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
@@ -1410,7 +1408,7 @@ model_view_plot = function(m, type) {
                 })
                 .classed("topic_cloud", true)
                 .attr("stroke-width", function (p) {
-                    return scale_stroke(topic_totals[p.t]);
+                    return scale_stroke(m.dt.col_sum(p.t));
                 })
                 .on("click", function (p) {
                     window.location.hash = topic_hash(t);
