@@ -12,7 +12,8 @@ var VIS = {
     },
     overview_words: 15,     // may need adjustment
     model_view: {
-        aspect: 1.3333,
+        w: 1140,            // px: the bootstrap container width
+        aspect: 1.3333,     // for calculating height
         words: 4,           // may need adjustment
         size_range: [7, 18], // points. may need adjustment
         stroke_range: 6,    // max. perimeter thickness
@@ -1265,7 +1266,7 @@ model_view_list = function (m, sort, dir) {
 };
 
 model_view_plot = function(m, type) {
-    var svg_w, spec, svg, cloud_size, circle_radius, range_padding,
+    var spec, svg, cloud_size, circle_radius, range_padding,
         coords,
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
@@ -1274,11 +1275,9 @@ model_view_plot = function(m, type) {
     // TODO need visual indication of stroke ~ alpha mapping
 
     // TODO really the best way to size this plot?
-    svg_w  = $("#main_container").width();
-
     spec = {
-        w: svg_w,
-        h: Math.floor(svg_w / VIS.model_view.aspect),
+        w: VIS.model_view.w,
+        h: Math.floor(VIS.model_view.w / VIS.model_view.aspect),
         m: {
             left: 0,
             right: 0,
