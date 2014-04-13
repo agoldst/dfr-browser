@@ -126,6 +126,55 @@ text.topic_label {
     stroke: none;
 }
 
+#model_view_list table {
+    margin-top: 12pt;
+}
+
+#model_view_list thead tr:hover {
+    background-color: white;
+}
+
+#model_view_list th {
+    border-top: 2px solid #ddd;
+}
+
+#model_view_list th:hover {
+    background-color: #f5f5f5;
+}
+
+#model_view_list th.active {
+    background-color: #eee;
+}
+
+#model_view_list th a {
+    color: black;
+    text-decoration: none;
+}
+
+#model_view_list th:hover a {
+    text-decoration: underline;
+}
+
+#model_view_list th .glyphicon {
+    visibility: hidden;
+}
+
+#model_view_list th:hover .glyphicon {
+    visibility: visible;
+}
+
+#model_view_list th.active .glyphicon {
+    visibility: visible;
+}
+
+th#model_view_list_topic {
+    min-width: 6em;
+}
+
+th#model_view_list_year {
+    min-width: 8em;
+}
+
 #model_view_list td.weight {
     width: 12em;
 }
