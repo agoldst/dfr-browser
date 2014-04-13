@@ -60,23 +60,20 @@ The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*P
 
 ### Tune the visualization parameters
 
-In the model-info file (`data/info.json` by default), you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [the start of index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js) for the fields of the `VIS` object. Some possibilities of note:
-
-`VIS.prefab_plots`: if true, plots for the topics are not drawn on the fly but requested in the format `topic_plot/020.png` (this format is, alas, hard-coded in the `topic_view()` function in [index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js))
+In the model-info file (`data/info.json` by default), you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [the start of index.js](https://github.com/agoldst/dfr-browser/blob/master/js/index.js) for the fields of the `VIS` object and their default values. Some properties are nested. Some possibilities of note:
 
 `VIS.overview_words`: how many words to use as the "titles" for topics in the List view, and the topics menu
 
-`VIS.model_view`: specify the overview's aspect ratio, number of words in the Little Circles, and type-size range in points:
+`VIS.model_view`: a collection of properties. Specify the overview's number of words in the Little Circles and type-size range in points:
 
 ```json
 "model_view": {
-  "aspect": 1.3333,
   "words": 6,
   "size_range": [8, 10]
 }
 ```
 
-*Known issue*: unfortunately, you can't replace a deeply-nested property using this mechanism, only a property of the `VIS` object. That's why you have to specify all three components of `VIS.model_view` if you specify any. I'll fix this, eventually.
+`model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
 ### Launch the browser
 
