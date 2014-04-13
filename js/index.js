@@ -94,6 +94,7 @@ var bib_sort,   // bibliography sorting
     model_view_plot,
     model_view_yearly,
     topic_coords_grid,
+    tooltip,
     view_refresh,
     view_loading,
     view_error,
@@ -500,12 +501,6 @@ topic_view_docs = function (m, t, n, year) {
         d3.select("#topic_year_clear")
             .classed("disabled", false)
             .on("click", function () {
-                // We know that the next time the tooltip on the bar
-                // chart is displayed, the tooltip object's "selected"
-                // property will be refreshed. Until then, the property
-                // is wrongly still true, but this won't affect anything
-                // the user sees.
-
                 d3.select(".selected_year").classed("selected_year", false);
                 VIS.view_updating = true;
                 window.location.hash = topic_hash(t);
@@ -567,7 +562,7 @@ plot_topic_yearly = function (m, t, param) {
         w_click,
         bars,
         bars_click,
-        tooltip,
+        tip, tip_text,
         svg = param.svg,
         spec = param.spec;
 
@@ -689,64 +684,32 @@ plot_topic_yearly = function (m, t, param) {
             });
 
         // interactivity for the bars
-        //
-        // first, construct a tooltip object we'll update on mouse events
 
-        tooltip = {
-            div: d3.select("div#tooltip"),
-            container: d3.select("body").node(),
-            selected: false
-        };
-        if (tooltip.div.empty()) {
-            tooltip.div = d3.select("body").append("div")
-                .attr("id", "tooltip")
-                .classed("bar_tooltip", true);
-            tooltip.div.append("p");
-        }
-
-        tooltip.update_pos = function () {
-            var mouse_pos = d3.mouse(this.container);
-            this.div.style({
-                    left: (mouse_pos[0] + VIS.tooltip.offset.x) + 'px',
-                    top: (mouse_pos[1] + VIS.tooltip.offset.y) + 'px',
-                    position: "absolute"
-                });
-        };
-        tooltip.text = function (d) {
-            // could condition on this.selected, but it gets too talky
-            this.div.select("p")
-                .text(d[0].getFullYear());
-        };
-        tooltip.show = function () {
-            this.div.classed("hidden", false);
-        };
-        tooltip.hide = function () {
-            this.div.classed("hidden", true);
-        };
+        // tooltip
+        tip = tooltip();
+        tip_text = function (d) { return d[0].getFullYear(); };
 
         // now set mouse event handlers
 
         bars_click.on("mouseover", function (d) {
                 var g = d3.select(this.parentNode);
                 g.select(".display").classed("hover", true); // display bar
-                tooltip.selected = g.classed("selected_year");
-                tooltip.text(d);
-                tooltip.update_pos();
-                tooltip.show();
+                tip.text(tip_text(d));
+                tip.update_pos();
+                tip.show();
             })
             .on("mousemove", function (d) {
-                tooltip.update_pos();
+                tip.update_pos();
             })
             .on("mouseout", function (d) {
                 d3.select(this.parentNode).select(".display") // display bar
                     .classed("hover", false);
-                tooltip.hide();
+                tip.hide();
             })
             .on("click", function (d) {
                 if(d3.select(this.parentNode).classed("selected_year")) {
                     d3.select(this.parentNode).classed("selected_year", false);
-                    tooltip.selected = false;
-                    tooltip.text(d);
+                    tip.text(tip_text(d));
                     VIS.view_updating = true;
                     window.location.hash = topic_hash(t);
                 } else {
@@ -754,8 +717,7 @@ plot_topic_yearly = function (m, t, param) {
                     d3.selectAll(".selected_year")
                         .classed("selected_year", false);
                     d3.select(this.parentNode).classed("selected_year", true);
-                    tooltip.selected = true;
-                    tooltip.text(d);
+                    tip.text(tip_text(d));
                     VIS.view_updating = true;
                     window.location.hash = topic_hash(t) + "/" +
                         d[0].getFullYear();
@@ -1711,6 +1673,42 @@ topic_coords_grid = function (n) {
     return result;
 };
 
+tooltip = function () {
+    var that = VIS.tooltip || { };
+
+    if (that.div) {
+        return VIS.tooltip;
+    }
+
+    that.div = d3.select("body").append("div")
+        .attr("id", "tooltip")
+        .classed("bar_tooltip", true);
+    that.container = d3.select("body").node(),
+
+    that.div.append("p");
+
+
+    that.update_pos = function () {
+        var mouse_pos = d3.mouse(this.container);
+        this.div.style({
+                left: (mouse_pos[0] + this.offset.x) + 'px',
+                top: (mouse_pos[1] + this.offset.y) + 'px',
+                position: "absolute"
+            });
+    };
+    that.text = function (text) {
+        this.div.select("p").text(text);
+    };
+    that.show = function () {
+        this.div.classed("hidden", false);
+    };
+    that.hide = function () {
+        this.div.classed("hidden", true);
+    };
+
+    VIS.tooltip = that;
+    return that;
+};
 
 view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag);
