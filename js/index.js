@@ -1111,9 +1111,8 @@ about_view = function (m) {
     return true;
 };
 
-model_view = function (m, type) {
-    var type_chosen = type || VIS.last.model,
-        coords;
+model_view = function (m, type, sort, sort_dir) {
+    var type_chosen = type || VIS.last.model;
 
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
@@ -1141,8 +1140,7 @@ model_view = function (m, type) {
             return true;
         }
 
-        model_view_list(m);
-        d3.select("button#model_sort_dir").classed("disabled", false);
+        model_view_list(m, sort, sort_dir);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
         if (!m.meta() || !m.dt()) {
@@ -1176,68 +1174,131 @@ model_view = function (m, type) {
     return true;
 };
 
-model_view_list = function (m) {
-    var trs, divs, topic_totals, token_total, token_max;
+model_view_list = function (m, sort, dir) {
+    var trs, divs, token_max,
+        keys, sorter, sort_choice, sort_dir;
 
-    d3.select("button#model_sort_dir").on("click", function () {
-        d3.selectAll("#model_view_list table tbody tr")
-            .sort(VIS.model_view.list.descend ?
-                        d3.descending : d3.ascending)
-            .order();
-        VIS.model_view.list.descend = !VIS.model_view.list.descend;
-    });
+    if (!VIS.ready.model_list) {
+        d3.select("th#model_view_list_year a")
+            .text(d3.min(m.years()) + "—" + d3.max(m.years()));
 
-    if (VIS.ready.model_list) {
-        return true;
+        trs = d3.select("#model_view_list table tbody")
+            .selectAll("tr")
+            .data(d3.range(m.n()))
+            .enter().append("tr");
+
+        trs.on("click", function (t) {
+                window.location.hash = topic_hash(t);
+            });
+
+        trs.append("td").append("a")
+            .text(function (t) { return t + 1; }) // sigh
+            .attr("href", topic_link);
+
+        divs = trs.append("td").append("div").classed("spark", true);
+        append_svg(divs, VIS.model_view.list.spark)
+            .each(function (t) {
+                plot_topic_yearly(m, t, {
+                    svg: d3.select(this),
+                    axes: false,
+                    clickable: false,
+                    spec: VIS.model_view.list.spark
+                });
+            });
+
+        trs.append("td").append("a")
+            .text(function (t) {
+                return m.topic_words(t, VIS.overview_words).join(" ");
+            })
+            .attr("href", topic_link);
+
+        token_max = d3.max(m.dt.col_sum());
+        add_weight_cells(trs, function (t) {
+            return m.dt.col_sum(t) / token_max;
+        });
+        trs.append("td")
+            .text(function (t) {
+                return VIS.percent_format(m.dt.col_sum(t) / m.total_tokens());
+            });
+
+        VIS.ready.model_list = true;
+    } // if (!VIS.ready.model_list)
+
+    // sorting
+
+    if (!VIS.last.model_list) {
+        VIS.last.model_list = { };
     }
 
-    VIS.model_view.list.descend = true;
+    sort_choice = sort || VIS.last.model_list.sort;
+    sort_dir = (sort_choice === VIS.last.model_list.sort) ?
+        (dir || VIS.last.model_list.dir) : "up";
 
-    d3.select("#model_view_list th#years_head")
-        .text(d3.min(m.years()) + "—" + d3.max(m.years()));
-
-    trs = d3.select("#model_view_list table tbody")
-        .selectAll("tr")
-        .data(d3.range(m.n()))
-        .enter().append("tr");
-
-    trs.on("click", function (t) {
-            window.location.hash = topic_hash(t);
+    keys = d3.range(m.n());
+    if (sort_choice === "words") {
+        keys = keys.map(function (t) {
+            return m.topic_words(t, 5).join(" ");
         });
-
-    trs.append("td").append("a")
-        .text(function (t) { return t + 1; }) // sigh
-        .attr("href", topic_link);
-
-    divs = trs.append("td").append("div").classed("spark", true);
-    append_svg(divs, VIS.model_view.list.spark)
-        .each(function (t) {
-            plot_topic_yearly(m, t, {
-                svg: d3.select(this),
-                axes: false,
-                clickable: false,
-                spec: VIS.model_view.list.spark
+    } else if (sort_choice === "frac") {
+        // default ordering should be largest frac to least,
+        // so the sort keys are negative proportions
+        keys = keys.map(function (t) {
+            return -m.dt.col_sum(t) / m.total_tokens();
+        });
+    } else if (sort_choice === "year") {
+        keys = keys.map(function (t) {
+            var result, max_weight = 0;
+            m.topic_yearly(t).forEach(function (year, weight) {
+                if (weight > max_weight) {
+                    result = year;
+                    max_weight = weight;
+                }
             });
+            return result;
         });
+    } else {
+        // otherwise, enforce the default: by topic number
+        sort_choice = "topic";
+    }
 
-    trs.append("td").append("a")
-        .text(function (t) {
-            return m.topic_words(t, VIS.overview_words).join(" ");
+    if (sort_dir === "down") {
+        sorter = function (a, b) {
+            return d3.descending(keys[a], keys[b]);
+        };
+    } else {
+        // default: up
+        sorter = function (a, b) {
+            return d3.ascending(keys[a], keys[b]);
+        };
+    }
+
+    // remember for the next time we visit #/model/list
+    VIS.last.model_list.sort = sort_choice;
+    VIS.last.model_list.dir = sort_dir;
+
+    d3.selectAll("#model_view_list table tbody tr")
+        .sort(sorter)
+        .order();
+
+    d3.selectAll("#model_view_list th.sort")
+        .classed("active", function () {
+            return !!this.id.match(sort_choice);
         })
-        .attr("href", topic_link);
+        .each(function () {
+            var ref = "#/" + this.id.replace(/_(view_)?/g, "/");
+            if (this.id.match(sort_choice)) {
+                ref += (sort_dir === "down") ? "/up" : "/down";
+            }
 
-    topic_totals = d3.range(m.n()).map(m.dt.col_sum);
-    token_total = d3.sum(topic_totals);
-    token_max = d3.max(topic_totals);
-    add_weight_cells(trs, function (t) {
-        return topic_totals[t] / token_max;
-    });
-    trs.append("td")
-        .text(function (t) {
-            return VIS.percent_format(topic_totals[t] / token_total);
+            d3.select(this).select("a")
+                .attr("href", ref);
+        })
+        .on("click", function () {
+            window.location.hash = d3.select(this).select("a")
+                .attr("href").replace(/#/, "");
         });
 
-    VIS.ready.model_list = true;
+
     return true;
 };
 
@@ -1682,7 +1743,7 @@ view_refresh = function (m, v) {
             success = model_view(m);
             break;
         case "model":
-            success = model_view(m, param);
+            success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "about":
             success = about_view(m);
