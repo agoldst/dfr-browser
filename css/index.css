@@ -181,66 +181,18 @@ th#model_view_list_year {
 
 /* model_view_yearly */
 
-#year_topics {
-    color: black;
-}
-
-#year_topics tr:hover {
-    background-color: inherit;
-}
-
-#year_topics tr:hover a {
-    text-decoration: none;
-}
-
-#year_topics tr td:hover a {
-    text-decoration: underline;
-}
-
-#year_topics td div.pie {
-    width: 10%;
-    float: left;
-    /* background-color: rgb(51,153,255); */
-}
-
-#year_topics td div span.proportion {
-    background-color: rgba(0,0,0,0);
-}
-
-#year_topics td a {
-    float: right;
-    width: 85%;
-    display: block;
-}
-
-#year_topics td a:hover {
-    float: right;
-    width: 85%;
-    color: black;
-    display: block;
-}
-
-td.year {
-    font-weight: bold;
+text.layer_label {
     pointer-events: none;
+    text-anchor: middle;
+    fill: rgba(0,0,0,0.7);
+    font: sans-serif;
 }
 
-#year_topics td:hover {
-    background-color: #eee; /* bootstrap's gray-lighter */
-    text-decoration: underline;
+path.topic_area {
+    stroke: rgba(0,0,0,0.2);
 }
 
-#year_topics div.pie {
-    margin: 1px;
-}
 
-g.arc path {
-    opacity: 0.25;
-}
-g.arc path.highlight {
-    opacity: 1;
-    stroke: #888;
-}
 
 /* topic_view */
 
