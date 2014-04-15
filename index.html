@@ -70,15 +70,29 @@
             <a href="#/model/yearly">Years</a>
           </li>
         </ul>
-        <p id="topic_hover" class="navbar-text help">Click a topic for more detail</p>
         <div class="navbar-right">
-          <p id="model_view_plot_help" class="navbar-text help">Drag to pan; scroll to zoom</p>
-          <button id="reset_zoom" type="button" class="btn btn-default navbar-btn">Reset zoom</button>
-          <button id="model_sort_dir"
-            class="btn btn-default navbar-btn"
-            type="button">
-            Reverse order
+          <p id="model_view_help"
+          class="navbar-text help model_view_plot">
+          Drag to pan; scroll to zoom; click for more about a topic</p>
+          <p id="list_view_help"
+          class="navbar-text help model_view_list">
+          click a column label to sort; click a row for more about a topic</p>
+          <button id="reset_zoom" type="button"
+            class="btn btn-default navbar-btn model_view_plot model_view_yearly hidden">
+            Reset zoom
           </button>
+          <p id="yearly_view_help" class="navbar-text help model_view_yearly">
+            y-axis:
+          </p>
+          <ul id="yearly_choice"
+            class="nav navbar-nav nav-pills model_view_yearly">
+            <li id="nav_model_yearly_frac" class="active">
+              <a href="#/model/yearly/frac">yearly %</a>
+            </li>
+            <li id="nav_model_yearly_raw">
+              <a href="#/model/yearly/raw">word counts</a>
+            </li>
+          </ul>
         </div>
       </div>
     </nav>

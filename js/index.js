@@ -21,14 +21,10 @@ var VIS = {
             w: 1090,
             h: 800,
             m: {
-                left: 50,
+                left: 60,
                 right: 20,
                 top: 20,
                 bottom: 20
-            },
-            ticks: {
-                x: 10,
-                y: 20
             }
         },
         list: {
@@ -1083,7 +1079,7 @@ about_view = function (m) {
     return true;
 };
 
-model_view = function (m, type, sort, sort_dir) {
+model_view = function (m, type, p1, p2) {
     var type_chosen = type || VIS.last.model;
 
     // if loading scaled coordinates failed,
@@ -1112,7 +1108,8 @@ model_view = function (m, type, sort, sort_dir) {
             return true;
         }
 
-        model_view_list(m, sort, sort_dir);
+        model_view_list(m, p1, p2);
+        d3.selectAll(".model_view_list").classed("hidden", false);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
         if (!m.meta() || !m.dt()) {
@@ -1120,10 +1117,10 @@ model_view = function (m, type, sort, sort_dir) {
             return true;
         }
 
-        model_view_yearly(m);
-        d3.select("button#model_sort_dir").classed("disabled", false);
-        d3.select("#model_view_yearly", "hidden", false);
-    } else {
+        model_view_yearly(m, p1);
+        d3.selectAll(".model_view_yearly").classed("hidden", false);
+        d3.select("#model_view_yearly").classed("hidden", false);
+    } else { // default to grid
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
         if (!m.topic_scaled() || !m.dt()) {
@@ -1136,8 +1133,7 @@ model_view = function (m, type, sort, sort_dir) {
             type_chosen = "grid";
         }
         model_view_plot(m, type_chosen);
-        d3.select("#model_view_plot_help").classed("hidden", false);
-        d3.select("#reset_zoom").classed("disabled", false);
+        d3.selectAll(".model_view_plot").classed("hidden", false);
         d3.select("#model_view_plot").classed("hidden", false);
     }
     VIS.last.model = type_chosen;
@@ -1489,19 +1485,16 @@ model_view_plot = function(m, type) {
     zoom(svg);
 };
 
-model_view_yearly = function (m) {
+model_view_yearly = function (m, type) {
     var spec = VIS.model_view.yearly, svg,
-        year_keys, years, weight_max, max_year, all_series,
-        stack, to_plot,
-        scale_x, y_max, scale_y, area,
+        year_keys, years, yr_extent, all_series,
+        scale_x, y_max, scale_y, axis_x, axis_y, area,
         scale_color,
-        tip, tip_text;
-
-
-    if (VIS.ready.model_yearly) {
-        d3.select("div#model_view_yearly").classed("hidden", false);
-        return true;
-    }
+        tip, tip_text,
+        stack,
+        raw = (type === "raw"),
+        paths,
+        areas, zoom;
 
     svg = plot_svg("#model_view_yearly", spec);
 
@@ -1509,53 +1502,23 @@ model_view_yearly = function (m) {
     years = year_keys.map(function (y) {
         return new Date(+y, 0, 1);
     });
-
-    weight_max = 0;
-
-    all_series = d3.range(m.n()).map(function (t) {
-        var wts = m.topic_yearly(t),
-            series = { t: t };
-        series.values = year_keys.map(function (yr, j) {
-            var result = {
-                x: years[j],
-                y: wts.get(yr) || 0
-            };
-            if (result.weight > weight_max) {
-                weight_max = result.y;
-                max_year = yr;
-            }
-            return result;
-        });
-        return series;
-    });
-
-    stack = d3.layout.stack()
-        .values(function (d) { return d.values; });
-    to_plot = stack(all_series);
+    yr_extent = d3.extent(years);
 
     scale_x = d3.time.scale()
-        .domain(d3.extent(years))
+        .domain(yr_extent)
         .range([0, spec.w]);
         //.nice();
 
-    // fractions: sum to 1 on each year
-    y_max = d3.max(to_plot, function (d) { return d.y + d.y0; });
+    if (raw) {
+        y_max = d3.max(m.yearly_total().values());
+    } else {
+        y_max = 1;
+    }
+
     scale_y = d3.scale.linear()
-        .domain([0, 1])
+        .domain([0, y_max])
         .range([spec.h, 0])
         .nice();
-
-    /*
-    scale_y_raw = d3.scale.linear()
-        .domain([0, weight_max * m.yearly_total(max_year)]
-        .range([spec.h, 0])
-        .nice();
-        */
-
-    area = d3.svg.area()
-        .x(function (d) { return scale_x(d.x); })
-        .y0(function (d) { return scale_y(d.y0); })
-        .y1(function (d) { return scale_y(d.y0 + d.y); });
 
     // axes
     // ----
@@ -1564,55 +1527,107 @@ model_view_yearly = function (m) {
     svg.selectAll("g.axis").remove();
 
     // x axis
+    axis_x = d3.svg.axis()
+        .scale(scale_x)
+        .orient("bottom");
+
     svg.append("g")
         .classed("axis", true)
         .classed("x", true)
         .attr("transform", "translate(0," + spec.h + ")")
-        .call(d3.svg.axis()
-            .scale(scale_x)
-            .orient("bottom")
-            .ticks(d3.time.years, spec.ticks.x));
+        .call(axis_x);
 
     // y axis
+    axis_y = d3.svg.axis()
+        .scale(scale_y)
+        .orient("left")
+        .tickFormat(raw ? null : d3.format('.0%'));
+
     svg.append("g")
         .classed("axis", true)
         .classed("y", true)
-        .call(d3.svg.axis()
-            .scale(scale_y)
-            .orient("left")
-            .tickSize(-spec.w)
-            .outerTickSize(0)
-            .tickFormat(VIS.percent_format)
-            .ticks(spec.ticks.y));
+        .call(axis_y);
 
     svg.selectAll("g.axis.y g").filter(function (d) { return d; })
         .classed("minor", true);
 
-    // TODO handles on axes
+    if (!VIS.ready.model_yearly) {
+        all_series = d3.range(m.n()).map(function (t) {
+            var wts = m.topic_yearly(t),
+                series = { t: t };
+            series.values = year_keys.map(function (yr, j) {
+                var result = {
+                    yr: yr,
+                    x: years[j],
+                    y: wts.get(yr) || 0
+                };
+                return result;
+            });
+            return series;
+        });
 
+        stack = d3.layout.stack()
+            .values(function (d) {
+                return d.values;
+            });
 
+        VIS.model_view.yearly.layers_frac = stack(all_series);
 
-    // A visual cue to help spot the same topic in nearby rows
-    // Unfortunately, 20 colors is as far as any sane person would go,
-    // so we'll just stupidly repeat colors at intervals of 20
-    // TODO make better (shape, pattern?)
-    scale_color = d3.scale.category20();
+        VIS.model_view.yearly.layers_raw = stack(all_series.map(function (s) {
+            return {
+                t: s.t,
+                values: s.values.map(function (d) {
+                    return {
+                        x: d.x,
+                        y: d.y * m.yearly_total(d.yr)
+                    };
+                })
+            };
+        }));
 
-    tip = tooltip();
-    tip_text = function (t) { return topic_label(m, t, 4); };
+        // A visual cue to help spot the same topic in nearby rows
+        // Unfortunately, 20 colors is as far as any sane person would go,
+        // so we'll just stupidly repeat colors at intervals of 20
+        // TODO make better (shape, pattern?)
+        scale_color = (function () {
+            var cat20 = d3.scale.category20();
+            return function (t, highlight) {
+                var c = cat20(t % 20);
+                return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
+            };
+        }());
 
-    svg.selectAll("path.topic_area")
-        .data(to_plot)
-        .enter()
+        svg.append("rect")
+            .attr("width", spec.w)
+            .attr("height", spec.h)
+            .classed("bg", true);
+
+        tip = tooltip();
+        tip_text = function (t) { return topic_label(m, t, 4); };
+
+        svg.append("clipPath").attr("id", "clip")
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", spec.w)
+            .attr("height", spec.h);
+
+        VIS.ready.model_yearly = true;
+    } // if (!VIS.ready.model_yearly)
+
+    paths = svg.selectAll("path.topic_area")
+        .data(raw ? VIS.model_view.yearly.layers_raw
+                : VIS.model_view.yearly.layers_frac);
+
+    paths.enter()
         .append("path")
         .classed("topic_area", true)
-        .attr("d", function (d) {
-            return area(d.values);
-        })
+        .attr("clip-path", "url(#clip)")
         .style("fill", function (d) {
-            return scale_color(d.t % 20);
+            return scale_color(d.t);
         })
         .on("mouseover", function (d) {
+            d3.select(this).style("fill", scale_color(d.t, true));
             tip.text(tip_text(d.t));
             tip.update_pos();
             tip.show();
@@ -1621,15 +1636,72 @@ model_view_yearly = function (m) {
             tip.update_pos();
         })
         .on("mouseout", function (d) {
+            d3.select(this).style("fill", scale_color(d.t));
             tip.hide();
         })
         .on("click", function (d) {
+            // TODO conflict with drag-to-pan: dblclick?
             window.location.hash = topic_hash(d.t);
-        })
+        });
 
-
-    VIS.ready.model_yearly = true;
     d3.select("div#model_view_yearly").classed("hidden", false);
+
+    area = d3.svg.area()
+        .x(function (d) { return scale_x(d.x); })
+        .y0(function (d) { return scale_y(d.y0); })
+        .y1(function (d) { return scale_y(d.y0 + d.y); });
+
+    areas = function (d) { return area(d.values); };
+
+    paths.transition()
+        .duration(2000)
+        .attr("d", areas);
+
+    zoom = d3.behavior.zoom()
+        .x(scale_x)
+        .y(scale_y)
+        .scaleExtent([1, 5])
+        .on("zoom", function () {
+            if (VIS.zoom_transition) {
+                paths.transition()
+                    .duration(2000)
+                    .attr("d", areas);
+                svg.select("g.x.axis").transition()
+                    .duration(2000)
+                    .call(axis_x);
+                svg.select("g.y.axis").transition()
+                    .duration(2000)
+                    .call(axis_y);
+                VIS.zoom_transition = false;
+            } else {
+                paths.attr("d", areas);
+                svg.select("g.x.axis").call(axis_x);
+                svg.select("g.y.axis").call(axis_y);
+            }
+        });
+
+    // zoom reset button
+    d3.select("button#reset_zoom")
+        .on("click", function () {
+            VIS.zoom_transition = true;
+            zoom.translate([0, 0])
+                .scale(1)
+                .event(svg);
+        });
+
+    zoom(svg);
+
+    d3.select("button#yearly_raw_toggle")
+        .text(raw ? "Show proportions" : "Show counts")
+        .on("click", function () {
+            window.location.hash = raw ? "/model/yearly/frac"
+                : "/model/yearly/raw";
+        });
+
+    d3.selectAll("#yearly_choice li").classed("active", false);
+    d3.select(raw ? "#nav_model_yearly_raw" : "#nav_model_yearly_frac")
+        .classed("active", true);
+
     return true;
 };
 
