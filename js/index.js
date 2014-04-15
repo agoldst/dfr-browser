@@ -569,7 +569,7 @@ plot_topic_yearly = function (m, t, param) {
         w_click,
         bars,
         bars_click,
-        tip, tip_text,
+        tip_text,
         svg = param.svg,
         spec = param.spec;
 
@@ -692,8 +692,7 @@ plot_topic_yearly = function (m, t, param) {
 
         // interactivity for the bars
 
-        // tooltip
-        tip = tooltip();
+        // tooltip text
         tip_text = function (d) { return d[0].getFullYear(); };
 
         // now set mouse event handlers
@@ -701,22 +700,22 @@ plot_topic_yearly = function (m, t, param) {
         bars_click.on("mouseover", function (d) {
                 var g = d3.select(this.parentNode);
                 g.select(".display").classed("hover", true); // display bar
-                tip.text(tip_text(d));
-                tip.update_pos();
-                tip.show();
+                tooltip().text(tip_text(d));
+                tooltip().update_pos();
+                tooltip().show();
             })
             .on("mousemove", function (d) {
-                tip.update_pos();
+                tooltip().update_pos();
             })
             .on("mouseout", function (d) {
                 d3.select(this.parentNode).select(".display") // display bar
                     .classed("hover", false);
-                tip.hide();
+                tooltip().hide();
             })
             .on("click", function (d) {
                 if(d3.select(this.parentNode).classed("selected_year")) {
                     d3.select(this.parentNode).classed("selected_year", false);
-                    tip.text(tip_text(d));
+                    tooltip().text(tip_text(d));
                     VIS.view_updating = true;
                     window.location.hash = topic_hash(t);
                 } else {
@@ -724,7 +723,7 @@ plot_topic_yearly = function (m, t, param) {
                     d3.selectAll(".selected_year")
                         .classed("selected_year", false);
                     d3.select(this.parentNode).classed("selected_year", true);
-                    tip.text(tip_text(d));
+                    tooltip().text(tip_text(d));
                     VIS.view_updating = true;
                     window.location.hash = topic_hash(t) + "/" +
                         d[0].getFullYear();
@@ -1485,7 +1484,6 @@ model_view_yearly = function (m, type) {
     var spec = VIS.model_view.yearly, svg,
         scale_x, y_max, scale_y, axis_x, axis_y, area,
         scale_color,
-        tip, tip_text,
         stack,
         raw = (type === "raw"),
         to_plot,
@@ -1581,16 +1579,16 @@ model_view_yearly = function (m, type) {
         })
         .on("mouseover", function (d) {
             d3.select(this).style("fill", scale_color(d.t, true));
-            tip.text(tip_text(d.t));
-            tip.update_pos();
-            tip.show();
+            tooltip().text(topic_label(m, d.t, 4));
+            tooltip().update_pos();
+            tooltip().show();
         })
         .on("mousemove", function (d) {
-            tip.update_pos();
+            tooltip().update_pos();
         })
         .on("mouseout", function (d) {
             d3.select(this).style("fill", scale_color(d.t));
-            tip.hide();
+            tooltip().hide();
         })
         .on("click", function (d) {
             // TODO conflict with drag-to-pan: dblclick?
