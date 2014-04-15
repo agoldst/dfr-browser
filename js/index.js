@@ -1746,13 +1746,13 @@ tooltip = function () {
     var that = VIS.tooltip || { };
 
     if (that.div) {
-        return VIS.tooltip;
+        return that;
     }
 
     that.div = d3.select("body").append("div")
         .attr("id", "tooltip")
         .classed("bar_tooltip", true);
-    that.container = d3.select("body").node(),
+    that.container = d3.select("body").node();
 
     that.div.append("p");
 
