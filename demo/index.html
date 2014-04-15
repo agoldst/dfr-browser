@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>Topic Model Browser</title>
-  <script type="text/javascript" src="lib/d3.v3.min.js"></script>
+  <script type="text/javascript" src="lib/d3.min.js"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
@@ -66,26 +66,69 @@
           <li id="nav_model_list">
             <a href="#/model/list">List</a>
           </li>
+          <li id="nav_model_yearly">
+            <a href="#/model/yearly">Years</a>
+          </li>
         </ul>
-        <p id="topic_hover" class="navbar-text help">Click a topic for more detail</p>
         <div class="navbar-right">
-          <p id="model_view_plot_help" class="navbar-text help">Drag to pan; scroll wheel or double-click to zoom</p>
-          <button id="reset_zoom" type="button" class="btn btn-default navbar-btn">Reset zoom</button>
+          <p id="model_view_help"
+          class="navbar-text help model_view_plot model_view_yearly">
+          scroll to zoom; shift-drag to pan; click for more about a topic</p>
+          <p id="list_view_help"
+          class="navbar-text help model_view_list">
+          click a column label to sort; click a row for more about a topic</p>
+          <p id="yearly_view_help" class="navbar-text help model_view_yearly">
+            y-axis:
+          </p>
+          <ul id="yearly_choice"
+            class="nav navbar-nav nav-pills model_view_yearly">
+            <li id="nav_model_yearly_frac" class="active">
+              <a href="#/model/yearly/frac">yearly %</a>
+            </li>
+            <li id="nav_model_yearly_raw">
+              <a href="#/model/yearly/raw">word counts</a>
+            </li>
+          </ul>
+          <button id="reset_zoom" type="button"
+            class="btn btn-default navbar-btn model_view_plot model_view_yearly hidden">
+            Reset zoom
+          </button>
         </div>
       </div>
     </nav>
     <div id="model_view_list" class="hidden">
       <table class="table table-condensed">
         <thead>
-          <th>Topic</th>
-          <th>Top words</th>
-          <th>α</th>
+          <tr class="info">
+            <th id="model_view_list_topic" class="sort">
+              <a href="#/model/list/topic" title="click to sort">
+                topic
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th id="model_view_list_year" class="sort">
+              <a href="#/model/list/year" title="click to sort by max year">
+              over time
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th id="model_view_list_words" class="sort">
+              <a href="#/model/list/words" title="click to sort">
+                top words
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+            <th colspan="2" id="model_view_list_frac" class="sort text-right">
+              <a href="#/model/list/frac" title="click to sort">
+                proportion of corpus
+              </a><span class="glyphicon glyphicon-sort"></span>
+            </th>
+          </tr>
         </thead>
         <tbody>
         </tbody>
       </table>
     </div>
     <div id="model_view_plot" class="hidden">
+    </div>
+    <div id="model_view_yearly" class="hidden">
     </div>
   </div>
 
@@ -112,8 +155,10 @@
           </div>
           <table class="table table-condensed" id="topic_words">
             <thead>
-              <th>Word</th>
-              <th class="th-right">Weight</th>
+              <tr>
+                <th>Word</th>
+                <th class="th-right">Weight</th>
+              </tr>
             </thead>
             <tbody>
             </tbody>
@@ -122,18 +167,27 @@
         <div class="col-md-9">
           <div id="topic_plot">
             <h3 class="h-small">Yearly proportion of words in topic</h3>
+            <p class="pull-left help">
+              Click a bar to limit documents to that year
+            </p>
+            <div class="pull-right">
+              <button class="btn btn-default disabled" type="button"
+                id="topic_year_clear">clear selected year</button>
+            </div>
           </div>
-          <h3 class="h-small">Documents with largest proportion</h3>
+          <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
           <div class="btn-group btn-group-xs">
             <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
             <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
           </div>
           <table class="table table-condensed" id="topic_docs">
             <thead>
-              <th>Document</th>
-              <th></th>
-              <th class="th-right">%</th>
-              <th class="th-right">Weight</th>
+              <tr>
+                <th>Document</th>
+                <th></th>
+                <th class="th-right">%</th>
+                <th class="th-right">Weight</th>
+              </tr>
             </thead>
             <tbody>
             </tbody>
@@ -263,8 +317,7 @@
 
 </div> <!-- /container -->
 
-
-<script type="text/javascript" src="//code.jquery.com/jquery.js"></script>
+<script type="text/javascript" src="lib/jquery-1.11.0.min.js"></script>
 <script type="text/javascript" src="lib/bootstrap.min.js"></script>
 <script type="text/javascript" src="lib/jszip.js"></script>
 <script type="text/javascript" src="lib/jszip-load.js"></script>

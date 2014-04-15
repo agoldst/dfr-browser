@@ -119,12 +119,92 @@ text.topic_label {
     fill: rgba(51,153,255,0.9);
 }
 
-/* topic_list_view */
+/* model_view_list */
+
+.spark rect {
+    fill: black;
+    stroke: none;
+}
+
+#model_view_list table {
+    margin-top: 12pt;
+}
+
+#model_view_list thead tr:hover {
+    background-color: white;
+}
+
+#model_view_list th {
+    border-top: 2px solid #ddd;
+}
+
+#model_view_list th:hover {
+    background-color: #f5f5f5;
+}
+
+#model_view_list th.active {
+    background-color: #eee;
+}
+
+#model_view_list th a {
+    color: black;
+    text-decoration: none;
+}
+
+#model_view_list th:hover a {
+    text-decoration: underline;
+}
+
+#model_view_list th .glyphicon {
+    visibility: hidden;
+}
+
+#model_view_list th:hover .glyphicon {
+    visibility: visible;
+}
+
+#model_view_list th.active .glyphicon {
+    visibility: visible;
+}
+
+th#model_view_list_topic {
+    min-width: 6em;
+}
+
+th#model_view_list_year {
+    min-width: 8em;
+}
+
+#model_view_list td.weight {
+    width: 12em;
+}
+
+/* model_view_yearly */
+
+text.layer_label {
+    pointer-events: none;
+    fill: rgba(0,0,0,0.8);
+    font: sans-serif;
+}
+
+path.topic_area {
+    stroke: rgba(0,0,0,0.2);
+}
+
+
 
 /* topic_view */
 
 #topic_words a {
     font-size: 1em;
+}
+
+tr:hover {
+    background-color: #eee;
+}
+
+tr:hover a {
+    text-decoration: underline;
 }
 
 /* topic_plot */
@@ -150,8 +230,61 @@ text.topic_label {
     display: none;
 }
 
-rect.topic_proportion {
+.topic_proportion rect.display {
     fill: black;
+    stroke: black;
+    pointer-events: none;
+}
+
+.topic_proportion rect.display.hover {
+/*    fill: #ddd;
+    stroke: #ddd;*/
+}
+
+.selected_year rect.display {
+    fill: rgb(51,153,255);
+    stroke: rgb(51,153,255);
+/*    fill: #ddd;
+    stroke: #ddd;*/
+}
+
+.topic_proportion rect.interact {
+    fill: rgba(255,255,255,0);
+}
+
+.topic_proportion rect.interact:hover {
+    stroke: #eee;
+    fill: #eee;
+}
+
+/* tooltip for selected topic-year */
+
+div.bar_tooltip {
+    background: #ddd;
+    opacity: .95;
+    padding-left: 5px;
+    padding-right: 5px;
+    vertical-align: middle;
+    border-radius: 4px;
+    text-align: center;
+    position: absolute;
+    z-index: 1001;
+    font-family: sans-serif;
+    font-size: 11px;
+    height: 18px;
+    color: black;
+    border: 1px solid #ddd;
+}
+
+/* topic_view docs */
+
+/* The weight bars for topic documents should have fixed width; otherwise,
+ * when we condition the list on year, the table columns will resize and
+ * the same percentage value will be represented by a different-sized bar.
+ */
+
+#topic_docs td.weight {
+    width: 25em;
 }
 
 /* word_view */
