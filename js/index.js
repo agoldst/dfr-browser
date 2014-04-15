@@ -25,7 +25,8 @@ var VIS = {
                 right: 20,
                 top: 20,
                 bottom: 20
-            }
+            },
+            label_threshold: 40 // px
         },
         list: {
             spark: {
@@ -1484,11 +1485,11 @@ model_view_plot = function(m, type) {
 
 model_view_yearly = function (m, type) {
     var spec = VIS.model_view.yearly, svg,
-        scale_x, y_max, scale_y, axis_x, axis_y, area,
+        scale_x, scale_y, axis_x, area,
         scale_color,
         raw,
         to_plot,
-        paths,
+        paths, labels, render_labels,
         areas, zoom;
 
     svg = plot_svg("#model_view_yearly", spec);
@@ -1519,12 +1520,15 @@ model_view_yearly = function (m, type) {
 
     // color: a visual cue to distinguish topics. // Unfortunately,
     // 20 colors is as far as any sane person would go, so we'll just
-    // stupidly repeat colors at intervals of 20
+    // stupidly repeat colors at intervals of 20. We can at least
+    // make sure repeated colors aren't adjacent.
     // TODO make better (shape, pattern?)
     scale_color = (function () {
-        var cat20 = d3.scale.category20();
+        var cat20 = d3.scale.category20(),
+            seq = [ ];
+            to_plot.order.forEach(function (k, r) { seq[k] = r; });
         return function (t, highlight) {
-            var c = cat20(t % 20);
+            var c = cat20(seq[t] % 20);
             return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
         };
     }());
@@ -1581,6 +1585,55 @@ model_view_yearly = function (m, type) {
             }
         });
 
+    labels = svg.selectAll("text.layer_label")
+        .data(to_plot.data);
+
+    labels.enter().append("text")
+        .classed("layer_label", true)
+        .attr("clip-path", "url(#clip)");
+
+    render_labels = function (sel) {
+        var t, i, xs, cur, show = [ ], max = [ ],
+            x0 = scale_x.domain()[0],
+            x1 = scale_x.domain()[1],
+            y0 = scale_y.domain()[0],
+            y1 = scale_y.domain()[1],
+            b = scale_y(0); // area heights are b - scale_y(y)
+        for (t = 0; t < m.n(); t += 1) {
+            show[t] = false;
+            xs = to_plot.data[t].values;
+            for (i = 0, cur = 0; i < xs.length; i += 1) {
+                if (xs[i].x >= x0 && xs[i].x <= x1
+                        && xs[i].y0 + xs[i].y >= y0
+                        && xs[i].y0 + xs[i].y <= y1) {
+                    if (xs[i].y > cur
+                            && b - scale_y(xs[i].y) >
+                            VIS.model_view.yearly.label_threshold) {
+                        show[t] = true;
+                        max[t] = i;
+                        cur = xs[i].y;
+                    }
+                }
+            }
+        }
+
+        sel.attr("display", function (d) {
+            return show[d.t] ? "inherit" : "none";
+        });
+
+        sel.filter(function (d) { return show[d.t]; })
+            .attr("x", function (d) {
+                return scale_x(d.values[max[d.t]].x);
+            })
+            .attr("y", function (d) {
+                return scale_y(d.values[max[d.t]].y0 +
+                    d.values[max[d.t]].y / 2);
+            })
+            .text(function (d) {
+                return topic_label(m, d.t, 2);
+            });
+    };
+
     d3.select("div#model_view_yearly").classed("hidden", false);
 
     area = d3.svg.area()
@@ -1588,12 +1641,20 @@ model_view_yearly = function (m, type) {
         .y0(function (d) { return scale_y(d.y0); })
         .y1(function (d) { return scale_y(d.y0 + d.y); });
 
+    // purely geometric smoothing is possible with
+    // area.interpolate("basis");
+    // or
+    // area.interpolate("monotone");
+    // These are quite slow.
+
     areas = function (d) { return area(d.values); };
 
     // ensure transition for raw/frac swap
     paths.transition()
         .duration(2000)
         .attr("d", areas);
+
+    render_labels(labels.transition().duration(2000));
 
     // set up zoom
     zoom = d3.behavior.zoom()
@@ -1608,9 +1669,11 @@ model_view_yearly = function (m, type) {
                 svg.select("g.x.axis").transition()
                     .duration(2000)
                     .call(axis_x);
+                render_labels(labels.transition().duration(2000));
                 VIS.zoom_transition = false;
             } else {
                 paths.attr("d", areas);
+                render_labels(labels);
                 svg.select("g.x.axis").call(axis_x);
             }
         });
@@ -1683,8 +1746,10 @@ topic_coords_grid = function (n) {
 };
 
 yearly_stacked_series = function (m, raw) {
-    var year_keys, years, yr_extent, all_series,
-        stack, ord;
+    var year_keys, years, all_series,
+        stack, ord,
+        data_frac, data_raw,
+        stack_domain_y;
 
     if (!VIS.model_view.yearly.data) {
         VIS.model_view.yearly.data = { };
@@ -1718,7 +1783,7 @@ yearly_stacked_series = function (m, raw) {
             .offset("wiggle") // streamgraph
             .order("inside-out"); // pick a "good" layer order
 
-        VIS.model_view.yearly.data.frac = stack(all_series);
+        data_frac = stack(all_series);
 
         // retrieve layer order (by recalculating it: dumb)
         ord = stack.order()(all_series.map(function (ds) {
@@ -1730,7 +1795,7 @@ yearly_stacked_series = function (m, raw) {
             return ord;
         });
 
-        VIS.model_view.yearly.data.raw = stack(all_series.map(function (s) {
+        data_raw = stack(all_series.map(function (s) {
             return {
                 t: s.t,
                 values: s.values.map(function (d) {
@@ -1742,24 +1807,30 @@ yearly_stacked_series = function (m, raw) {
             };
         }));
 
-        VIS.model_view.yearly.domain_frac = [0,
-            d3.max(VIS.model_view.yearly.data.frac.map(function (ds) {
+        stack_domain_y = function (xs) {
+            return [0, d3.max(xs.map(function (ds) {
                 return d3.max(ds.values, function (d) {
                     return d.y0 + d.y;
                 });
             }))];
-        VIS.model_view.yearly.domain_raw = [0,
-            d3.max(VIS.model_view.yearly.data.raw.map(function (ds) {
-                return d3.max(ds.values, function (d) {
-                    return d.y0 + d.y;
-                });
-            }))];
+        };
+
+        VIS.model_view.yearly.domain_frac =
+            stack_domain_y(data_frac);
+        VIS.model_view.yearly.domain_raw =
+            stack_domain_y(data_raw);
+
+        VIS.model_view.yearly.order = ord;
+
+        VIS.model_view.yearly.data.frac = data_frac;
+        VIS.model_view.yearly.data.raw = data_raw;
     } // if (!VIS.model_view.yearly.data)
 
     return {
         data: VIS.model_view.yearly.data[raw ? "raw" : "frac"],
         domain_x: VIS.model_view.yearly.domain_years,
-        domain_y: VIS.model_view.yearly[raw ? "domain_raw" : "domain_frac"]
+        domain_y: VIS.model_view.yearly[raw ? "domain_raw" : "domain_frac"],
+        order: VIS.model_view.yearly.order
     };
 
 };
