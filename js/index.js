@@ -1094,13 +1094,13 @@ model_view = function (m, type, p1, p2) {
     d3.selectAll("#nav_model li.active").classed("active",false);
     d3.select("#nav_model_" + type_chosen).classed("active",true);
 
-    // hide all subviews; we'll reveal the chosen one
+    // hide all subviews and controls; we'll reveal the chosen one
     d3.select("#model_view_plot").classed("hidden", true);
-    d3.select("#model_view_plot_help").classed("hidden", true);
     d3.select("#model_view_list").classed("hidden", true);
-    d3.select("#reset_zoom").classed("disabled", true);
-    d3.select("button#model_sort_dir").classed("disabled", true);
     d3.select("#model_view_yearly").classed("hidden", true);
+    d3.selectAll(".model_view_plot").classed("hidden", true);
+    d3.selectAll(".model_view_list").classed("hidden", true);
+    d3.selectAll(".model_view_yearly").classed("hidden", true);
 
     if (type_chosen === "list") {
         if (!m.meta() || !m.dt()) {
@@ -1397,17 +1397,12 @@ model_view_plot = function(m, type) {
                             return d3.ascending(a.t, b.t);
                         })
                         .order();
-                    d3.select("p#topic_hover")
-                        .text("Click for more on topic "
-                            + topic_label(m, t, 3));
                 })
                 .on("mouseout",function() {
                     gs.sort(function (a, b) {
                             return d3.ascending(a.t, b.t);
                         })
                         .order();
-                    d3.select("p#topic_hover")
-                        .text("Click a topic for more detail");
                 });
 
             up = 0;
