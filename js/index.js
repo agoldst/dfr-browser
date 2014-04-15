@@ -1684,16 +1684,10 @@ topic_coords_grid = function (n) {
 
 yearly_stacked_series = function (m, raw) {
     var year_keys, years, yr_extent, all_series,
-        stack;
+        stack, ord;
 
     if (!VIS.model_view.yearly.data) {
         VIS.model_view.yearly.data = { };
-
-        stack = d3.layout.stack()
-            .values(function (d) {
-                return d.values;
-            })
-            .offset("wiggle");
 
         year_keys = m.years().sort();
         years = year_keys.map(function (y) {
@@ -1717,7 +1711,24 @@ yearly_stacked_series = function (m, raw) {
             return series;
         });
 
+        stack = d3.layout.stack()
+            .values(function (d) {
+                return d.values;
+            })
+            .offset("wiggle") // streamgraph
+            .order("inside-out"); // pick a "good" layer order
+
         VIS.model_view.yearly.data.frac = stack(all_series);
+
+        // retrieve layer order (by recalculating it: dumb)
+        ord = stack.order()(all_series.map(function (ds) {
+            return ds.values.map(function (d) { return [d.x, d.y]; });
+        }));
+
+        // for raw-counts, enforce same order, even if not "good"
+        stack.order(function (d) {
+            return ord;
+        });
 
         VIS.model_view.yearly.data.raw = stack(all_series.map(function (s) {
             return {
