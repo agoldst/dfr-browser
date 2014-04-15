@@ -1486,13 +1486,15 @@ model_view_yearly = function (m, type) {
     var spec = VIS.model_view.yearly, svg,
         scale_x, y_max, scale_y, axis_x, axis_y, area,
         scale_color,
-        stack,
-        raw = (type === "raw"),
+        raw,
         to_plot,
         paths,
         areas, zoom;
 
     svg = plot_svg("#model_view_yearly", spec);
+
+    raw = type ? (type === "raw") : VIS.last.model_yearly;
+    VIS.last.model_yearly = raw;
 
     to_plot = yearly_stacked_series(m, raw);
 
@@ -1530,7 +1532,6 @@ model_view_yearly = function (m, type) {
     scale_x = d3.time.scale()
         .domain(to_plot.domain_x)
         .range([0, spec.w]);
-        //.nice();
 
     scale_y = d3.scale.linear()
         .domain(to_plot.domain_y)
