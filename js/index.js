@@ -100,6 +100,7 @@ var bib_sort,   // bibliography sorting
     model_view_plot,
     model_view_yearly,
     topic_coords_grid,
+    yearly_stacked_series,
     tooltip,
     view_refresh,
     view_loading,
@@ -1482,36 +1483,57 @@ model_view_plot = function(m, type) {
 
 model_view_yearly = function (m, type) {
     var spec = VIS.model_view.yearly, svg,
-        year_keys, years, yr_extent, all_series,
         scale_x, y_max, scale_y, axis_x, axis_y, area,
         scale_color,
         tip, tip_text,
         stack,
         raw = (type === "raw"),
+        to_plot,
         paths,
         areas, zoom;
 
     svg = plot_svg("#model_view_yearly", spec);
 
-    year_keys = m.years().sort();
-    years = year_keys.map(function (y) {
-        return new Date(+y, 0, 1);
-    });
-    yr_extent = d3.extent(years);
+    to_plot = yearly_stacked_series(m, raw);
+
+    if (!VIS.ready.model_yearly) {
+        svg.append("rect")
+            .attr("width", spec.w)
+            .attr("height", spec.h)
+            .classed("bg", true);
+
+        svg.append("clipPath").attr("id", "clip")
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", spec.w)
+            .attr("height", spec.h);
+
+        VIS.ready.model_yearly = true;
+    } // if (!VIS.ready.model_yearly)
+
+    // scales
+    // ------
+
+    // color: a visual cue to distinguish topics. // Unfortunately,
+    // 20 colors is as far as any sane person would go, so we'll just
+    // stupidly repeat colors at intervals of 20
+    // TODO make better (shape, pattern?)
+    scale_color = (function () {
+        var cat20 = d3.scale.category20();
+        return function (t, highlight) {
+            var c = cat20(t % 20);
+            return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
+        };
+    }());
 
     scale_x = d3.time.scale()
-        .domain(yr_extent)
+        .domain(to_plot.domain_x)
         .range([0, spec.w]);
         //.nice();
 
-    if (raw) {
-        y_max = d3.max(m.yearly_total().values());
-    } else {
-        y_max = 1;
-    }
-
     scale_y = d3.scale.linear()
-        .domain([0, y_max])
+        .domain(to_plot.domain_y)
         .range([spec.h, 0])
         .nice();
 
@@ -1546,73 +1568,9 @@ model_view_yearly = function (m, type) {
     svg.selectAll("g.axis.y g").filter(function (d) { return d; })
         .classed("minor", true);
 
-    if (!VIS.ready.model_yearly) {
-        all_series = d3.range(m.n()).map(function (t) {
-            var wts = m.topic_yearly(t),
-                series = { t: t };
-            series.values = year_keys.map(function (yr, j) {
-                var result = {
-                    yr: yr,
-                    x: years[j],
-                    y: wts.get(yr) || 0
-                };
-                return result;
-            });
-            return series;
-        });
-
-        stack = d3.layout.stack()
-            .values(function (d) {
-                return d.values;
-            });
-
-        VIS.model_view.yearly.layers_frac = stack(all_series);
-
-        VIS.model_view.yearly.layers_raw = stack(all_series.map(function (s) {
-            return {
-                t: s.t,
-                values: s.values.map(function (d) {
-                    return {
-                        x: d.x,
-                        y: d.y * m.yearly_total(d.yr)
-                    };
-                })
-            };
-        }));
-
-        // A visual cue to help spot the same topic in nearby rows
-        // Unfortunately, 20 colors is as far as any sane person would go,
-        // so we'll just stupidly repeat colors at intervals of 20
-        // TODO make better (shape, pattern?)
-        scale_color = (function () {
-            var cat20 = d3.scale.category20();
-            return function (t, highlight) {
-                var c = cat20(t % 20);
-                return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
-            };
-        }());
-
-        svg.append("rect")
-            .attr("width", spec.w)
-            .attr("height", spec.h)
-            .classed("bg", true);
-
-        tip = tooltip();
-        tip_text = function (t) { return topic_label(m, t, 4); };
-
-        svg.append("clipPath").attr("id", "clip")
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", spec.w)
-            .attr("height", spec.h);
-
-        VIS.ready.model_yearly = true;
-    } // if (!VIS.ready.model_yearly)
 
     paths = svg.selectAll("path.topic_area")
-        .data(raw ? VIS.model_view.yearly.layers_raw
-                : VIS.model_view.yearly.layers_frac);
+        .data(to_plot.data);
 
     paths.enter()
         .append("path")
@@ -1740,6 +1698,77 @@ topic_coords_grid = function (n) {
     }
 
     return result;
+};
+
+yearly_stacked_series = function (m, raw) {
+    var year_keys, years, yr_extent, all_series,
+        stack;
+
+    if (!VIS.model_view.yearly.data) {
+        VIS.model_view.yearly.data = { };
+
+        stack = d3.layout.stack()
+            .values(function (d) {
+                return d.values;
+            })
+            .offset("wiggle");
+
+        year_keys = m.years().sort();
+        years = year_keys.map(function (y) {
+            return new Date(+y, 0, 1);
+        });
+
+        // save x range
+        VIS.model_view.yearly.domain_years = d3.extent(years);
+
+        all_series = d3.range(m.n()).map(function (t) {
+            var wts = m.topic_yearly(t),
+                series = { t: t };
+            series.values = year_keys.map(function (yr, j) {
+                var result = {
+                    yr: yr,
+                    x: years[j],
+                    y: wts.get(yr) || 0
+                };
+                return result;
+            });
+            return series;
+        });
+
+        VIS.model_view.yearly.data.frac = stack(all_series);
+
+        VIS.model_view.yearly.data.raw = stack(all_series.map(function (s) {
+            return {
+                t: s.t,
+                values: s.values.map(function (d) {
+                    return {
+                        x: d.x,
+                        y: d.y * m.yearly_total(d.yr)
+                    };
+                })
+            };
+        }));
+
+        VIS.model_view.yearly.domain_frac = [0,
+            d3.max(VIS.model_view.yearly.data.frac.map(function (ds) {
+                return d3.max(ds.values, function (d) {
+                    return d.y0 + d.y;
+                });
+            }))];
+        VIS.model_view.yearly.domain_raw = [0,
+            d3.max(VIS.model_view.yearly.data.raw.map(function (ds) {
+                return d3.max(ds.values, function (d) {
+                    return d.y0 + d.y;
+                });
+            }))];
+    } // if (!VIS.model_view.yearly.data)
+
+    return {
+        data: VIS.model_view.yearly.data[raw ? "raw" : "frac"],
+        domain_x: VIS.model_view.yearly.domain_years,
+        domain_y: VIS.model_view.yearly[raw ? "domain_raw" : "domain_frac"]
+    };
+
 };
 
 tooltip = function () {
