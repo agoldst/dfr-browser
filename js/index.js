@@ -21,7 +21,7 @@ var VIS = {
             w: 1090,
             h: 800,
             m: {
-                left: 60,
+                left: 20,
                 right: 20,
                 top: 20,
                 bottom: 20
@@ -1535,13 +1535,10 @@ model_view_yearly = function (m, type) {
         .range([spec.h, 0])
         .nice();
 
-    // axes
-    // ----
-
-    // clear
+    // clear axes
     svg.selectAll("g.axis").remove();
 
-    // x axis
+    // x axis (no y axis: streamgraph makes it meaningless)
     axis_x = d3.svg.axis()
         .scale(scale_x)
         .orient("bottom");
@@ -1551,21 +1548,6 @@ model_view_yearly = function (m, type) {
         .classed("x", true)
         .attr("transform", "translate(0," + spec.h + ")")
         .call(axis_x);
-
-    // y axis
-    axis_y = d3.svg.axis()
-        .scale(scale_y)
-        .orient("left")
-        .tickFormat(raw ? null : d3.format('.0%'));
-
-    svg.append("g")
-        .classed("axis", true)
-        .classed("y", true)
-        .call(axis_y);
-
-    svg.selectAll("g.axis.y g").filter(function (d) { return d; })
-        .classed("minor", true);
-
 
     paths = svg.selectAll("path.topic_area")
         .data(to_plot.data);
@@ -1604,10 +1586,12 @@ model_view_yearly = function (m, type) {
 
     areas = function (d) { return area(d.values); };
 
+    // ensure transition for raw/frac swap
     paths.transition()
         .duration(2000)
         .attr("d", areas);
 
+    // set up zoom
     zoom = d3.behavior.zoom()
         .x(scale_x)
         .y(scale_y)
@@ -1620,14 +1604,10 @@ model_view_yearly = function (m, type) {
                 svg.select("g.x.axis").transition()
                     .duration(2000)
                     .call(axis_x);
-                svg.select("g.y.axis").transition()
-                    .duration(2000)
-                    .call(axis_y);
                 VIS.zoom_transition = false;
             } else {
                 paths.attr("d", areas);
                 svg.select("g.x.axis").call(axis_x);
-                svg.select("g.y.axis").call(axis_y);
             }
         });
 
