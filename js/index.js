@@ -1377,7 +1377,9 @@ model_view_plot = function(m, type) {
                     return scale_stroke(m.dt.col_sum(p.t));
                 })
                 .on("click", function (p) {
-                    window.location.hash = topic_hash(t);
+                    if (!d3.event.shiftKey) {
+                        window.location.hash = topic_hash(t);
+                    }
                 })
                 .on("mouseover", function (p) {
                     gs.sort(function (a, b) {
@@ -1573,8 +1575,9 @@ model_view_yearly = function (m, type) {
             tooltip().hide();
         })
         .on("click", function (d) {
-            // TODO conflict with drag-to-pan: dblclick?
-            window.location.hash = topic_hash(d.t);
+            if (!d3.event.shiftKey) {
+                window.location.hash = topic_hash(d.t);
+            }
         });
 
     d3.select("div#model_view_yearly").classed("hidden", false);
