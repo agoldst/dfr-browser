@@ -47,11 +47,27 @@
 
 <h3>The overview</h3>
 
-<p>In the <a href="demo/">overview</a>, topics are represented by their most frequent words. The overview has three subviews, two graphical (<a href="demo/#/model/grid">Grid</a> and <a href="demo/#/model/scaled">Scaled</a>) and one textual (<a href="demo/#/model/list">List</a>). In any subview, click a topic to go to the view for that topic.  In the <em>Grid</em>, the topics are arranged in arbitrary order in a grid. In the <em>Scaled</em> view, topics are placed close to one another if they are similar. To see overlapping topics more clearly, use the mouse to pan or zoom the view. The <em>List</em>, which is what it says on the tin, also gives the estimated "hyperparameter" α for each topic. A very small α means the topic likely doesn&rsquo;t account for much of the corpus.</p>
+<p>In the <a href="demo/">overview</a>, topics are represented by their most frequent words. There are four different versions of the overview. In any of them, click a topic to go to the view for that topic.
 
-<p>In the graphical views, the topics are represented by what I like to call Little Circles With Words in Them. The type size reflects a word's weight in a topic. Originally I wanted the circles to be word clouds, but the otherwise impressive <a href="https://github.com/jasondavies/d3-cloud">d3-cloud</a> is really not meant to squeeze few words into a very small space (it's much better at a bunch of words in a larger space). So I have opted instead for a simple column of words, with sizes decreasing from the center. <em>Known issue:</em> No effort is made to respect the horizontal bounds of the circle; the number of words is fixed by a parameter, which must be hand-tuned.</p>
+<h4>The grid subview</h4>
 
-<p>The measure of topic similarity for the Scaled view has to be precalculated: in the <a href="demo/#/model/scaled">demo</a>, I use, following <a href="http://doi.acm.org/10.1145/2160165.2160168">David Mimno</a>, multi-dimensional scaling—i.e., principal coordinates analysis—to reduce the matrix of Jensen-Shannon divergences between topics, considered as distributions over words, into two-dimensional coordinates. The resulting spatial representation does not always produce the most intuitive juxtapositions, but it is sometimes suggestive. I have not done more fine-tuning for this <em>alpha release</em>.</p>
+<p>In the <a href="demo/#/model/grid">grid view</a>, the topics are arranged in arbitrary order in a grid. Topics are represented by what I like to call Little Circles With Words in Them. The type size reflects a word's weight in a topic. Originally I wanted the circles to be word clouds, but the otherwise impressive <a href="https://github.com/jasondavies/d3-cloud">d3-cloud</a> is really not meant to squeeze few words into a very small space (it's much better at a bunch of words in a larger space). So I have opted instead for a simple column of words, with sizes decreasing from the center. <em>Known issue:</em> No effort is made to respect the horizontal bounds of the circle; the number of words is fixed by a parameter, which must be hand-tuned.</p>
+
+<h4>The scaled subview</h4>
+
+<p>In the <a href="demo/#/model/scaled">scaled view</a>, topics are placed close to one another if they are similar (in the sense of: having similar distributions of frequent words). To see overlapping topics more clearly, use the mouse to pan or zoom the view. The measure of topic similarity for the scaled view has to be precalculated. In the demo I use, following <a href="http://doi.acm.org/10.1145/2160165.2160168">David Mimno</a>, multi-dimensional scaling—i.e., principal coordinates analysis—to reduce the matrix of Jensen-Shannon divergences between topics, considered as distributions over words, into two-dimensional coordinates. The resulting spatial representation does not always produce the most intuitive juxtapositions, but it is sometimes suggestive. I have not done more fine-tuning for this <em>alpha release</em>.</p>
+
+<h4>The list subview</h4>
+
+<p>In the <a href="demo/#/model/list">list view</a>, the topics are listed in table form. To help compare topics among one another, the table can be sorted in several ways. By default topics come in an arbitrary order. Click the "top words" header to see <a href="demo/#/model/list/words">the list sorted alphabetically by most frequent words</a>. On the far right is the proportion of all the words in the corpus assigned to the given topic, visualized as a length (the blue bar). This <a href="demo/#/model/list/frac">sorting by corpus proportion</a> is deceptive in the sense that the highest-proportion topics are often the <em>least</em> interesting parts of the model—agglomerations of very common words without a clear thematic content.</p>
+
+<p>The column to the left of the topic key words shows a miniature graph of the topic time-series (visible more fully in the topic view; see below). This gives a rough sense of the distribution of the topic over document years. Click the column header to sort by the year in which the topic attains its maximum proportion. Note that the y-axes of these miniature bar charts are not all on the same scale.</p>
+
+<h4>The yearly subview</h4>
+
+<p>One wants to have a sense of the shifting composition of the corpus in terms of topics over time. Seeing this as a whole is a challenging visualization problem, and I lack the graphical sense to solve it well. However, d3 offers some options which I am experimenting with. In the <a href="demo/#/model/yearly">yearly subview</a>, all the time series for the topics are stacked on top of one another in a streamgraph (see <a href="https://github.com/mbostock/d3/wiki/Stack-Layout">the d3 documentation</a>). The height of each topic's stream gives the proportion of the topic in a given year. The topics are reordered by a heuristic for making the visualization less jagged. Colors are used to distinguish topics from one another, but in this <em>alpha release</em> I have given up on trying to come up with a unique color for each topic. The program attempts to stick topic labels in reasonable places, with uneven success. Nonetheless, this view does allow a chance to pick out islands of prominence or topics with unusual spreading over the time space. To take exploration a little further, it is possible to pan and zoom the view (hold down shift while dragging).</p>
+
+<p>Finally, by default the yearly subview stacks up the time series of <em>percentages of the year's words</em> accounted for by a topic. If the corpus has many more words in some years than others, this might be deceptive. So I have left on the option of shifting the yearly view to display <a href="demo/#/model/list/yearly/raw">raw counts of words assigned to topics</a> per year. In the demo here, one immediately notices the oddity of 1952, when <em>PMLA</em> published some extraordinarily long essays.</p>
 
 <h3>The topic view</h3>
 
@@ -59,7 +75,8 @@
 
 <p>The choice of how to represent the relation of topics and documents is harder. I list the documents where the topic is at its largest proportion (the blue bars visualize this proportion), since these are typically in some sense more &ldquo;characteristic&rdquo; of the topic. But pay attention to the size of the proportions as well as the absolute weights, and remember that the document with largest proportion of topic <em>k</em> may nonetheless have an even larger proportion of another topic <em>k&#x0027;</em>.</p>
 
-<p>On the upper right is the tantalizing time-series: the yearly proportion of words in the corpus belonging to the topic. I have chosen bars to emphasize that the model does not assume a smooth evolution from year to year in topics, and neither should we. This does make it harder to see a time trend, however. <em>Possible future additions:</em> a smoothing line; an interactive way of changing the binning, and of panning and zooming the chart.</p>
+<p>On the upper right is the tantalizing time-series: the yearly proportion of words in the corpus belonging to the topic. I have chosen bars to emphasize that the model does not assume a smooth evolution from year to year in topics, and neither should we. This does make it harder to see a time trend, however. To focus on prominent documents in the topic <em>for a given year</em>, click a bar on the chart (thus, compare the overall top documents for <a href="demo/#/topic/38"><em>novel story narrative</em></a> with the topic's top documents <a href="demo/#/topic/38/1980">in 1980</a>).
+</p>
 
 
 <h3>The document view</h3>
@@ -121,6 +138,12 @@
 <p><a href="http://code.google.com/p/tmve/">Allison Chaney&rsquo;s Topic Model Visualization Engine</a> is a robust static-site generator.</p>
 
 <p><a href="http://code.google.com/p/topic-modeling-tool/">The Topic Modeling Tool</a> provides a GUI to make MALLET use easier.</p>
+
+<h2>Version history</h2>
+
+<p>April 15, 2014. Second alpha release, with additional data views.</p>
+<p>October 29, 2013. First alpha release on github pages.</p>
+
       </section>
     </div>
 
