@@ -1,3 +1,17 @@
-- uglifyjs into a single versioned file linked in index.html
-- stricter "namespacing": everything under dfb object?
-- refactor infinitely-long index.js
+
+sidebar with topic model vocabulary:
+
+- topics
+- key word
+- top document
+
+example narratives
+
+speed up loading (mod_zip rather than jszip?)
+
+fix linking into jstor.
+
+words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note)
+
+
+uglifyjs into a single versioned file linked in index.html
