@@ -81,11 +81,20 @@ model = function (spec) {
         if (!my.dt) {
             return undefined;
         }
-        result = 0;
-        for (t = 0; t < my.n; t += 1) {
-            result += this(d, t);
+
+        // memoize, at least
+        if (!my.dt_row_sum) {
+            my.dt_row_sum = [ ];
         }
-        return result;
+
+        if (!my.dt_row_sum[d]) {
+            result = 0;
+            for (t = 0; t < my.n; t += 1) {
+                result += this(d, t);
+            }
+            my.dt_row_sum[d] = result;
+        }
+        return my.dt_row_sum[d];
     };
     // a col_sum method: this takes advantages of the column compression
     dt.col_sum = function (t) {
@@ -137,7 +146,7 @@ model = function (spec) {
 
     // though we could take sums of rows of dt, that would give us
     // token counts rather than word counts. Instead, we expect
-    // to be given these precalculated
+    // to be given these precalculated TODO really?? or are these row sums?
     doc_len = function (d) {
         if (!my.doc_len) {
             return undefined;
@@ -373,7 +382,7 @@ model = function (spec) {
         docs = d3.range(p0, p1).map(function (p) {
             return {
                 doc: my.dt.i[p],
-                frac: my.dt.x[p] / that.doc_len(my.dt.i[p]),
+                frac: my.dt.x[p] / that.dt.row_sum(my.dt.i[p]),
                 weight: my.dt.x[p]
             };
         });

@@ -876,7 +876,7 @@ doc_view = function (m, d) {
         .html(cite_doc(m, doc));
 
     view.select("#doc_remark")
-        .html(m.doc_len(doc) + " tokens. "
+        .html(m.dt.row_sum(doc) + " tokens. "
                 + '<a class ="external" href="'
                 + doc_uri(m, doc)
                 + '">View '
@@ -914,7 +914,7 @@ doc_view = function (m, d) {
             });
 
             add_weight_cells(trs, function (t) {
-                return t.weight / m.doc_len(doc);
+                return t.weight / m.dt.row_sum(doc);
             });
 
             trs.append("td")
@@ -923,7 +923,7 @@ doc_view = function (m, d) {
                 });
             trs.append("td")
                 .text(function (t) {
-                    return VIS.percent_format(t.weight / m.doc_len(doc));
+                    return VIS.percent_format(t.weight / m.dt.row_sum(doc));
                 });
         });
 
