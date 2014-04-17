@@ -15,3 +15,21 @@ words should also have links to jstor dfr search in signs (for ngrams-like explo
 
 
 uglifyjs into a single versioned file linked in index.html
+
+BUGS
+
+- chrome vs firefox vs ... sorting not the same (not stable sort??)
+- 65 topics - does not show up on grid
+- jstor id resolution for older items: write JSTOR
+
+TEXT TO WRITE
+
+1. Introductory text
+2. Explanation of the technique
+3. How to read (vocabulary)
+4. Interpretive narratives (later) and cautions
+
+Tasks:
+
+1. ask others to comment
+2. RUCore or other permanent storage
