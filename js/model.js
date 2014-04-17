@@ -16,7 +16,6 @@ model = function (spec) {
         info, // accessors and pseudo-accessors
         dt,
         n_docs,
-        doc_len,
         tw,
         n,
         n_top_words,
@@ -38,7 +37,6 @@ model = function (spec) {
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
-        set_doc_len,
         set_topic_scaled;
 
 
@@ -81,11 +79,20 @@ model = function (spec) {
         if (!my.dt) {
             return undefined;
         }
-        result = 0;
-        for (t = 0; t < my.n; t += 1) {
-            result += this(d, t);
+
+        // memoize, at least
+        if (!my.dt_row_sum) {
+            my.dt_row_sum = [ ];
         }
-        return result;
+
+        if (!my.dt_row_sum[d]) {
+            result = 0;
+            for (t = 0; t < my.n; t += 1) {
+                result += this(d, t);
+            }
+            my.dt_row_sum[d] = result;
+        }
+        return my.dt_row_sum[d];
     };
     // a col_sum method: this takes advantages of the column compression
     dt.col_sum = function (t) {
@@ -134,24 +141,6 @@ model = function (spec) {
         return result; // undefined if both my.meta and my.dt are missing
     };
     that.n_docs = n_docs;
-
-    // though we could take sums of rows of dt, that would give us
-    // token counts rather than word counts. Instead, we expect
-    // to be given these precalculated
-    doc_len = function (d) {
-        if (!my.doc_len) {
-            return undefined;
-            //my.doc_len = [];
-        }
-
-        // doc_len() for the whole list
-        if (d === undefined) {
-            return my.doc_len;
-        }
-
-        return my.doc_len[d];
-    };
-    that.doc_len = doc_len;
 
     // access top key words per topic
     tw = function (t, word) {
@@ -373,7 +362,7 @@ model = function (spec) {
         docs = d3.range(p0, p1).map(function (p) {
             return {
                 doc: my.dt.i[p],
-                frac: my.dt.x[p] / that.doc_len(my.dt.i[p]),
+                frac: my.dt.x[p] / that.dt.row_sum(my.dt.i[p]),
                 weight: my.dt.x[p]
             };
         });
@@ -586,15 +575,6 @@ model = function (spec) {
         });
     };
     that.set_meta = set_meta;
-
-    // load doc lengths from a string of JSON
-    set_doc_len = function (s) {
-        if (typeof s  !== 'string') {
-            return;
-        }
-        my.doc_len = JSON.parse(s).doc_len;
-    };
-    that.set_doc_len = set_doc_len;
 
     // load scaled topic coordinates from a string of CSV lines
     set_topic_scaled = function (ts_s) {

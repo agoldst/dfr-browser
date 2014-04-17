@@ -51,7 +51,6 @@ The browser asks for data files using the names stored in the properties of the 
 - `dfb.files.dt` (*default*: `data/dt.json.zip`): the document-topic matrix, but in sparse compressed-column format (from R's [`CsparseMatrix` class](http://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/CsparseMatrix-class.html). The object properties are three arrays : `i`, `p`, and `x`.
 - `dfb.files.tw` (*default*: `data/tw.json`): a JSON object with `alpha`, a vector of alpha values for each topic, and `tw`, a vector of `{ words, weights }` objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).
 - `dfb.files.meta` (*default*: `meta.csv.zip`): headerless CSV of document metadata, with rows in the same order as the document-topic matrix, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
-- `dfb.files.doc_len` (*default*: `doc_len.json.zip`): a JSON object holding an array `doc_len` of document lengths. Used to skip the task of summing the rows of the doc-topic matrix---which might be supererogatory, but oh well.
 - `dfb.files.topic_scaled` (*default*: `data/topic_scaled.csv`): x and y coordinates for the topics in some space. This is optional; if it is available, the browser can draw the "scaled" overview plot.
 
 #### Sample datafiles

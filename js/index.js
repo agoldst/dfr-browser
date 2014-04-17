@@ -354,7 +354,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 topic_view = function (m, t, year) {
     var view = d3.select("div#topic_view");
 
-    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
+    if (!m.meta() || !m.dt() || !m.tw()) {
         // not ready yet; show loading message
         view_loading(true);
         return true;
@@ -844,7 +844,7 @@ doc_view = function (m, d) {
         topics,
         trs;
 
-    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
+    if (!m.meta() || !m.dt() || !m.tw()) {
         view_loading(true);
         return true;
     }
@@ -876,7 +876,7 @@ doc_view = function (m, d) {
         .html(cite_doc(m, doc));
 
     view.select("#doc_remark")
-        .html(m.doc_len(doc) + " tokens. "
+        .html(m.dt.row_sum(doc) + " tokens. "
                 + '<a class ="external" href="'
                 + doc_uri(m, doc)
                 + '">View '
@@ -914,7 +914,7 @@ doc_view = function (m, d) {
             });
 
             add_weight_cells(trs, function (t) {
-                return t.weight / m.doc_len(doc);
+                return t.weight / m.dt.row_sum(doc);
             });
 
             trs.append("td")
@@ -923,7 +923,7 @@ doc_view = function (m, d) {
                 });
             trs.append("td")
                 .text(function (t) {
-                    return VIS.percent_format(t.weight / m.doc_len(doc));
+                    return VIS.percent_format(t.weight / m.dt.row_sum(doc));
                 });
         });
 
@@ -1081,7 +1081,7 @@ about_view = function (m) {
 };
 
 model_view = function (m, type, p1, p2) {
-    var type_chosen = type || VIS.last.model;
+    var type_chosen = type || VIS.last.model || "grid";
 
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
@@ -2079,10 +2079,6 @@ main = function () {
             } else {
                 view_error("Unable to load topic words from " + dfb.files.tw);
             }
-        });
-        load_data(dfb.files.doc_len, function (error, doc_len_s) {
-            m.set_doc_len(doc_len_s);
-            view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
             if (typeof s === 'string') {
