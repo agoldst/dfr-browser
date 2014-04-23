@@ -2041,6 +2041,12 @@ var load_data = function (target, callback) {
 // ----
 
 main = function () {
+    $(document).ready(function () {
+        if (!window.location.hash.match(/\/no_intro$/)) {
+            $("#intro_modal").modal("show");
+        } // TODO FIX NO_INTRO
+    });
+
     load_data(dfb.files.info,function (error, info_s) {
         // callback, invoked when ready 
         var m = model({ info: JSON.parse(info_s) });
