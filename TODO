@@ -13,6 +13,7 @@ fix linking into jstor.
 
 words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note)
 
+get rid of "by journal, then by journal contents" option in bibliography view?
 
 uglifyjs into a single versioned file linked in index.html
 
