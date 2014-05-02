@@ -1905,6 +1905,10 @@ view_refresh = function (m, v) {
             view_parsed[1] = "model";
             success = model_view(m);
             break;
+        case "":
+            view_parsed[1] = "model";
+            success = model_view(m);
+            break;
         case "model":
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
