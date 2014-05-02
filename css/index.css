@@ -374,8 +374,21 @@ div.panel div.panel-heading.panel_heading_hover {
     color: black;
 }
 
-#about_contents a.selected {
-    text-decoration: underline;
+#about_contents li a {
+    display: block;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+    padding-left: 1em;
+    padding-right: 1em;
+    text-decoration: none;
+}
+
+#about_contents li:hover {
+    background-color: #f5f5f5;
+}
+
+#about_contents li.selected {
+    background-color: #f5f5f5;
 }
 
 #about_view div#about_browser {

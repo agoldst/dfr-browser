@@ -1080,7 +1080,7 @@ about_view = function (m, section) {
     d3.selectAll("#discussion_text > div")
         .classed("hidden", true);
     d3.select(elem).classed("hidden", false);
-    d3.selectAll("#about_contents li a")
+    d3.selectAll("#about_contents li")
         .classed("selected", false);
     d3.select("#about_contents_" + section)
         .classed("selected", true);
