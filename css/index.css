@@ -1,8 +1,10 @@
-/* head clearance for bootstrap navbar */
+/* a fixed navbar needs head clearance; the default doesn't */
+/*
 body {
     padding-top: 60px;
     padding-bottom: 60px;
 }
+*/
 
 .hidden {
     display: none;
@@ -338,6 +340,18 @@ div.panel div.panel-heading.panel_heading_hover {
 
 #about_view a:visited {
     color: purple;
+}
+
+#about_contents a {
+    color: black;
+}
+
+#about_contents a:visited {
+    color: black;
+}
+
+#about_contents a.selected {
+    text-decoration: underline;
 }
 
 #about_view div#about_browser {

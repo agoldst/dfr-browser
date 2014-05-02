@@ -1069,14 +1069,21 @@ bib_view = function (m, maj, min) {
 
 };
 
-about_view = function (m) {
-    if(!VIS.ready.about) {
-        d3.select("div#meta_info")
-            .html(m.info().meta_info);
-        VIS.ready.about = true;
-    }
+about_view = function (m, section) {
+    var sec = section || "intro",
+        elem = document.getElementById("about_" + section) ||
+            document.getElementById("about_intro");
+
     view_loading(false);
     d3.select("#about_view").classed("hidden", false);
+    elem.scrollIntoView();
+    d3.selectAll("#discussion_text > div")
+        .classed("hidden", true);
+    d3.select(elem).classed("hidden", false);
+    d3.selectAll("#about_contents li a")
+        .classed("selected", false);
+    d3.select("#about_contents_" + section)
+        .classed("selected", true);
     return true;
 };
 
@@ -1904,7 +1911,7 @@ view_refresh = function (m, v) {
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "about":
-            success = about_view(m);
+            success = about_view(m, param);
             break;
         case "bib":
             success = bib_view(m, param, view_parsed[3]);
