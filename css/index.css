@@ -82,6 +82,30 @@ th.th-right {
 th.wide {
     min-width: 20em;
 }
+
+/* help_box */
+
+#help_box {
+    position: relative;
+}
+
+#help_box_content {
+    position: absolute;
+    left: 60%;
+    width: 40%;
+    background-color: white;
+    z-index: 1001;
+    border: 3px solid rgba(200,200,200,0.6);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+#help_box_content p a {
+    color: blue;
+}
+
+
+
 /* model_view aka overview */
 
 #topic_hover p {
