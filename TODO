@@ -13,9 +13,19 @@ fix linking into jstor.
 
 words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note)
 
-get rid of "by journal, then by journal contents" option in bibliography view?
-
 uglifyjs into a single versioned file linked in index.html
+
+AM 5/2 questions: 
+- get rid of "by journal, then by journal contents" option in bibliography view?
+- Signs logo in nav bar?
+- Center screenshots
+- Is all words the top 50 words for all topics?
+
+5/2 Ideas discussed
+- Titles or popovers for key terms
+- Enhanced word view
+- Default view as list?
+
 
 BUGS
 
