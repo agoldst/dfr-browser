@@ -721,6 +721,7 @@ plot_topic_yearly = function (m, t, param) {
                     window.location.hash = topic_hash(t);
                 } else {
                     // TODO selection of multiple years
+                    // should use a brush http://bl.ocks.org/mbostock/6232537
                     d3.selectAll(".selected_year")
                         .classed("selected_year", false);
                     d3.select(this.parentNode).classed("selected_year", true);
