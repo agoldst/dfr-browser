@@ -25,11 +25,11 @@ You will need the following source data:
 }
 ```
 
-One way to generate the doc-topic, weighted keys, and scaled topic coordinates files is to use the `output_model()` model function in the [topics_rmallet.R](https://github.com/agoldst/dfr-analysis/blob/master/topics_rmallet.R) file in my [dfr-analysis](http://github.com/agoldst/dfr-analysis) collection of scripts.
+One way to generate the doc-topic, weighted keys, and scaled topic coordinates files is to use the `output_model()` model function in the [topics_rmallet.R](https://github.com/agoldst/dfr-analysis/blob/master/topics_rmallet.R) file in my [dfrtopics](http://github.com/agoldst/dfrtopics) experimental R package. That package also provides a direct `export_browser_data()` function (see `help(export_browser_data,dfrtopics)` in R.)
 
 ### Create the dfr-browser datafiles
 
-To convert these source data files into the formats dfr-browser needs, use the provided [prepare_data.R](https://github.com/agoldst/dfr-browser/blob/master/prepare_data.R) script. You can invoke the script within R as follows:
+If you do not wish to install dfrtopics, you can convert these source data files into the formats dfr-browser needs with the provided [prepare_data.R](https://github.com/agoldst/dfr-browser/blob/master/prepare_data.R) script. You can invoke the script within R as follows:
 
 ```r
 source("prepare_data.R")
