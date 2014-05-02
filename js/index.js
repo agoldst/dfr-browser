@@ -1889,11 +1889,16 @@ view_refresh = function (m, v) {
     var view_parsed, param, success;
 
     view_parsed = v.split("/");
+    if (view_parsed[view_parsed.length - 1] === "no_intro") {
+        view_parsed.length -= 1;
+    }
+
     param = view_parsed[2];
 
     if (VIS.cur_view !== undefined && !VIS.view_updating) {
         VIS.cur_view.classed("hidden", true);
     }
+
 
     switch (view_parsed[1]) {
         case undefined:
@@ -1964,6 +1969,29 @@ setup_vis = function (m) {
     window.onhashchange = function () {
         view_refresh(m, window.location.hash, false);
     };
+
+    // help box
+    d3.select("#nav_help")
+        .on("click", function () {
+            var box = d3.select("#help_box"),
+                hidden = box.classed("hidden");
+
+            box.classed("hidden", !hidden);
+            d3.select("#nav_help").classed("active", hidden);
+        });
+
+    d3.select("#help_box")
+        .selectAll(".close_button")
+        .on("click", function () {
+            d3.select("#help_box")
+                .classed("hidden", true);
+            d3.select("#nav_help").classed("active", false);
+        });
+
+    if (!window.location.hash.match(/\/no_intro$/)) {
+        d3.select("#help_box").classed("hidden", false);
+        d3.select("#nav_help").classed("active", true);
+    }
 
     // TODO settings controls
 };
@@ -2041,11 +2069,6 @@ var load_data = function (target, callback) {
 // ----
 
 main = function () {
-    $(document).ready(function () {
-        if (!window.location.hash.match(/\/no_intro$/)) {
-            $("#intro_modal").modal("show");
-        } // TODO FIX NO_INTRO
-    });
 
     load_data(dfb.files.info,function (error, info_s) {
         // callback, invoked when ready 

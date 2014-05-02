@@ -40,7 +40,23 @@
         <li id="nav_words"><a href="#/words">All words</a></li>
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li id="nav_help"><a>Help</a></li>
+      </ul>
     </div><!--/.navbar-collapse -->
+    <div class="hidden" id="help_box">
+      <div id="help_box_content">
+        <button type="button" class="close close_button">
+          &times;
+        </button>
+        <h4 class="modal-title">
+          Topics in <em>Signs</em>: a model
+        </h4>
+        <p>In this site, explore a model of <em>Signs</em>.</p>
+        <button type="button" class="btn btn-default pull-right
+          close_button">Close</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -53,29 +69,6 @@
   <div id="error" class="hidden">
   </div>
 
-  <div class="modal fade" id="intro_modal"
-    tabindex="-1" role="dialog"
-    aria-labelledby="intro_modal_label" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close"
-            data-dismiss="modal" aria-hidden="true">
-            &times;
-          </button>
-          <h4 class="modal-title" id="intro_modal_label">
-            Topics in <em>Signs</em>: a model
-          </h4>
-        </div>
-        <div class="modal-body">
-          <p>In this site, explore a model of <em>Signs</em>.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <div id="model_view" class="hidden">
     <nav class="nav navbar-default" role="navigation">
