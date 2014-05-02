@@ -1069,14 +1069,17 @@ bib_view = function (m, maj, min) {
 
 };
 
-about_view = function (m) {
-    if(!VIS.ready.about) {
-        d3.select("div#meta_info")
-            .html(m.info().meta_info);
-        VIS.ready.about = true;
-    }
+about_view = function (m, section) {
+    var sec;
+
     view_loading(false);
     d3.select("#about_view").classed("hidden", false);
+    if (section) {
+        sec = document.getElementById("about_" + section);
+        if (sec) {
+            sec.scrollIntoView();
+        }
+    }
     return true;
 };
 
@@ -1904,7 +1907,7 @@ view_refresh = function (m, v) {
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "about":
-            success = about_view(m);
+            success = about_view(m, param);
             break;
         case "bib":
             success = bib_view(m, param, view_parsed[3]);

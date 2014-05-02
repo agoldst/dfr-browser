@@ -13,7 +13,7 @@
 </head>
 
 <body>
-<div class="navbar navbar-inverse navbar-fixed-top">
+<div class="navbar navbar-default navbar-inverse">
   <div class="container">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -138,9 +138,9 @@
         <div data-spy="affix">
           <h4>Contents</h4>
           <ul>
-            <li>About topic modeling</li>
-            <li>How to read this browser</li>
-            <li>Modeling choices</li>
+            <li><a href="#/about/topic_modeling">About topic modeling</a></li>
+            <li><a href="#/about/how">How to read this browser</a></li>
+            <li><a href="#/about/choices">Modeling choices</a></li>
         </div>
       </div>
       <div id="discussion_text" class="col-md-9">
@@ -148,14 +148,14 @@
 <h2>The <em>Signs</em> 40th Anniversary Issue</h2>
 <p>This site is a project of the journal <em>Signs: Women in Culture and Society</em>, jointly created by Susana Galán, Lindsey Whitmore, Andrew Mazzaschi, and Andrew Goldstone. It uses the results of a computer-assisted <em>topic modeling</em> technique to explore thematic and rhetorical patterns in the history of <em>Signs</em> from its first publication to 2013. The site offers you pathways through the overall tendencies that have characterized the journal and novel routes to particular articles from the journal's run so far. Though we have included some interpretations of some of the results on the site, our hope is that you will discover new patterns and trends yourself---and that you may find this a useful way to (re)discover aspects of the <em>Signs</em> archive and to spark new questions and open up new channels of interpretation. </p>
 
-<h3>About topic modeling</h3>
+<h3 id="about_topic_modeling">About topic modeling</h3>
   <p>Topic modeling is a family of algorithms in the field of machine learning which seek to characterize a large number of documents in terms of a smaller number of themes or topoi (<em>topics</em>). The result of the algorithm is a <em>model</em>: deliberately simplifying the documents, it attempts to describe their interconnections concisely and cogently.</p>
   <p>The particular technique we have used is Latent Dirichlet Allocation, an algorithm first described by David Blei, Andrew Ng, and Michael Jordan <a href="http://dl.acm.org/citation.cfm?id=944919.944937">in a 2003 technical article</a> (Blei has more recently written <a href="http://dx.doi.org/1145/2133806.2133826">a explanation for a broader audience</a> as well). Like most such algorithms, it focuses its attention solely on patterns of word use. A <em>topic</em>, in the sense used by the algorithm, is a collection of words that tend to occur in the same documents. One topic here is characterized by the words: <a href="#/topic/16">political, movement, rights, public</a>.  Because the technique focuses on words that occur together, it attempts to capture the way that the same word may be used (sometimes with different meanings) in different contexts. Thus, another topic also using the word <em>political</em> is characterized by words like <a href="#/topic/11">feminist, feminism, feminists, political</a>.</p>
   <p>Because topics are models of word usage, the term <em>topic</em> is misleadingly narrow. The patterns of language are better described as <em>discourses</em>, <em>topoi</em>, or <em>rhetorical frames</em>. The attraction of topic modeling is precisely its capacity to capture (if only approximately) these central concepts of cultural and political analysis.</p>
   <p>The model treats each article in <em>Signs</em> as a mixture of topics, recognizing that the typical article incorporates multiple major themes or discourses. Thus, for example, Mary Hawkesworth's 2006 editorial <a href="#/doc/252">"Legacies, Transitions, and New Directions at <em>Signs</em>,"</a> is divided by the model among ten topics, including <a href="#/topic/58">studies, research, study</a>, <a href="#/topic/11">feminist, feminism, feminists</a>, and <a href="#/topic/56">social, power, practices</a>. As this example indicates, these patterns of word use are by no means definitive interpretations of the content and rhetoric of an individual text; instead, this model offers a guide for exploration and further reading.</p>
-  <p>We explain our <a href="#about_choices">modeling choices</a> in some more detail below.</p>
+  <p>We explain our <a href="#/about/choices">modeling choices</a> in some more detail below.</p>
   
-  <h3>How to read this browser</h3>
+  <h3 id="about_how">How to read this browser</h3>
   <p>This browser serves as one way of visualizing the topic model of the <em>Signs</em> archive. It presents multiple ways of viewing topics and thus gives users multiple vantage points that allow them to see topics over time, the articles that are most strongly associated with particular topics, the multiple topics contained in each article, and the words that contribute most significantly to each topic.</p>
   <h4>Overview page</h4>
   <p>In the <a href="#">overview</a>, topics are represented by their most frequent words. Remember that these lists of words as a collection constitute a single "topic"; they are the words that tend to co-occur when a particular subject is being discussed or when a particular analytical frame is being employed. There are four ways of viewing the overview. In any of them, click a topic to examine that topic in more depth. </p>

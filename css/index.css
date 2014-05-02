@@ -1,8 +1,10 @@
-/* head clearance for bootstrap navbar */
+/* a fixed navbar needs head clearance; the default doesn't */
+/*
 body {
     padding-top: 60px;
     padding-bottom: 60px;
 }
+*/
 
 .hidden {
     display: none;
