@@ -342,6 +342,18 @@ div.panel div.panel-heading.panel_heading_hover {
     color: purple;
 }
 
+#about_contents a {
+    color: black;
+}
+
+#about_contents a:visited {
+    color: black;
+}
+
+#about_contents a.selected {
+    text-decoration: underline;
+}
+
 #about_view div#about_browser {
     padding-top: 5ex;
     font-style: italic;

@@ -1070,16 +1070,20 @@ bib_view = function (m, maj, min) {
 };
 
 about_view = function (m, section) {
-    var sec;
+    var sec = section || "intro",
+        elem = document.getElementById("about_" + section) ||
+            document.getElementById("about_intro");
 
     view_loading(false);
     d3.select("#about_view").classed("hidden", false);
-    if (section) {
-        sec = document.getElementById("about_" + section);
-        if (sec) {
-            sec.scrollIntoView();
-        }
-    }
+    elem.scrollIntoView();
+    d3.selectAll("#discussion_text > div")
+        .classed("hidden", true);
+    d3.select(elem).classed("hidden", false);
+    d3.selectAll("#about_contents li a")
+        .classed("selected", false);
+    d3.select("#about_contents_" + section)
+        .classed("selected", true);
     return true;
 };
 
