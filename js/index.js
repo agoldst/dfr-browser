@@ -59,9 +59,11 @@ var VIS = {
         ticks: 10 // applied to both x and y axes
     },
     word_view: {
+        n_min: 10, // words per topic
         topic_label_padding: 8, // pt
         topic_label_size: 14, // pt
         row_height: 80, // pt
+        svg_rows: 10, // * row_height gives min. height for svg element
         m: {
             left: 100,
             right: 100,
@@ -754,7 +756,8 @@ word_view = function (m, w) {
         words = [],
         spec, row_height,
         svg, scale_x, scale_y, scale_bar,
-        gs_t, gs_t_enter, gs_w, gs_w_enter;
+        gs_t, gs_t_enter, gs_w, gs_w_enter,
+        tx_w;
 
     if (!m.tw()) {
         view_loading(true);
@@ -799,13 +802,14 @@ word_view = function (m, w) {
     view.select("table#word_topics").classed("hidden", topics.length === 0);
 
     n = 1 + d3.max(topics, function (t) {
-        return t.rank; // 0-based
+        return t.rank; // 0-based, so we rank + 1 
     });
-    // now figure out how many words per row,
-    // taking account of possible ties
+    // now figure out how many words per row, taking account of possible ties
     n = d3.max(topics, function (t) {
         return m.topic_words(t.topic, n).length;
     });
+    // but not too few words
+    n = Math.max(VIS.word_view.n_min, n);
 
     words = topics.map(function (t) {
         var max_weight,
@@ -831,15 +835,17 @@ word_view = function (m, w) {
     row_height = VIS.word_view.row_height;
     svg = plot_svg("#word_view_main", spec);
     // adjust svg height so that scroll bar isn't too long
+    // and svg isn't so short it clips things weirdly
     d3.select("#word_view_main svg")
-        .attr("height", VIS.word_view.row_height * (topics.length + 1)
-                + spec.m.top + spec.m.bottom);
+        .attr("height", VIS.word_view.row_height
+            * (Math.max(topics.length, VIS.word_view.svg_rows) + 1)
+            + spec.m.top + spec.m.bottom);
 
     scale_x = d3.scale.linear()
         .domain([0, n])
         .range([0, spec.w]);
     scale_y = d3.scale.linear()
-        .domain([0, topics.length - 1])
+        .domain([0, Math.max(1, topics.length - 1)])
         .range([row_height, row_height * topics.length]);
     scale_bar = d3.scale.linear()
         .domain([0, 1])
@@ -848,7 +854,37 @@ word_view = function (m, w) {
     gs_t = svg.selectAll("g.topic")
         .data(topics, function (t) { return t.topic; } );
 
-    gs_t_enter = gs_t.enter().append("g").classed("topic", true);
+    // transition: update only
+    gs_t.transition().duration(1000)
+        .attr("transform", function (t, i) {
+            return "translate(0," + scale_y(i) + ")";
+        });
+
+    gs_t_enter = gs_t.enter().append("g").classed("topic", true)
+        .attr("transform", function (t, i) {
+            return "translate(0," + scale_y(i) + ")";
+        })
+        .style("opacity", 0);
+
+    if (!VIS.ready.word) {
+        // if this is the first loading, don't leave the user with a totally
+        // blank display for any time at all
+        d3.selectAll("g.topic").style("opacity", 1);
+        VIS.ready.word = true;
+    } else {
+        d3.transition().duration(1000)
+            .ease("linear")
+            .each("end", function () {
+                d3.selectAll("g.topic").style("opacity", 1);
+            });
+    }
+    
+    // and move exit rows out of the way
+    gs_t.exit().transition()
+        .duration(2000)
+        .attr("transform", "translate(0," +
+                row_height * (n + gs_t.exit().size()) + ")")
+        .remove();
 
     gs_t_enter.append("rect")
         .classed("interact", true)
@@ -877,9 +913,9 @@ word_view = function (m, w) {
         .data(function (t, i) { return words[i]; },
                 function (d) { return d.word; });
 
-    gs_w_enter = gs_w.enter().append("g");
-    gs_w_enter.classed("word", true)
-        .append("text")
+    gs_w_enter = gs_w.enter().append("g").classed("word", true);
+
+    gs_w_enter.append("text")
         .attr("transform", "rotate(-45)");
 
     gs_w_enter.append("rect")
@@ -904,48 +940,34 @@ word_view = function (m, w) {
         return d.word === word;
     });
 
-    // update topic row positions
-    gs_t.transition()
-        .duration(2000)
-        .attr("transform", function (t, i) {
-            return "translate(0," + scale_y(i) + ")";
-        });
-
-    // and move exit rows out of the way
-    gs_t.exit().transition()
-        .duration(2000)
-        .attr("transform", "translate(0," +
-                row_height * (n + gs_t.exit().size()) + ")")
-        .remove();
+    gs_w_enter.attr("transform", function (d, j) {
+        return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
+    })
+        .attr("opacity", 0);
 
     // update g positions for word/bars
-    gs_w.transition()
+    tx_w = gs_w.transition()
+        //.delay(1000)
         .duration(2000)
         .attr("transform", function (d, j) {
             return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
+        })
+        .attr("opacity", 1)
+        .each("end", function () {
+            d3.select(this).classed("update_row", false);
         });
 
-    // and move exit words out of the way
-    gs_w.exit().transition()
-        .duration(2000)
-        .attr("transform", "translate(" + spec.w + ",0)")
-        .remove();
-
     // update word label positions
-
-    gs_w.selectAll("text")
-        .transition()
-        .duration(2000) 
-        .attr("x", spec.w / (4 * n));
+    tx_w.selectAll("text").attr("x", spec.w / (4 * n));
 
     // update bar widths
-    gs_w.selectAll("rect")
-        .transition()
-        .duration(2000)
+    tx_w.selectAll("rect")
         .attr("width", spec.w / (2 * n))
         .attr("height", function (d) {
             return scale_bar(d.weight);
         });
+    // and move exit words out of the way
+    gs_w.exit().transition().delay(1000).remove();
 
     return true;
     // (later: time graph)
