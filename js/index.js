@@ -58,6 +58,17 @@ var VIS = {
         bar_width: 90, // in days!
         ticks: 10 // applied to both x and y axes
     },
+    word_view: {
+        topic_label_padding: 8, // pt
+        topic_label_size: 14, // pt
+        row_height: 80, // pt
+        m: {
+            left: 100,
+            right: 100,
+            top: 20,
+            bottom: 0
+        }
+    },
     doc_view: {
         topics: 10,         // should be divisible by...
         topics_increment: 2
@@ -739,8 +750,11 @@ plot_topic_yearly = function (m, t, param) {
 word_view = function (m, w) {
     var view = d3.select("div#word_view"),
         word = w,
-        trs,
-        topics;
+        topics, n,
+        words = [],
+        spec, row_height,
+        svg, scale_x, scale_y, scale_bar,
+        gs_t, gs_t_enter, gs_w, gs_w_enter;
 
     if (!m.tw()) {
         view_loading(true);
@@ -776,7 +790,7 @@ word_view = function (m, w) {
     view.select("#word_view_main").classed("hidden", false);
 
     VIS.last.word = word;
-    view.select("h2#word_header")
+    view.select("h2#word_header span.word")
         .text(word);
 
     topics = m.word_topics(word);
@@ -784,36 +798,154 @@ word_view = function (m, w) {
     view.select("#word_no_topics").classed("hidden", topics.length !== 0);
     view.select("table#word_topics").classed("hidden", topics.length === 0);
 
-    trs = view.select("table#word_topics tbody")
-        .selectAll("tr")
-        .data(topics);
-
-    trs.enter().append("tr");
-    trs.exit().remove();
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    trs.append("td")
-        .text(function (d) {
-            return d.rank + 1; // user-facing rank is 1-based
-        });
-
-    trs.append("td").append("a")
-        .text(function (d) {
-            return topic_label(m, d.topic, VIS.overview_words);
-        })
-        .attr("href", function (d) {
-            return topic_link(d.topic);
-        });
-
-    trs.on("click", function (d) {
-        window.location.hash = topic_hash(d.topic);
+    n = 1 + d3.max(topics, function (t) {
+        return t.rank; // 0-based
     });
-        // TODO visualize rank by instead using bars in columns as in the left-hand-size 
-        // of the topic view. Column headers are links to topics, words are word links,
-        // highlight the word that's in focus. thicker column borders between topics. 
-        // Alternatively: termite-style grid.
+    // now figure out how many words per row,
+    // taking account of possible ties
+    n = d3.max(topics, function (t) {
+        return m.topic_words(t.topic, n).length;
+    });
+
+    words = topics.map(function (t) {
+        var max_weight,
+            ws = m.topic_words(t.topic).slice(0, n);
+        return ws.map(function (wrd, i) {
+            if (i === 0) {
+                max_weight = m.tw(t.topic, wrd);
+            }
+            // normalize weights relative to the weight of the word ranked 1
+            return {
+                word: wrd,
+                weight: m.tw(t.topic, wrd) / max_weight
+            };
+        });
+    });
+
+    spec = {
+        w: VIS.model_view.w,
+        h: VIS.word_view.row_height * (m.n() + 1),
+        m: VIS.word_view.m
+    };
+
+    row_height = VIS.word_view.row_height;
+    svg = plot_svg("#word_view_main", spec);
+    // adjust svg height so that scroll bar isn't too long
+    d3.select("#word_view_main svg")
+        .attr("height", VIS.word_view.row_height * (topics.length + 1)
+                + spec.m.top + spec.m.bottom);
+
+    scale_x = d3.scale.linear()
+        .domain([0, n])
+        .range([0, spec.w]);
+    scale_y = d3.scale.linear()
+        .domain([0, topics.length - 1])
+        .range([row_height, row_height * topics.length]);
+    scale_bar = d3.scale.linear()
+        .domain([0, 1])
+        .range([0, row_height / 2]);
+
+    gs_t = svg.selectAll("g.topic")
+        .data(topics, function (t) { return t.topic; } );
+
+    gs_t_enter = gs_t.enter().append("g").classed("topic", true);
+
+    gs_t_enter.append("rect")
+        .classed("interact", true)
+        .attr({
+            x: -spec.m.left,
+            y: -row_height,
+            width: spec.m.left,
+            height: row_height
+        })
+        .on("click", function (t) {
+            window.location.hash = topic_hash(t.topic);
+        });
+                
+    gs_t_enter.append("text")
+        .classed("topic", true)
+        .attr({
+            x: -VIS.word_view.topic_label_padding,
+            y: -(row_height - VIS.word_view.topic_label_size) / 2
+        })
+        .text(function (t) {
+            return "Topic " + (t.topic + 1);
+        })
+        .style("font-size", VIS.word_view.topic_label_size + "pt");
+
+    gs_w = gs_t.selectAll("g.word")
+        .data(function (t, i) { return words[i]; },
+                function (d) { return d.word; });
+
+    gs_w_enter = gs_w.enter().append("g");
+    gs_w_enter.classed("word", true)
+        .append("text")
+        .attr("transform", "rotate(-45)");
+
+    gs_w_enter.append("rect")
+        .classed("proportion", true)
+        .attr({ x: 0, y: 0 });
+
+    gs_w.selectAll("text")
+        .text(function (d) { return d.word; });
+
+    gs_w.selectAll("text, rect")
+        .on("click", function (d) {
+            window.location.hash = "/word/" + d.word;
+        })
+        .on("mouseover", function () {
+            d3.select(this.parentNode).classed("hover", true);
+        })
+        .on("mouseout", function () {
+            d3.select(this.parentNode).classed("hover", false);
+        });
+
+    gs_w.classed("selected_word", function (d) {
+        return d.word === word;
+    });
+
+    // update topic row positions
+    gs_t.transition()
+        .duration(2000)
+        .attr("transform", function (t, i) {
+            return "translate(0," + scale_y(i) + ")";
+        });
+
+    // and move exit rows out of the way
+    gs_t.exit().transition()
+        .duration(2000)
+        .attr("transform", "translate(0," +
+                row_height * (n + gs_t.exit().size()) + ")")
+        .remove();
+
+    // update g positions for word/bars
+    gs_w.transition()
+        .duration(2000)
+        .attr("transform", function (d, j) {
+            return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
+        });
+
+    // and move exit words out of the way
+    gs_w.exit().transition()
+        .duration(2000)
+        .attr("transform", "translate(" + spec.w + ",0)")
+        .remove();
+
+    // update word label positions
+
+    gs_w.selectAll("text")
+        .transition()
+        .duration(2000) 
+        .attr("x", spec.w / (4 * n));
+
+    // update bar widths
+    gs_w.selectAll("rect")
+        .transition()
+        .duration(2000)
+        .attr("width", spec.w / (2 * n))
+        .attr("height", function (d) {
+            return scale_bar(d.weight);
+        });
 
     return true;
     // (later: time graph)
