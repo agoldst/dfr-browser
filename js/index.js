@@ -64,9 +64,10 @@ var VIS = {
         topic_label_size: 14, // pt
         row_height: 80, // pt
         svg_rows: 10, // * row_height gives min. height for svg element
+        w: 1000,
         m: {
             left: 100,
-            right: 100,
+            right: 40,
             top: 20,
             bottom: 0
         }
@@ -827,7 +828,7 @@ word_view = function (m, w) {
     });
 
     spec = {
-        w: VIS.model_view.w,
+        w: VIS.word_view.w,
         h: VIS.word_view.row_height * (m.n() + 1),
         m: VIS.word_view.m
     };
