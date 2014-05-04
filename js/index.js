@@ -794,13 +794,14 @@ word_view = function (m, w) {
     view.select("#word_view_main").classed("hidden", false);
 
     VIS.last.word = word;
-    view.select("h2#word_header span.word")
+    view.selectAll("#word_view span.word") // sets header and help
         .text(word);
 
     topics = m.word_topics(word);
 
     view.select("#word_no_topics").classed("hidden", topics.length !== 0);
     view.select("table#word_topics").classed("hidden", topics.length === 0);
+    view.select("#word_view_explainer").classed("hidden", topics.length === 0);
 
     n = 1 + d3.max(topics, function (t) {
         return t.rank; // 0-based, so we rank + 1 
