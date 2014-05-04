@@ -58,6 +58,20 @@ var VIS = {
         bar_width: 90, // in days!
         ticks: 10 // applied to both x and y axes
     },
+    word_view: {
+        n_min: 10, // words per topic
+        topic_label_padding: 8, // pt
+        topic_label_size: 14, // pt
+        row_height: 80, // pt
+        svg_rows: 10, // * row_height gives min. height for svg element
+        w: 1000,
+        m: {
+            left: 100,
+            right: 40,
+            top: 20,
+            bottom: 0
+        }
+    },
     doc_view: {
         topics: 10,         // should be divisible by...
         topics_increment: 2
@@ -354,7 +368,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 topic_view = function (m, t, year) {
     var view = d3.select("div#topic_view");
 
-    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
+    if (!m.meta() || !m.dt() || !m.tw()) {
         // not ready yet; show loading message
         view_loading(true);
         return true;
@@ -721,6 +735,7 @@ plot_topic_yearly = function (m, t, param) {
                     window.location.hash = topic_hash(t);
                 } else {
                     // TODO selection of multiple years
+                    // should use a brush http://bl.ocks.org/mbostock/6232537
                     d3.selectAll(".selected_year")
                         .classed("selected_year", false);
                     d3.select(this.parentNode).classed("selected_year", true);
@@ -738,8 +753,12 @@ plot_topic_yearly = function (m, t, param) {
 word_view = function (m, w) {
     var view = d3.select("div#word_view"),
         word = w,
-        trs,
-        topics;
+        topics, n,
+        words = [],
+        spec, row_height,
+        svg, scale_x, scale_y, scale_bar,
+        gs_t, gs_t_enter, gs_w, gs_w_enter,
+        tx_w;
 
     if (!m.tw()) {
         view_loading(true);
@@ -775,44 +794,182 @@ word_view = function (m, w) {
     view.select("#word_view_main").classed("hidden", false);
 
     VIS.last.word = word;
-    view.select("h2#word_header")
+    view.selectAll("#word_view span.word") // sets header and help
         .text(word);
 
     topics = m.word_topics(word);
 
     view.select("#word_no_topics").classed("hidden", topics.length !== 0);
     view.select("table#word_topics").classed("hidden", topics.length === 0);
+    view.select("#word_view_explainer").classed("hidden", topics.length === 0);
 
-    trs = view.select("table#word_topics tbody")
-        .selectAll("tr")
-        .data(topics);
-
-    trs.enter().append("tr");
-    trs.exit().remove();
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    trs.append("td")
-        .text(function (d) {
-            return d.rank + 1; // user-facing rank is 1-based
-        });
-
-    trs.append("td").append("a")
-        .text(function (d) {
-            return topic_label(m, d.topic, VIS.overview_words);
-        })
-        .attr("href", function (d) {
-            return topic_link(d.topic);
-        });
-
-    trs.on("click", function (d) {
-        window.location.hash = topic_hash(d.topic);
+    n = 1 + d3.max(topics, function (t) {
+        return t.rank; // 0-based, so we rank + 1 
     });
-        // TODO visualize rank by instead using bars in columns as in the left-hand-size 
-        // of the topic view. Column headers are links to topics, words are word links,
-        // highlight the word that's in focus. thicker column borders between topics. 
-        // Alternatively: termite-style grid.
+    // now figure out how many words per row, taking account of possible ties
+    n = d3.max(topics, function (t) {
+        return m.topic_words(t.topic, n).length;
+    });
+    // but not too few words
+    n = Math.max(VIS.word_view.n_min, n);
+
+    words = topics.map(function (t) {
+        var max_weight,
+            ws = m.topic_words(t.topic).slice(0, n);
+        return ws.map(function (wrd, i) {
+            if (i === 0) {
+                max_weight = m.tw(t.topic, wrd);
+            }
+            // normalize weights relative to the weight of the word ranked 1
+            return {
+                word: wrd,
+                weight: m.tw(t.topic, wrd) / max_weight
+            };
+        });
+    });
+
+    spec = {
+        w: VIS.word_view.w,
+        h: VIS.word_view.row_height * (m.n() + 1),
+        m: VIS.word_view.m
+    };
+
+    row_height = VIS.word_view.row_height;
+    svg = plot_svg("#word_view_main", spec);
+    // adjust svg height so that scroll bar isn't too long
+    // and svg isn't so short it clips things weirdly
+    d3.select("#word_view_main svg")
+        .attr("height", VIS.word_view.row_height
+            * (Math.max(topics.length, VIS.word_view.svg_rows) + 1)
+            + spec.m.top + spec.m.bottom);
+
+    scale_x = d3.scale.linear()
+        .domain([0, n])
+        .range([0, spec.w]);
+    scale_y = d3.scale.linear()
+        .domain([0, Math.max(1, topics.length - 1)])
+        .range([row_height, row_height * topics.length]);
+    scale_bar = d3.scale.linear()
+        .domain([0, 1])
+        .range([0, row_height / 2]);
+
+    gs_t = svg.selectAll("g.topic")
+        .data(topics, function (t) { return t.topic; } );
+
+    // transition: update only
+    gs_t.transition().duration(1000)
+        .attr("transform", function (t, i) {
+            return "translate(0," + scale_y(i) + ")";
+        });
+
+    gs_t_enter = gs_t.enter().append("g").classed("topic", true)
+        .attr("transform", function (t, i) {
+            return "translate(0," + scale_y(i) + ")";
+        })
+        .style("opacity", 0);
+
+    if (!VIS.ready.word) {
+        // if this is the first loading, don't leave the user with a totally
+        // blank display for any time at all
+        d3.selectAll("g.topic").style("opacity", 1);
+        VIS.ready.word = true;
+    } else {
+        d3.transition().duration(1000)
+            .ease("linear")
+            .each("end", function () {
+                d3.selectAll("g.topic").style("opacity", 1);
+            });
+    }
+    
+    // and move exit rows out of the way
+    gs_t.exit().transition()
+        .duration(2000)
+        .attr("transform", "translate(0," +
+                row_height * (n + gs_t.exit().size()) + ")")
+        .remove();
+
+    gs_t_enter.append("rect")
+        .classed("interact", true)
+        .attr({
+            x: -spec.m.left,
+            y: -row_height,
+            width: spec.m.left,
+            height: row_height
+        })
+        .on("click", function (t) {
+            window.location.hash = topic_hash(t.topic);
+        });
+                
+    gs_t_enter.append("text")
+        .classed("topic", true)
+        .attr({
+            x: -VIS.word_view.topic_label_padding,
+            y: -(row_height - VIS.word_view.topic_label_size) / 2
+        })
+        .text(function (t) {
+            return "Topic " + (t.topic + 1);
+        })
+        .style("font-size", VIS.word_view.topic_label_size + "pt");
+
+    gs_w = gs_t.selectAll("g.word")
+        .data(function (t, i) { return words[i]; },
+                function (d) { return d.word; });
+
+    gs_w_enter = gs_w.enter().append("g").classed("word", true);
+
+    gs_w_enter.append("text")
+        .attr("transform", "rotate(-45)");
+
+    gs_w_enter.append("rect")
+        .classed("proportion", true)
+        .attr({ x: 0, y: 0 });
+
+    gs_w.selectAll("text")
+        .text(function (d) { return d.word; });
+
+    gs_w.selectAll("text, rect")
+        .on("click", function (d) {
+            window.location.hash = "/word/" + d.word;
+        })
+        .on("mouseover", function () {
+            d3.select(this.parentNode).classed("hover", true);
+        })
+        .on("mouseout", function () {
+            d3.select(this.parentNode).classed("hover", false);
+        });
+
+    gs_w.classed("selected_word", function (d) {
+        return d.word === word;
+    });
+
+    gs_w_enter.attr("transform", function (d, j) {
+        return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
+    })
+        .attr("opacity", 0);
+
+    // update g positions for word/bars
+    tx_w = gs_w.transition()
+        //.delay(1000)
+        .duration(2000)
+        .attr("transform", function (d, j) {
+            return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
+        })
+        .attr("opacity", 1)
+        .each("end", function () {
+            d3.select(this).classed("update_row", false);
+        });
+
+    // update word label positions
+    tx_w.selectAll("text").attr("x", spec.w / (4 * n));
+
+    // update bar widths
+    tx_w.selectAll("rect")
+        .attr("width", spec.w / (2 * n))
+        .attr("height", function (d) {
+            return scale_bar(d.weight);
+        });
+    // and move exit words out of the way
+    gs_w.exit().transition().delay(1000).remove();
 
     return true;
     // (later: time graph)
@@ -844,7 +1001,7 @@ doc_view = function (m, d) {
         topics,
         trs;
 
-    if (!m.meta() || !m.dt() || !m.tw() || !m.doc_len()) {
+    if (!m.meta() || !m.dt() || !m.tw()) {
         view_loading(true);
         return true;
     }
@@ -876,7 +1033,7 @@ doc_view = function (m, d) {
         .html(cite_doc(m, doc));
 
     view.select("#doc_remark")
-        .html(m.doc_len(doc) + " tokens. "
+        .html(m.dt.row_sum(doc) + " tokens. "
                 + '<a class ="external" href="'
                 + doc_uri(m, doc)
                 + '">View '
@@ -914,7 +1071,7 @@ doc_view = function (m, d) {
             });
 
             add_weight_cells(trs, function (t) {
-                return t.weight / m.doc_len(doc);
+                return t.weight / m.dt.row_sum(doc);
             });
 
             trs.append("td")
@@ -923,7 +1080,7 @@ doc_view = function (m, d) {
                 });
             trs.append("td")
                 .text(function (t) {
-                    return VIS.percent_format(t.weight / m.doc_len(doc));
+                    return VIS.percent_format(t.weight / m.dt.row_sum(doc));
                 });
         });
 
@@ -1081,7 +1238,7 @@ about_view = function (m) {
 };
 
 model_view = function (m, type, p1, p2) {
-    var type_chosen = type || VIS.last.model;
+    var type_chosen = type || VIS.last.model || "grid";
 
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
@@ -2079,10 +2236,6 @@ main = function () {
             } else {
                 view_error("Unable to load topic words from " + dfb.files.tw);
             }
-        });
-        load_data(dfb.files.doc_len, function (error, doc_len_s) {
-            m.set_doc_len(doc_len_s);
-            view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
             if (typeof s === 'string') {

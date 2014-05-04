@@ -72,16 +72,16 @@
         </ul>
         <div class="navbar-right">
           <p id="model_view_help"
-          class="navbar-text help model_view_plot model_view_yearly">
+          class="navbar-text help model_view_plot model_view_yearly hidden">
           scroll to zoom; shift-drag to pan; click for more about a topic</p>
           <p id="list_view_help"
-          class="navbar-text help model_view_list">
+          class="navbar-text help model_view_list hidden">
           click a column label to sort; click a row for more about a topic</p>
           <p id="yearly_view_help" class="navbar-text help model_view_yearly">
             y-axis:
           </p>
           <ul id="yearly_choice"
-            class="nav navbar-nav nav-pills model_view_yearly">
+            class="nav navbar-nav nav-pills model_view_yearly hidden">
             <li id="nav_model_yearly_frac" class="active">
               <a href="#/model/yearly/frac">yearly %</a>
             </li>
@@ -247,20 +247,13 @@
       </div>
     </div>
     <div id="word_view_main" class="hidden">
-      <h2 id="word_header"></h2>
+      <h2 id="word_header">Prominent topics for <span class="word"></span></h2>
+      <div id="word_view_explainer">
+        <p class="help">Click row labels to go to the topic view; click a word to show the topic list for that word.</p>
+      </div>
       <div id="word_no_topics" class="alert alert-info hidden">
         <p>There are no topics in which this word is prominent.</p>
       </div>
-      <table class="table table-condensed" id="word_topics">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th class="wide">Topic</th>
-          </tr>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
     </div>
   </div>
 

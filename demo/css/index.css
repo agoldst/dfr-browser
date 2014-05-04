@@ -248,11 +248,11 @@ tr:hover a {
     stroke: #ddd;*/
 }
 
-.topic_proportion rect.interact {
+rect.interact {
     fill: rgba(255,255,255,0);
 }
 
-.topic_proportion rect.interact:hover {
+rect.interact:hover {
     stroke: #eee;
     fill: #eee;
 }
@@ -289,6 +289,52 @@ div.bar_tooltip {
 
 /* word_view */
 
+#word_header .word {
+    font-style: italic;
+}
+
+#word_view g.topic text.topic {
+    text-anchor: end;
+    pointer-events: none;
+}
+
+#word_view rect.interact {
+    fill: rgba(255,255,255,0);
+}
+
+#word_view rect.interact:hover {
+    fill: #eee;
+}
+
+#word_view rect.proportion {
+    fill: rgba(51,153,255,0.25);
+}
+
+#word_view .hover rect.proportion {
+    fill: rgb(51,153,255);
+}
+
+#word_view .selected_word rect.proportion {
+    fill: rgb(51,153,255);
+}
+
+#word_view g.word text {
+    text-decoration: none;
+    text-anchor: start;
+    fill: grey;
+    font-size: 10pt;
+}
+
+#word_view g.word.hover text {
+    fill: black;
+}
+
+#word_view g.word.selected_word text {
+    fill: black;
+}
+
+/* words_view */
+
 ul#vocab_list {
     -moz-column-width: 10em;
     -webkit-column-width: 10em;
@@ -301,6 +347,7 @@ ul#vocab_list li a {
 ul#vocab_list li a:visited {
     color: black;
 }
+
 
 
 /* doc_view */
