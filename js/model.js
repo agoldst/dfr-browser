@@ -370,15 +370,18 @@ model = function (spec) {
         // return them all, sorted, if there are fewer than n hits
         if (n >= docs.length) {
             docs.sort(function (a, b) {
-                return d3.descending(a.frac, b.frac);
+                return d3.descending(a.frac, b.frac) ||
+                    d3.descending(a.doc, b.doc); // stabilize sort
             });
             return docs;
         }
 
         // initial guess. simplifies the conditionals below to do it this way,
         // and sorting n elements is no biggie
+
         result = docs.slice(0, n).sort(function (a, b) {
-            return d3.ascending(a.frac, b.frac);
+            return d3.ascending(a.frac, b.frac) ||
+                d3.ascending(a.doc, b.doc); // stabilize sort
         });
 
         bisect = d3.bisector(function (d) { return d.frac; }).left;
@@ -389,7 +392,7 @@ model = function (spec) {
                 result.splice(insert, 0, docs[i]);
                 result.shift();
             } else if (result[0].frac === docs[i].frac) {
-                // insert = 0, tie
+                // insert = 0 but a tie
                 result.unshift(docs[i]);
             }
         }
