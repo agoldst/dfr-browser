@@ -868,6 +868,8 @@ word_view = function (m, w) {
         })
         .style("opacity", 0);
 
+    // TODO refine transition timings
+
     if (!VIS.ready.word) {
         // if this is the first loading, don't leave the user with a totally
         // blank display for any time at all
