@@ -62,13 +62,13 @@ var VIS = {
         n_min: 10, // words per topic
         topic_label_padding: 8, // pt
         topic_label_size: 14, // pt
-        row_height: 100, // pt
+        row_height: 80, // pt
         svg_rows: 10, // * row_height gives min. height for svg element
         w: 1000,
         m: {
             left: 100,
             right: 40,
-            top: 50,
+            top: 20,
             bottom: 0
         }
     },
