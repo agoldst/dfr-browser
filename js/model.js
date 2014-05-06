@@ -422,7 +422,8 @@ model = function (spec) {
                 return d.weight > 0;
             })
             .sort(function (a, b) {
-                return d3.descending(a.weight, b.weight);
+                return d3.descending(a.weight, b.weight) ||
+                    d3.descending(a.t, b.t); // stabilize sort
             });
 
 
