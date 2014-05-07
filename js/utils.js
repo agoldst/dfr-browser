@@ -2,8 +2,7 @@ var utils = (function () {
     "use strict";
     var that = {},
         shorten,
-        deep_replace,
-        stable_sort;
+        deep_replace;
 
     // shorten a sorted array to n elements, allowing more than n elements if 
     // there are ties at the end
@@ -62,15 +61,6 @@ var utils = (function () {
         return result;
     };
     that.deep_replace = deep_replace;
-
-    stable_sort = function (xs, cmp, descending) {
-        var cmp_is = descending ? d3.descending : d3.ascending,
-            is = d3.range(xs.length).sort(function (i, j) {
-            return cmp(xs[i], xs[j]) || cmp_is(i, j);
-        });
-        return is.map(function (i) { return xs[i]; });
-    };
-    that.stable_sort = stable_sort;
 
     return that;
 }());
