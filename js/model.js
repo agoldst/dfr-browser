@@ -438,7 +438,8 @@ model = function (spec) {
         var n_words = n || this.n_top_words(),
             words = this.tw(t).entries(); // d3.map method
         words.sort(function (w1, w2) {
-            return d3.descending(w1.value, w2.value);
+            return d3.descending(w1.value, w2.value) ||
+                d3.ascending(w1.key, w2.key); // stabilize sort: alphabetical
         });
 
         return utils.shorten(words, n_words, function (ws, i) {
