@@ -357,6 +357,7 @@ div.bar_tooltip {
 
 #word_view g.word.selected_word text {
     fill: black;
+    font-weight: bold;
 }
 
 /* words_view */
