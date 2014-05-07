@@ -498,7 +498,8 @@ model = function (spec) {
             });
         }
         result.sort(function (a, b) {
-            return d3.descending(a.weight, b.weight);
+            return d3.descending(a.weight, b.weight) ||
+                d3.ascending(a.topic, b.topic); // stabilize sort
         });
 
         return utils.shorten(result, n);
