@@ -473,7 +473,8 @@ model = function (spec) {
             }
         }
         result.sort(function (a, b) {
-            return d3.ascending(a.rank, b.rank);
+            return d3.ascending(a.rank, b.rank) ||
+                d3.ascending(a.topic, b.topic); // stabilize sort
         });
         return utils.shorten(result, n_topics, function (topics, i) {
             return topics[i].rank;
