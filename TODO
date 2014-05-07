@@ -32,6 +32,7 @@ BUGS
 - chrome vs firefox vs ... sorting not the same (not stable sort??)
 - 65 topics - does not show up on grid
 - jstor id resolution for older items: write JSTOR
+- apparent problems with d3 (?) on firefox 30 under MacOS 10.8, unable to replicate on ffx 30 on 10.7.5
 
 TEXT TO WRITE
 
