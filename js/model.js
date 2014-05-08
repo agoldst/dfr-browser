@@ -359,6 +359,8 @@ model = function (spec) {
             result = [];
 
         // column slice
+        // TODO speed bottleneck: all that row-summing gets slooow
+        // because row-slicing is slow on the col-compressed matrix
         docs = d3.range(p0, p1).map(function (p) {
             return {
                 doc: my.dt.i[p],
