@@ -370,15 +370,18 @@ model = function (spec) {
         // return them all, sorted, if there are fewer than n hits
         if (n >= docs.length) {
             docs.sort(function (a, b) {
-                return d3.descending(a.frac, b.frac);
+                return d3.descending(a.frac, b.frac) ||
+                    d3.descending(a.doc, b.doc); // stabilize sort
             });
             return docs;
         }
 
         // initial guess. simplifies the conditionals below to do it this way,
         // and sorting n elements is no biggie
+
         result = docs.slice(0, n).sort(function (a, b) {
-            return d3.ascending(a.frac, b.frac);
+            return d3.ascending(a.frac, b.frac) ||
+                d3.ascending(a.doc, b.doc); // stabilize sort
         });
 
         bisect = d3.bisector(function (d) { return d.frac; }).left;
@@ -389,7 +392,7 @@ model = function (spec) {
                 result.splice(insert, 0, docs[i]);
                 result.shift();
             } else if (result[0].frac === docs[i].frac) {
-                // insert = 0, tie
+                // insert = 0 but a tie
                 result.unshift(docs[i]);
             }
         }
@@ -419,7 +422,8 @@ model = function (spec) {
                 return d.weight > 0;
             })
             .sort(function (a, b) {
-                return d3.descending(a.weight, b.weight);
+                return d3.descending(a.weight, b.weight) ||
+                    d3.descending(a.t, b.t); // stabilize sort
             });
 
 
@@ -434,7 +438,8 @@ model = function (spec) {
         var n_words = n || this.n_top_words(),
             words = this.tw(t).entries(); // d3.map method
         words.sort(function (w1, w2) {
-            return d3.descending(w1.value, w2.value);
+            return d3.descending(w1.value, w2.value) ||
+                d3.ascending(w1.key, w2.key); // stabilize sort: alphabetical
         });
 
         return utils.shorten(words, n_words, function (ws, i) {
@@ -468,7 +473,8 @@ model = function (spec) {
             }
         }
         result.sort(function (a, b) {
-            return d3.ascending(a.rank, b.rank);
+            return d3.ascending(a.rank, b.rank) ||
+                d3.ascending(a.topic, b.topic); // stabilize sort
         });
         return utils.shorten(result, n_topics, function (topics, i) {
             return topics[i].rank;
@@ -492,7 +498,8 @@ model = function (spec) {
             });
         }
         result.sort(function (a, b) {
-            return d3.descending(a.weight, b.weight);
+            return d3.descending(a.weight, b.weight) ||
+                d3.ascending(a.topic, b.topic); // stabilize sort
         });
 
         return utils.shorten(result, n);

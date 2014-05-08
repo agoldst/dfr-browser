@@ -201,8 +201,9 @@ bib_sort = function (m, major, minor) {
             };
         })
         .sort(function (a, b) {
-            var M = d3.ascending(a.major, b.major);
-            return (M !== 0) ? M : d3.ascending(a.minor, b.minor);
+            return d3.ascending(a.major, b.major) ||
+                d3.ascending(a.minor, b.minor) ||
+                d3.ascending(a.id, b.id); // stabilize sort
         });
 
     for (i = 0, cur_major = ""; i < docs.length; i += 1) {
@@ -868,6 +869,8 @@ word_view = function (m, w) {
         })
         .style("opacity", 0);
 
+    // TODO refine transition timings
+
     if (!VIS.ready.word) {
         // if this is the first loading, don't leave the user with a totally
         // blank display for any time at all
@@ -1152,7 +1155,7 @@ bib_view = function (m, maj, min) {
             return function () {
                 d3.selectAll("div#bib_main div.panel-default")
                     .sort(descend ? d3.descending : d3.ascending)
-                    .order();
+                    .order(); // stable because bound data is just indices
                 descend = !descend;
             };
         }())); // up/down state is preserved in the closure
@@ -1396,12 +1399,14 @@ model_view_list = function (m, sort, dir) {
 
     if (sort_dir === "down") {
         sorter = function (a, b) {
-            return d3.descending(keys[a], keys[b]);
+            return d3.descending(keys[a], keys[b]) ||
+                d3.descending(a, b); // stabilize sort
         };
     } else {
         // default: up
         sorter = function (a, b) {
-            return d3.ascending(keys[a], keys[b]);
+            return d3.ascending(keys[a], keys[b]) ||
+                d3.ascending(a, b); // stabilize sort
         };
     }
 
