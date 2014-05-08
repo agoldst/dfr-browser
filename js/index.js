@@ -1244,10 +1244,8 @@ about_view = function (m) {
 model_view = function (m, type, p1, p2) {
     var type_chosen = type || VIS.last.model || "grid";
 
-    // if loading scaled coordinates failed,
-    // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
-    // but fall through to choosing the grid below
-    if (!m.tw() || !m.topic_scaled()) {
+    // for any subview, we'll want tw and dt
+    if (!m.tw() || !m.dt()) {
         view_loading(true);
         return true;
     }
@@ -1268,7 +1266,7 @@ model_view = function (m, type, p1, p2) {
     d3.select("#model_view nav").classed("hidden", false);
 
     if (type_chosen === "list") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta()) {
             view_loading(true);
             return true;
         }
@@ -1277,7 +1275,7 @@ model_view = function (m, type, p1, p2) {
         d3.selectAll(".model_view_list").classed("hidden", false);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta()) {
             view_loading(true);
             return true;
         }
@@ -1288,7 +1286,7 @@ model_view = function (m, type, p1, p2) {
     } else { // default to grid
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
-        if (!m.topic_scaled() || !m.dt()) {
+        if (!m.topic_scaled()) {
             view_loading(true);
             return true;
         }
