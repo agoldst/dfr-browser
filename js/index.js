@@ -120,6 +120,7 @@ var bib_sort,   // bibliography sorting
     view_refresh,
     view_loading,
     view_error,
+    view_warning,
     setup_vis,          // initialization
     plot_svg,
     append_svg,
@@ -1263,6 +1264,9 @@ model_view = function (m, type, p1, p2) {
     d3.selectAll(".model_view_list").classed("hidden", true);
     d3.selectAll(".model_view_yearly").classed("hidden", true);
 
+    // reveal navbar
+    d3.select("#model_view nav").classed("hidden", false);
+
     if (type_chosen === "list") {
         if (!m.meta() || !m.dt()) {
             view_loading(true);
@@ -2035,16 +2039,20 @@ tooltip = function () {
 };
 
 view_loading = function (flag) {
-    d3.select("div#loading").classed("hidden", !flag);
+    // don't say we're loading if we have an error
+    d3.select("div#loading").classed("hidden", !flag || !!VIS.error);
 };
 
 view_error = function (msg) {
-    d3.select("div#error").append("div")
-        .classed("alert", true)
-        .classed("alert-danger", true)
-        .append("p")
-            .text(msg);
+    d3.select("div#error").append("p").text(msg);
     d3.select("div#error").classed("hidden", false);
+    view_loading(false);
+    VIS.error = true;
+};
+
+view_warning = function (msg) {
+    d3.select("div#warning").append("p").text(msg);
+    d3.select("div#warning").classed("hidden", false);
 };
 
 view_refresh = function (m, v) {
@@ -2116,11 +2124,13 @@ view_refresh = function (m, v) {
 // global visualization setup
 setup_vis = function (m) {
     // load any preferences stashed in model info
-    VIS = utils.deep_replace(VIS, m.info().VIS);
+    if (m.info()) {
+        VIS = utils.deep_replace(VIS, m.info().VIS);
 
-    // model title
-    d3.selectAll(".model_title")
-        .html(m.info().title);
+        // model title
+        d3.selectAll(".model_title")
+            .html(m.info().title);
+    }
 
     // hashchange handler
     window.onhashchange = function () {
@@ -2184,7 +2194,7 @@ var load_data = function (target, callback) {
             .responseType("arraybuffer")
             .get(function (error, response) {
                 var zip, text;
-                if (response.status === 200) {
+                if (response && response.status === 200) {
                     zip = new JSZip(response.response);
                     text = zip.file(target_base.replace(/\.zip$/, "")).asText();
                 }
@@ -2204,8 +2214,18 @@ var load_data = function (target, callback) {
 
 main = function () {
     load_data(dfb.files.info,function (error, info_s) {
-        // callback, invoked when ready 
-        var m = model({ info: JSON.parse(info_s) });
+        var m = model();
+
+        // We need to know whether we got new VIS parameters before we
+        // do the rest of the loading, but if info is missing, it's not
+        // really the end of the world
+
+        if (typeof info_s === 'string') {
+            m.info(JSON.parse(info_s));
+        } else {
+            view_warning("Unable to load model info from " + dfb.files.info);
+        }
+
         setup_vis(m);
 
         // TODO no need to globally expose the model, but handy for debugging
@@ -2215,12 +2235,21 @@ main = function () {
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(dfb.files.meta, function (error, meta_s) {
-            m.set_meta(meta_s);
-            view_refresh(m, window.location.hash);
+            if (typeof meta_s === 'string') {
+                m.set_meta(meta_s);
+                view_refresh(m, window.location.hash);
+            } else {
+                view_error("Unable to load metadata from " + dfb.files.meta);
+            }
         });
         load_data(dfb.files.dt, function (error, dt_s) {
-            m.set_dt(dt_s);
-            view_refresh(m, window.location.hash);
+            if (typeof dt_s === 'string') {
+                m.set_dt(dt_s);
+                view_refresh(m, window.location.hash);
+            } else {
+                view_error("Unable to load document topics from " +
+                    dfb.files.dt);
+            }
         });
         load_data(dfb.files.tw, function (error, tw_s) {
             if (typeof tw_s === 'string') {

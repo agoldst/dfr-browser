@@ -46,15 +46,20 @@
 
 <div id="main_container" class="container">
 
-  <div id="loading" class="well">
+  <div id="loading" class="alert alert-info">
     <p>Loading...</p>
   </div>
 
-  <div id="error" class="hidden">
+  <div id="error" class="alert alert-danger alert-dismissable hidden">
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+  </div>
+
+  <div id="warning" class="alert alert-warning alert-dismissable hidden">
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
   </div>
 
   <div id="model_view" class="hidden">
-    <nav class="nav navbar-default" role="navigation">
+    <nav class="nav navbar-default hidden" role="navigation">
       <div class="collapse navbar-collapse navbar-ex1-collapse">
         <ul id="nav_model" class="nav navbar-nav nav-pills">
           <li id="nav_model_grid" class="active">
