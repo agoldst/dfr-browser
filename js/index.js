@@ -119,7 +119,7 @@ var bib_sort,   // bibliography sorting
     tooltip,
     view_refresh,
     view_loading,
-    view_error,
+    view_alert,
     setup_vis,          // initialization
     plot_svg,
     append_svg,
@@ -1250,10 +1250,8 @@ about_view = function (m, section) {
 model_view = function (m, type, p1, p2) {
     var type_chosen = type || VIS.last.model || "grid";
 
-    // if loading scaled coordinates failed,
-    // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
-    // but fall through to choosing the grid below
-    if (!m.tw() || !m.topic_scaled()) {
+    // for any subview, we'll want tw and dt
+    if (!m.tw() || !m.dt()) {
         view_loading(true);
         return true;
     }
@@ -1270,8 +1268,11 @@ model_view = function (m, type, p1, p2) {
     d3.selectAll(".model_view_list").classed("hidden", true);
     d3.selectAll(".model_view_yearly").classed("hidden", true);
 
+    // reveal navbar
+    d3.select("#model_view nav").classed("hidden", false);
+
     if (type_chosen === "list") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta()) {
             view_loading(true);
             return true;
         }
@@ -1280,7 +1281,7 @@ model_view = function (m, type, p1, p2) {
         d3.selectAll(".model_view_list").classed("hidden", false);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta()) {
             view_loading(true);
             return true;
         }
@@ -1291,7 +1292,7 @@ model_view = function (m, type, p1, p2) {
     } else { // default to grid
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
-        if (!m.topic_scaled() || !m.dt()) {
+        if (!m.topic_scaled()) {
             view_loading(true);
             return true;
         }
@@ -2042,16 +2043,19 @@ tooltip = function () {
 };
 
 view_loading = function (flag) {
-    d3.select("div#loading").classed("hidden", !flag);
+    // don't say we're loading if we have an error
+    d3.select("div#loading").classed("hidden", !flag || !!VIS.error);
 };
 
-view_error = function (msg) {
-    d3.select("div#error").append("div")
-        .classed("alert", true)
-        .classed("alert-danger", true)
-        .append("p")
-            .text(msg);
-    d3.select("div#error").classed("hidden", false);
+view_alert = function (type, msg) {
+    d3.select("div#" + type)
+        .classed("hidden", false)
+        .append("p").text(msg);
+
+    if (type === "error") {
+        view_loading(false);
+        VIS.error = true;
+    }
 };
 
 view_refresh = function (m, v) {
@@ -2132,11 +2136,13 @@ view_refresh = function (m, v) {
 // global visualization setup
 setup_vis = function (m) {
     // load any preferences stashed in model info
-    VIS = utils.deep_replace(VIS, m.info().VIS);
+    if (m.info()) {
+        VIS = utils.deep_replace(VIS, m.info().VIS);
 
-    // model title
-    d3.selectAll(".model_title")
-        .html(m.info().title);
+        // model title
+        d3.selectAll(".model_title")
+            .html(m.info().title);
+    }
 
     // hashchange handler
     window.onhashchange = function () {
@@ -2223,7 +2229,7 @@ var load_data = function (target, callback) {
             .responseType("arraybuffer")
             .get(function (error, response) {
                 var zip, text;
-                if (response.status === 200) {
+                if (response && response.status === 200) {
                     zip = new JSZip(response.response);
                     text = zip.file(target_base.replace(/\.zip$/, "")).asText();
                 }
@@ -2244,8 +2250,19 @@ var load_data = function (target, callback) {
 main = function () {
 
     load_data(dfb.files.info,function (error, info_s) {
-        // callback, invoked when ready 
-        var m = model({ info: JSON.parse(info_s) });
+        var m = model();
+
+        // We need to know whether we got new VIS parameters before we
+        // do the rest of the loading, but if info is missing, it's not
+        // really the end of the world
+
+        if (typeof info_s === 'string') {
+            m.info(JSON.parse(info_s));
+        } else {
+            view_alert("warning",
+                "Unable to load model info from " + dfb.files.info);
+        }
+
         setup_vis(m);
 
         // TODO no need to globally expose the model, but handy for debugging
@@ -2255,12 +2272,22 @@ main = function () {
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(dfb.files.meta, function (error, meta_s) {
-            m.set_meta(meta_s);
-            view_refresh(m, window.location.hash);
+            if (typeof meta_s === 'string') {
+                m.set_meta(meta_s);
+                view_refresh(m, window.location.hash);
+            } else {
+                view_alert("error",
+                    "Unable to load metadata from " + dfb.files.meta);
+            }
         });
         load_data(dfb.files.dt, function (error, dt_s) {
-            m.set_dt(dt_s);
-            view_refresh(m, window.location.hash);
+            if (typeof dt_s === 'string') {
+                m.set_dt(dt_s);
+                view_refresh(m, window.location.hash);
+            } else {
+                view_alert("error",
+                    "Unable to load document topics from " + dfb.files.dt);
+            }
         });
         load_data(dfb.files.tw, function (error, tw_s) {
             if (typeof tw_s === 'string') {
@@ -2279,7 +2306,8 @@ main = function () {
 
                 view_refresh(m, window.location.hash);
             } else {
-                view_error("Unable to load topic words from " + dfb.files.tw);
+                view_alert("error",
+                    "Unable to load topic words from " + dfb.files.tw);
             }
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
