@@ -119,8 +119,7 @@ var bib_sort,   // bibliography sorting
     tooltip,
     view_refresh,
     view_loading,
-    view_error,
-    view_warning,
+    view_alert,
     setup_vis,          // initialization
     plot_svg,
     append_svg,
@@ -2041,16 +2040,15 @@ view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag || !!VIS.error);
 };
 
-view_error = function (msg) {
-    d3.select("div#error").append("p").text(msg);
-    d3.select("div#error").classed("hidden", false);
-    view_loading(false);
-    VIS.error = true;
-};
+view_alert = function (type, msg) {
+    d3.select("div#" + type)
+        .classed("hidden", false)
+        .append("p").text(msg);
 
-view_warning = function (msg) {
-    d3.select("div#warning").append("p").text(msg);
-    d3.select("div#warning").classed("hidden", false);
+    if (type === "error") {
+        view_loading(false);
+        VIS.error = true;
+    }
 };
 
 view_refresh = function (m, v) {
@@ -2221,7 +2219,8 @@ main = function () {
         if (typeof info_s === 'string') {
             m.info(JSON.parse(info_s));
         } else {
-            view_warning("Unable to load model info from " + dfb.files.info);
+            view_alert("warning",
+                "Unable to load model info from " + dfb.files.info);
         }
 
         setup_vis(m);
@@ -2237,7 +2236,8 @@ main = function () {
                 m.set_meta(meta_s);
                 view_refresh(m, window.location.hash);
             } else {
-                view_error("Unable to load metadata from " + dfb.files.meta);
+                view_alert("error",
+                    "Unable to load metadata from " + dfb.files.meta);
             }
         });
         load_data(dfb.files.dt, function (error, dt_s) {
@@ -2245,8 +2245,8 @@ main = function () {
                 m.set_dt(dt_s);
                 view_refresh(m, window.location.hash);
             } else {
-                view_error("Unable to load document topics from " +
-                    dfb.files.dt);
+                view_alert("error",
+                    "Unable to load document topics from " + dfb.files.dt);
             }
         });
         load_data(dfb.files.tw, function (error, tw_s) {
@@ -2266,7 +2266,8 @@ main = function () {
 
                 view_refresh(m, window.location.hash);
             } else {
-                view_error("Unable to load topic words from " + dfb.files.tw);
+                view_alert("error",
+                    "Unable to load topic words from " + dfb.files.tw);
             }
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
