@@ -1,4 +1,4 @@
-/*global d3, utils */
+/*global d3, utils, dt, Worker */
 "use strict";
 var model;
 
@@ -39,6 +39,20 @@ model = function (spec) {
         set_meta,
         set_topic_scaled;
 
+    my.worker = new Worker("js/model_worker.js");
+    my.worker.fs = d3.map();
+    my.worker.onmessage = function (e) {
+        var f = my.worker.fs.get(e.data.what);
+        if (f) {
+            f(e.data.result);
+        }
+        console.log("message received at model: " + e.data.what);
+    };
+    my.worker.callback = function (key, f) {
+        my.worker.fs.set(key, f);
+    };
+    // TODO real ready
+    my.worker.callback("ready", function () { console.log("ready!"); });
 
     info = function (model_meta) {
         if (model_meta) {
@@ -49,73 +63,7 @@ model = function (spec) {
     that.info = info;
 
     dt = function (d, t) {
-        var p0, p;
-        if (!my.dt) {
-            return undefined;
-        }
-
-        // dt() for the whole matrix
-        if (d === undefined) {
-            return my.dt;
-        }
-
-        // dt(d) for a whole document row
-        if (t === undefined) {
-            return d3.range(this.n()).map(function (j) {
-                return this.dt(d, j);
-            });
-        }
-
-        // dt(d, t) for one entry
-        p0 = my.dt.p[t];
-        p = d3.bisectLeft(my.dt.i.slice(p0, my.dt.p[t + 1]), d);
-
-        // if there is no d entry for column t, return 0
-        return (my.dt.i[p + p0] === d) ? my.dt.x[p + p0] : 0;
-    };
-    // a naive row_sum method for the dt object
-    dt.row_sum = function (d) {
-        var result, t;
-        if (!my.dt) {
-            return undefined;
-        }
-
-        // memoize, at least
-        if (!my.dt_row_sum) {
-            my.dt_row_sum = [ ];
-        }
-
-        if (!my.dt_row_sum[d]) {
-            result = 0;
-            for (t = 0; t < my.n; t += 1) {
-                result += this(d, t);
-            }
-            my.dt_row_sum[d] = result;
-        }
-        return my.dt_row_sum[d];
-    };
-    // a col_sum method: this takes advantages of the column compression
-    dt.col_sum = function (t) {
-        var i;
-
-        // memoization
-        if (!my.col_sums) {
-            my.col_sums = [];
-        }
-
-        // dt.col_sum() returns an array of sums
-        if (t === undefined) {
-            return d3.range(my.n).map(this.col_sum);
-        }
-
-        // otherwise, return the sum for column t
-        if (!my.col_sums[t]) {
-            my.col_sums[t] = 0;
-            for (i = my.dt.p[t]; i < my.dt.p[t + 1]; i += 1) {
-                my.col_sums[t] += my.dt.x[i];
-            }
-        }
-        return my.col_sums[t];
+        return my.dt ? my.dt.get(d, t) : undefined;
     };
     that.dt = dt;
 
@@ -180,7 +128,7 @@ model = function (spec) {
     that.n_top_words = n_top_words;
 
     total_tokens = function () {
-        if (!this.dt()) {
+        if (!my.dt) {
             return undefined;
         }
 
@@ -318,7 +266,7 @@ model = function (spec) {
         } else if (my.topic_yearly[t]) {
             return my.topic_yearly[t];
         }
-        if (!this.dt() || !this.meta()) {
+        if (!my.dt || !this.meta()) {
             return undefined;
         }
 
@@ -349,59 +297,12 @@ model = function (spec) {
     // Get n top documents for topic t. Uses a naive document ranking,
     // by the proportion of words assigned to t, which does *not*
     // necessarily give the docs where t is most salient
-    topic_docs = function (t, n) {
-        var p0 = my.dt.p[t],
-            p1 = my.dt.p[t + 1],
-            docs,
-            bisect,
-            insert,
-            i,
-            result = [];
-
-        // column slice
-        // TODO speed bottleneck: all that row-summing gets slooow
-        // because row-slicing is slow on the col-compressed matrix
-        docs = d3.range(p0, p1).map(function (p) {
-            return {
-                doc: my.dt.i[p],
-                frac: my.dt.x[p] / that.dt.row_sum(my.dt.i[p]),
-                weight: my.dt.x[p]
-            };
-        });
-
-        // return them all, sorted, if there are fewer than n hits
-        if (n >= docs.length) {
-            docs.sort(function (a, b) {
-                return d3.descending(a.frac, b.frac) ||
-                    d3.descending(a.doc, b.doc); // stabilize sort
-            });
-            return docs;
-        }
-
-        // initial guess. simplifies the conditionals below to do it this way,
-        // and sorting n elements is no biggie
-
-        result = docs.slice(0, n).sort(function (a, b) {
-            return d3.ascending(a.frac, b.frac) ||
-                d3.ascending(a.doc, b.doc); // stabilize sort
-        });
-
-        bisect = d3.bisector(function (d) { return d.frac; }).left;
-
-        for (i = n; i < docs.length; i += 1) {
-            insert = bisect(result, docs[i].frac);
-            if (insert > 0) {
-                result.splice(insert, 0, docs[i]);
-                result.shift();
-            } else if (result[0].frac === docs[i].frac) {
-                // insert = 0 but a tie
-                result.unshift(docs[i]);
-            }
-        }
-
-        // biggest first
-        return utils.shorten(result.reverse(), n, function (xs, i) {
-            return xs[i].frac;
+    topic_docs = function (t, n, callback) {
+        my.worker.callback("topic_docs/" + t + "/" + n, callback);
+        my.worker.postMessage({
+            what: "topic_docs",
+            t: t,
+            n: n
         });
     };
     that.topic_docs = topic_docs;
@@ -537,10 +438,14 @@ model = function (spec) {
         if (typeof dt_s  !== 'string') {
             return;
         }
-        my.dt = JSON.parse(dt_s);
+        my.dt = doc_topics_matrix(JSON.parse(dt_s)); // TODO remove this duplication
         if (!my.n) {
-            my.n = my.dt.p.length - 1;
+            my.n = my.dt.n;
         }
+        my.worker.postMessage({
+            what: "set",
+            dt: JSON.parse(dt_s)
+        });
     };
     that.set_dt = set_dt;
 

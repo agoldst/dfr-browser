@@ -119,6 +119,7 @@ var bib_sort,   // bibliography sorting
     tooltip,
     view_refresh,
     view_loading,
+    view_calculating,
     view_error,
     setup_vis,          // initialization
     plot_svg,
@@ -404,7 +405,7 @@ topic_view = function (m, t, year) {
     view.select("p#topic_remark")
         .text("α = " + VIS.float_format(m.alpha(t))
                 + "; "
-                + VIS.percent_format(m.dt.col_sum(t) / m.total_tokens())
+                + VIS.percent_format(m.dt().col_sum(t) / m.total_tokens())
                 + " of corpus.");
 
     // table of top words and weights
@@ -508,21 +509,18 @@ add_weight_cells = function (sel, f) {
 };
 
 topic_view_docs = function (m, t, n, year) {
-    var trs_d, docs, header_text;
+    var n_req, header_text, trs_d;
 
     // FIXME transition the table items
     //
     // TODO asynchronous calculation of topic_docs with a web worker
-    // because dt.row_sum, called by m.topic_docs for every doc with a
+    // because dt().row_sum, called by m.topic_docs for every doc with a
     // non-zero score for topic t, is expensive
+    view_calculating("#topic_docs", true);
 
-    if(isFinite(year)) {
-        // TODO cache this?
-        docs = m.topic_docs(t, m.n_docs()).filter(function (d) {
-            return m.doc_year(d.doc) === +year;
-        });
-        docs = utils.shorten(docs, n);
+    if (isFinite(year)) {
         header_text = "Top documents in " + year;
+        n_req = m.n_docs();
 
         // the clear-selected-year button
         d3.select("#topic_year_clear")
@@ -534,51 +532,63 @@ topic_view_docs = function (m, t, n, year) {
             })
             .classed("hidden", false);
     } else {
-        docs = m.topic_docs(t, n);
+        n_req = n;
         header_text = "Top documents";
         d3.select("#topic_year_clear")
             .classed("disabled", true);
     }
 
-    d3.select("h3#topic_docs_header")
-        .text(header_text);
+    m.topic_docs(t, n_req, function (ds) {
+        var docs = ds;
 
-    trs_d = d3.select("table#topic_docs tbody")
-        .selectAll("tr")
-        .data(docs);
+        if (isFinite(year)) {
+            docs = utils.shorten(docs.filter(function (d) {
+                return m.doc_year(d.doc) === +year;
+            }), n);
+        }
 
-    trs_d.enter().append("tr");
-    trs_d.exit().remove();
+        view_calculating("#topic_docs", false);
 
-    // clear rows
-    trs_d.selectAll("td").remove();
+        d3.select("h3#topic_docs_header")
+            .text(header_text);
 
-    trs_d
-        .append("td").append("a")
-        .attr("href", function (d) {
-            return "#/doc/" + d.doc;
-        })
-        .html(function (d) {
-            return cite_doc(m, d.doc);
+        trs_d = d3.select("table#topic_docs tbody")
+            .selectAll("tr")
+            .data(docs);
+
+        trs_d.enter().append("tr");
+        trs_d.exit().remove();
+
+        // clear rows
+        trs_d.selectAll("td").remove();
+
+        trs_d
+            .append("td").append("a")
+            .attr("href", function (d) {
+                return "#/doc/" + d.doc;
+            })
+            .html(function (d) {
+                return cite_doc(m, d.doc);
+            });
+
+        trs_d.on("click", function (d) {
+            window.location.hash = "/doc/" + d.doc;
         });
 
-    trs_d.on("click", function (d) {
-        window.location.hash = "/doc/" + d.doc;
+        add_weight_cells(trs_d, function (d) { return d.frac; });
+
+        trs_d
+            .append("td")
+            .text(function (d) {
+                return VIS.percent_format(d.frac);
+            });
+
+        trs_d
+            .append("td")
+            .text(function (d) {
+                return d.weight;
+            });
     });
-
-    add_weight_cells(trs_d, function (d) { return d.frac; });
-
-    trs_d
-        .append("td")
-        .text(function (d) {
-            return VIS.percent_format(d.frac);
-        });
-
-    trs_d
-        .append("td")
-        .text(function (d) {
-            return d.weight;
-        });
 };
 
 plot_topic_yearly = function (m, t, param) {
@@ -1040,7 +1050,7 @@ doc_view = function (m, d) {
         .html(cite_doc(m, doc));
 
     view.select("#doc_remark")
-        .html(m.dt.row_sum(doc) + " tokens. "
+        .html(m.dt().row_sum(doc) + " tokens. "
                 + '<a class ="external" href="'
                 + doc_uri(m, doc)
                 + '">View '
@@ -1078,7 +1088,7 @@ doc_view = function (m, d) {
             });
 
             add_weight_cells(trs, function (t) {
-                return t.weight / m.dt.row_sum(doc);
+                return t.weight / m.dt().row_sum(doc);
             });
 
             trs.append("td")
@@ -1087,7 +1097,7 @@ doc_view = function (m, d) {
                 });
             trs.append("td")
                 .text(function (t) {
-                    return VIS.percent_format(t.weight / m.dt.row_sum(doc));
+                    return VIS.percent_format(t.weight / m.dt().row_sum(doc));
                 });
         });
 
@@ -1345,13 +1355,13 @@ model_view_list = function (m, sort, dir) {
             })
             .attr("href", topic_link);
 
-        token_max = d3.max(m.dt.col_sum());
+        token_max = d3.max(m.dt().col_sum());
         add_weight_cells(trs, function (t) {
-            return m.dt.col_sum(t) / token_max;
+            return m.dt().col_sum(t) / token_max;
         });
         trs.append("td")
             .text(function (t) {
-                return VIS.percent_format(m.dt.col_sum(t) / m.total_tokens());
+                return VIS.percent_format(m.dt().col_sum(t) / m.total_tokens());
             });
 
         VIS.ready.model_list = true;
@@ -1376,7 +1386,7 @@ model_view_list = function (m, sort, dir) {
         // default ordering should be largest frac to least,
         // so the sort keys are negative proportions
         keys = keys.map(function (t) {
-            return -m.dt.col_sum(t) / m.total_tokens();
+            return -m.dt().col_sum(t) / m.total_tokens();
         });
     } else if (sort_choice === "year") {
         keys = keys.map(function (t) {
@@ -1514,7 +1524,7 @@ model_view_plot = function(m, type) {
         .range(VIS.model_view.size_range);
 
     scale_stroke = d3.scale.linear()
-        .domain([0,d3.max(m.dt.col_sum())])
+        .domain([0,d3.max(m.dt().col_sum())])
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
@@ -1541,7 +1551,7 @@ model_view_plot = function(m, type) {
                 })
                 .classed("topic_cloud", true)
                 .attr("stroke-width", function (p) {
-                    return scale_stroke(m.dt.col_sum(p.t));
+                    return scale_stroke(m.dt().col_sum(p.t));
                 })
                 .on("click", function (p) {
                     if (!d3.event.shiftKey) {
@@ -2040,6 +2050,12 @@ tooltip = function () {
 
 view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag);
+};
+
+view_calculating = function (sel, flag) {
+    // TODO put in requisite html
+    d3.selectAll(sel + " .calc").classed("hidden", flag);
+    d3.selectAll(sel + " .calc-done").classed("hidden", !flag);
 };
 
 view_error = function (msg) {
