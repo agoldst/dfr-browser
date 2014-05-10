@@ -511,6 +511,10 @@ topic_view_docs = function (m, t, n, year) {
     var trs_d, docs, header_text;
 
     // FIXME transition the table items
+    //
+    // TODO asynchronous calculation of topic_docs with a web worker
+    // because dt.row_sum, called by m.topic_docs for every doc with a
+    // non-zero score for topic t, is expensive
 
     if(isFinite(year)) {
         // TODO cache this?
