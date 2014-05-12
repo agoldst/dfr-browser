@@ -175,23 +175,28 @@
                 id="topic_year_clear">clear selected year</button>
             </div>
           </div>
-          <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
-          <div class="btn-group btn-group-xs">
-            <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
-            <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
-          </div>
-          <table class="table table-condensed" id="topic_docs">
-            <thead>
-              <tr>
-                <th>Document</th>
-                <th></th>
-                <th class="th-right">%</th>
-                <th class="th-right">Weight</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
+          <div id="topic_docs">
+            <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
+            <div class="well calc">
+              <p>Calculating...</p>
+            </div>
+            <div class="btn-group btn-group-xs calc-done">
+              <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
+              <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
+            </div>
+            <table class="table table-condensed calc-done" id="topic_docs">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th></th>
+                  <th class="th-right">%</th>
+                  <th class="th-right">Weight</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div> <!-- #topic_docs -->
         </div>
       </div>
     </div> <!-- #topic_view_main -->

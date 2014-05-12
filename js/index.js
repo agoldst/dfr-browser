@@ -552,7 +552,7 @@ topic_view_docs = function (m, t, n, year) {
         d3.select("h3#topic_docs_header")
             .text(header_text);
 
-        trs_d = d3.select("table#topic_docs tbody")
+        trs_d = d3.select("#topic_docs tbody")
             .selectAll("tr")
             .data(docs);
 
@@ -2053,9 +2053,8 @@ view_loading = function (flag) {
 };
 
 view_calculating = function (sel, flag) {
-    // TODO put in requisite html
-    d3.selectAll(sel + " .calc").classed("hidden", flag);
-    d3.selectAll(sel + " .calc-done").classed("hidden", !flag);
+    d3.selectAll(sel + " .calc").classed("hidden", !flag);
+    d3.selectAll(sel + " .calc-done").classed("hidden", flag);
 };
 
 view_error = function (msg) {
