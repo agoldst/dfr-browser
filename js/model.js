@@ -327,7 +327,14 @@ model = function (spec) {
     // Get n top words for topic t.
     topic_words = function (t, n) {
         var n_words = n || this.n_top_words(),
-            words = this.tw(t).entries(); // d3.map method
+            words;
+        if (t === undefined) {
+            return d3.range(this.n()).map(function (topic) {
+                return that.topic_words(topic, n);
+            });
+        }
+        
+        words = this.tw(t).entries(); // d3.map method
         words.sort(function (w1, w2) {
             return d3.descending(w1.value, w2.value) ||
                 d3.ascending(w1.key, w2.key); // stabilize sort: alphabetical

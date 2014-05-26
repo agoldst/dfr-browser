@@ -114,7 +114,6 @@ var bib_sort,   // bibliography sorting
     model_view_list,
     model_view_plot,
     model_view_yearly,
-    topic_coords_grid,
     yearly_stacked_series,
     set_view,
     view_refresh,
@@ -665,9 +664,7 @@ words_view = function (m) {
 
 doc_view = function (m, d) {
     var div = d3.select("div#doc_view"),
-        doc = d,
-        topics,
-        trs;
+        doc = d;
 
     if (!m.meta() || !m.dt() || !m.tw()) {
         view.loading(true);
@@ -931,9 +928,7 @@ model_view_list = function (m, sort, dir) {
             view.model.list({
                 yearly: yearly,
                 sums: sums,
-                words: d3.range(m.n()).map(function (t) {
-                    return m.topic_words(t, VIS.overview_words);
-                }),
+                words: m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
                 dir: dir
             });
@@ -943,216 +938,17 @@ model_view_list = function (m, sort, dir) {
     return true;
 };
 
-model_view_plot = function(m, type) {
-    var spec, svg, cloud_size, circle_radius, range_padding,
-        coords,
-        domain_x, domain_y,
-        scale_x, scale_y, scale_size, scale_stroke,
-        gs, translation, zoom;
-
-    // TODO need visual indication of stroke ~ alpha mapping
-
-    // TODO really the best way to size this plot?
-    spec = {
-        w: VIS.model_view.w,
-        h: Math.floor(VIS.model_view.w / VIS.model_view.aspect),
-        m: {
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0
-        }
-    };
-
-    svg = view.plot_svg("#model_view_plot", spec);
-
-    // rough attempt to fill total circle area in plot window 
-    // 2.25 rather than 2 is pure fudge factor
-    circle_radius = Math.floor(spec.w /
-            (2.25 * Math.sqrt(VIS.model_view.aspect * m.n())));
-    // Allow the cloud to spill outside circle a little
-    cloud_size = Math.floor(circle_radius * 2.1);
-    range_padding = 1.1 * circle_radius;
-
-    // zoom-target rectangle
-    svg.selectAll("rect.bg")
-        .data([1])
-        .enter().append("rect")
-            .attr("width", spec.w)
-            .attr("height", spec.h)
-            .classed("bg", true);
-
-    if (type === "scaled") {
-        coords = m.topic_scaled().map(function (p, j) {
-            return {
-                x: p[0],
-                y: p[1],
-                t: j,
-                r: circle_radius
-            };
+model_view_plot = function (m, type) {
+    m.topic_total(undefined, function (totals) {
+        view.model.plot({
+            type: type,
+            words: m.topic_words(undefined, VIS.model_view.words),
+            scaled: m.topic_scaled(),
+            topic_totals: totals
         });
-    } else {
-        // default to grid
-        coords = topic_coords_grid(m.n()).map(function (p, j) {
-            return {
-                x: p.x,
-                y: p.y,
-                t: j,
-                r: circle_radius
-            };
-        });
-    }
+    });
 
-    domain_x = d3.extent(coords, function (d) { return d.x; });
-    domain_y = d3.extent(coords, function (d) { return d.y; });
-
-
-    scale_x = d3.scale.linear()
-        .domain(domain_x)
-        .range([range_padding, spec.w - range_padding]);
-
-    scale_y = d3.scale.linear()
-        .domain(domain_y)
-        .range([spec.h - range_padding, range_padding]);
-
-    scale_size = d3.scale.sqrt()
-        .domain([0, 1])
-        .range(VIS.model_view.size_range);
-
-    scale_stroke = d3.scale.linear()
-        .domain([0,d3.max(m.dt().col_sum())])
-        .range([0,VIS.model_view.stroke_range]);
-
-    gs = svg.selectAll("g")
-        .data(coords);
-
-    gs.enter().append("g")
-        .each(function (p, t) {
-            var g = d3.select(this),
-                max_wt = m.topic_words(t, 1)[0].weight,
-                wds = m.topic_words(t, VIS.model_view.words)
-                    .map(function (w) {
-                        return {
-                            text: w.word,
-                            size: Math.floor(scale_size(w.weight / max_wt))
-                        };
-                    }),
-                up, down, toggle, i;
-
-            g.append("circle")
-                .attr("cx", 0)
-                .attr("cy", 0)
-                .attr("r", function (p) {
-                    return p.r;
-                })
-                .classed("topic_cloud", true)
-                .attr("stroke-width", function (p) {
-                    return scale_stroke(m.dt().col_sum(p.t));
-                })
-                .on("click", function (p) {
-                    if (!d3.event.shiftKey) {
-                        window.location.hash = topic_hash(t);
-                    }
-                })
-                .on("mouseover", function (p) {
-                    gs.sort(function (a, b) {
-                            if (a.t === b.t) {
-                                return 0;
-                            }
-
-                            if (a.t === t) {
-                                return 1;
-                            }
-
-                            if (b.t === t) {
-                                return -1;
-                            }
-
-                            // otherwise
-                            return d3.ascending(a.t, b.t);
-                        })
-                        .order();
-                })
-                .on("mouseout",function() {
-                    gs.sort(function (a, b) {
-                            return d3.ascending(a.t, b.t);
-                        })
-                        .order();
-                });
-
-            up = 0;
-            down = 0;
-            toggle = false;
-            for (i = 0; i < wds.length; i += 1, toggle = !toggle) {
-                if (toggle) {
-                    wds[i].y = up;
-                    up -= wds[i].size;
-                } else {
-                    down += wds[i].size;
-                    wds[i].y = down;
-                }
-                if (up - cloud_size / 2 < wds[i].size
-                        && down > cloud_size / 2) {
-                    break;
-                }
-            }
-
-            g.selectAll("text")
-                .data(wds.slice(0, i))
-                .enter().append("text")
-                    .text(function (wd) {
-                        return wd.text;
-                    })
-                    .style("font-size", function (wd) {
-                        return wd.size + "px";
-                    })
-                    .attr("x", 0)
-                    .attr("y", function (wd) {
-                        return wd.y;
-                    })
-                    .on("click", function (wd) {
-                        window.location.hash = topic_hash(t);
-                    }) 
-                    .classed("topic_label", true);
-                    // TODO coloring
-        });
-
-    translation = function (p) {
-        var result = "translate(" + scale_x(p.x);
-        result += "," + scale_y(p.y) + ")";
-        return result;
-    };
-
-    gs.transition()
-        .duration(1000)
-        .attr("transform", translation);
-
-    zoom = d3.behavior.zoom()
-        .x(scale_x)
-        .y(scale_y)
-        .scaleExtent([1, 10])
-        .on("zoom", function () {
-            if (VIS.zoom_transition) {
-                gs.transition()
-                    .duration(1000)
-                    .attr("transform", translation);
-                VIS.zoom_transition = false;
-            } else {
-                gs.attr("transform", translation);
-            }
-        });
-
-    // zoom reset button
-    d3.select("button#reset_zoom")
-        .on("click", function () {
-            VIS.zoom_transition = true;
-            zoom.translate([0, 0])
-                .scale(1)
-                .event(svg);
-        });
-
-
-    zoom(svg);
+    return true;
 };
 
 model_view_yearly = function (m, type) {
@@ -1375,47 +1171,6 @@ model_view_yearly = function (m, type) {
     return true;
 };
 
-topic_coords_grid = function (n) {
-    var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
-        n_row = Math.floor(n / n_col),
-        remain = n - n_row * n_col,
-        remain_odd = Math.max(remain - Math.floor(n_row / 2), 0),
-        cols,
-        vskip,
-        i, j,
-        result = [];
-
-    // for circles of equal size, closest possible packing is hexagonal grid
-    // centers are spaced 1 unit apart on horizontal, sqrt(3) / 2 on vertical.
-    // Alternate rows are displaced 1/2 unit on horizontal.
-    vskip = Math.sqrt(3.0) / 2.0;
-
-    // if n is not exactly n_row * n_col, we'll do our best sticking
-    // things on the right-side margin
-
-    for (i = 0; i < n_row; i += 1) {
-        cols = n_col;
-        if (remain > 0) {
-            remain -= 1;
-            if (i % 2 === 0) {
-                cols = n_col + 1;
-            } else {
-                if (remain_odd > 0) {
-                    remain_odd -= 1;
-                    cols = n_col + 1;
-                }
-            }
-        }
-
-        for (j = 0; j < cols; j += 1) {
-            result.push({
-                x: j + 0.5 + ((i % 2 === 0) ? 0 : 0.5),
-                y: (n_row - i) * vskip + 0.5 });
-        }
-    }
-
-    return result;
-};
 
 yearly_stacked_series = function (m, raw) {
     var year_keys, years, all_series,
