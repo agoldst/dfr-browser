@@ -1154,7 +1154,7 @@ model_view_plot = function(m, type) {
                     .map(function (w) {
                         return {
                             text: w.word,
-                            size: Math.floor(scale_size(w.weight) / max_wt)
+                            size: Math.floor(scale_size(w.weight / max_wt))
                         };
                     }),
                 up, down, toggle, i;
