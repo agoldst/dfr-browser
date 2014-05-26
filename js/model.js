@@ -257,7 +257,7 @@ model = function (spec) {
                 callback(d3.map(yearly_total));
             };
         }
-        my.worker.callback("topic_yearly/" + y, f);
+        my.worker.callback("yearly_total/" + y, f);
         my.worker.postMessage({
             what: "yearly_total",
             y: y
