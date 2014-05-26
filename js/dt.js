@@ -22,6 +22,7 @@ var doc_topics_matrix = function (data) {
 
         // dt(d) for a whole document row
         if (t === undefined) {
+            result = [ ];
             for (j = 0; j < this.n; j += 1) {
                 result.push(this.get(d, j));
             }
@@ -33,7 +34,8 @@ var doc_topics_matrix = function (data) {
         p = utils.bisect_left(this.i.slice(p0, this.p[t + 1]), d);
 
         // if there is no d entry for column t, return 0
-        return (this.i[p + p0] === d) ? this.x[p + p0] : 0;
+        result = (this.i[p + p0] === d) ? this.x[p + p0] : 0;
+        return result;
     };
 
     // a naive row_sum method for the dt object
@@ -70,7 +72,7 @@ var doc_topics_matrix = function (data) {
         if (t === undefined) {
             for (i = 0; i <= this.n; i += 1) {
                 this.col_sum(i); // stores the result
-            };
+            }
             return my.col_sum;
         }
 

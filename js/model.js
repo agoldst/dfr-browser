@@ -158,7 +158,16 @@ model = function (spec) {
         }
 
         // meta(d) for one row of doc metadata or meta() for all of them
-        return isFinite(d) ? my.meta[d] : my.meta;
+        if (isFinite(d)) {
+            return my.meta[d];
+        }
+        
+        if (d === undefined) {
+            return my.meta;
+        }
+
+        // otherwise, assume d is an array of indices
+        return d.map(function (j) { return my.meta[j]; });
     };
     that.meta = meta;
 
@@ -297,12 +306,23 @@ model = function (spec) {
     // Get n top documents for topic t. Uses a naive document ranking,
     // by the proportion of words assigned to t, which does *not*
     // necessarily give the docs where t is most salient
-    topic_docs = function (t, n, callback) {
-        my.worker.callback("topic_docs/" + t + "/" + n, callback);
+    topic_docs = function (t, n, year, callback) {
+        var n_req = n, f = callback;
+        if (this.valid_year(year, t)) {
+            n_req = this.n_docs();
+            f = function (docs) {
+                var year_docs = docs.filter(function (d) {
+                    return that.doc_year(d.doc) === +year;
+                });
+                return callback(utils.shorten(year_docs, n));
+            };
+        }
+
+        my.worker.callback("topic_docs/" + t + "/" + n_req, f);
         my.worker.postMessage({
             what: "topic_docs",
             t: t,
-            n: n
+            n: n_req
         });
     };
     that.topic_docs = topic_docs;
@@ -311,27 +331,12 @@ model = function (spec) {
     // go to lengths to avoid sorting n_topics entries, since
     // n_topics << n_docs. The expensive step is the row slice, which we
     // have to do anyway.
-    doc_topics = function (d, n) {
-        var topics;
-
-        topics = d3.range(my.n)
-            .map(function (t) {
-                return {
-                    topic: t,
-                    weight: that.dt(d, t)
-                };
-            })
-            .filter(function (d) {
-                return d.weight > 0;
-            })
-            .sort(function (a, b) {
-                return d3.descending(a.weight, b.weight) ||
-                    d3.descending(a.t, b.t); // stabilize sort
-            });
-
-
-        return utils.shorten(topics, n, function (topics, i) {
-            return topics[i].weight;
+    doc_topics = function (d, n, callback) {
+        my.worker.callback("doc_topics/" + d + "/" + n, callback);
+        my.worker.postMessage({
+            what: "doc_topics",
+            d: d,
+            n: n
         });
     };
     that.doc_topics = doc_topics;
@@ -348,7 +353,12 @@ model = function (spec) {
         return utils.shorten(words, n_words, function (ws, i) {
             return ws[i].value;
         })
-            .map(function (w) { return w.key; });
+            .map(function (w) {
+                return {
+                    word: w.key,
+                    weight: w.value
+                };
+            });
     };
     that.topic_words = topic_words;
 

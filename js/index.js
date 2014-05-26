@@ -1,4 +1,4 @@
-/*global d3, $, JSZip, model, utils, dfb, window, document */
+/*global d3, $, JSZip, model, utils, dfb, view, window, document */
 "use strict";
 
 /* declaration of global object (initialized in setup_vis) */
@@ -98,9 +98,10 @@ var bib_sort,   // bibliography sorting
     topic_hash,
     doc_author_string,
     cite_doc,
+    cite_docs,
+    citation,
     doc_uri,
     render_updown,      // view generation
-    add_weight_cells,
     topic_view,
     topic_view_words,
     topic_view_docs,
@@ -116,14 +117,12 @@ var bib_sort,   // bibliography sorting
     model_view_yearly,
     topic_coords_grid,
     yearly_stacked_series,
-    tooltip,
-    view_refresh,
     view_loading,
     view_calculating,
     view_error,
+    set_view,
+    view_refresh,
     setup_vis,          // initialization
-    plot_svg,
-    append_svg,
     read_files,
     main;               // main program
 
@@ -162,7 +161,7 @@ bib_sort = function (m, major, minor) {
     } else {
         // default to alphabetical by author
         major_key = function (i) {
-            return doc_author_string(m, i).replace(/^\W*/, "")[0]
+            return doc_author_string(m.meta(i)).replace(/^\W*/, "")[0]
                 .toUpperCase();
         };
     }
@@ -189,7 +188,7 @@ bib_sort = function (m, major, minor) {
     } else {
         // default to alphabetical by author then title
         minor_key = function (i) {
-            return doc_author_string(m, i) + m.meta(i).title;
+            return doc_author_string(m.meta(i)) + m.meta(i).title;
         };
     }
 
@@ -231,12 +230,7 @@ bib_sort = function (m, major, minor) {
 //    ------------
 
 topic_label = function (m, t, n) {
-    var label;
-
-    label = String(t + 1); // user-facing index is 1-based
-    label += " ";
-    label += m.topic_words(t, n).join(" ");
-    return label;
+    return view.topic.label(t, m.topic_words(t, n));
 };
 
 topic_link = function (t) {
@@ -247,9 +241,8 @@ topic_hash = function (t) {
     return "/topic/" + String(t + 1);
 };
 
-doc_author_string = function (m, i) {
-    var doc = m.meta(i),
-        lead,
+doc_author_string = function (doc) {
+    var lead,
         lead_trail,
         result;
 
@@ -290,10 +283,15 @@ doc_author_string = function (m, i) {
 };
 
 cite_doc = function (m, d) {
-    var doc, result;
+    return citation(m.meta(d));
+};
 
-    doc = m.meta(d);
-    result = doc_author_string(m, d);
+cite_docs = function (m, ds) {
+    return m.meta(ds).map(citation);
+};
+
+citation = function (doc) {
+    var result = doc_author_string(doc);
 
     // don't duplicate trailing period on middle initial etc.
     result = result.replace(/\.?$/, ". ");
@@ -303,7 +301,6 @@ cite_doc = function (m, d) {
     if (doc.issue) {
         result += ", no. " + doc.issue;
     }
-
 
     result += " (" + VIS.cite_date_format(doc.date) + "): ";
     result += doc.pagerange + ".";
@@ -368,7 +365,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 // -----------------------------------
 
 topic_view = function (m, t, year) {
-    var view = d3.select("div#topic_view");
+    var docs, words;
 
     if (!m.meta() || !m.dt() || !m.tw()) {
         // not ready yet; show loading message
@@ -392,381 +389,49 @@ topic_view = function (m, t, year) {
         year = undefined;
     }
 
-    // otherwise, proceed to render the view
-    d3.select("#topic_view_help").classed("hidden", true);
-    d3.select("#topic_view_main").classed("hidden", false);
+    words = m.topic_words(t);
 
-    // heading information
-    // -------------------
+    view.topic({
+        t: t,
+        year: year,
+        words: words,
+        alpha: m.alpha(t),
+        col_sum: m.dt().col_sum(t),
+        total_tokens: m.total_tokens()
+    });
 
-    view.select("h2#topic_header")
-        .text(topic_label(m, t, VIS.overview_words));
+    view.topic.words(utils.shorten(words, VIS.topic_view.words));
+    view.topic.yearly({
+        t: t,
+        year: year,
+        yearly: m.topic_yearly(t)
+    });
 
-    view.select("p#topic_remark")
-        .text("α = " + VIS.float_format(m.alpha(t))
-                + "; "
-                + VIS.percent_format(m.dt().col_sum(t) / m.total_tokens())
-                + " of corpus.");
-
-    // table of top words and weights
-    // ------------------------------
-
-    if (!VIS.view_updating) {
-        // with up/down buttons
-        render_updown("button#topic_words",
-            VIS.topic_view.words,
-            VIS.topic_view.words_increment,
-            m.n_top_words(),
-            VIS.topic_view.words_increment,
-            function (n) {
-                topic_view_words(m, t, n);
-                // Ensure the initial count persists in another topic view
-                VIS.topic_view.words = n;
-            });
-    }
-
-    // table of top articles
-    // ---------------------
-
-    // with up/down buttons
-    render_updown("button#topic_docs",
-        VIS.topic_view.docs,
-        VIS.topic_view.docs_increment,
-        m.n_docs(),
-        VIS.topic_view.docs_increment,
-        function (n) {
-            topic_view_docs(m, t, n, year);
-            // Ensure the initial count persists in another topic view
-            VIS.topic_view.docs = n;
+    view_calculating("#topic_docs", true); 
+    m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
+        view.topic.docs({
+            t: t,
+            docs: docs,
+            citations: cite_docs(m, docs.map(function (d) { return d.doc; })),
+            year: year
         });
+    });
+    view_calculating("#topic_docs", false);
 
-    // Plot topic over time
-    // --------------------
-    //
-
-    if (!VIS.view_updating) {
-        plot_topic_yearly(m, t, {
-            svg: plot_svg("div#topic_plot", VIS.topic_view),
-            axes: true,
-            clickable: true,
-            year: year,
-            spec: VIS.topic_view
-        });
-    }
-
-    VIS.topic_view.updating = false;
+    view.updating(false);
     view_loading(false);
 
     return true;
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-topic_view_words = function (m, t, n) {
-    var trs_w,
-        words = m.topic_words(t, n).map(function (w) {
-            return {
-                word: w,
-                weight: m.tw(t, w)
-            };
-        });
 
-    trs_w = d3.select("table#topic_words tbody")
-        .selectAll("tr")
-        .data(words);
 
-    trs_w.enter().append("tr");
-    trs_w.exit().remove();
 
-    trs_w.on("click", function (w) {
-        window.location.hash ="/word/" + w.word;
-    });
-
-    // clear rows
-    trs_w.selectAll("td").remove();
-
-    trs_w.append("td").append("a")
-        .attr("href", function (w) {
-            return "#/word/" + w.word;
-        })
-        .text(function (w) { return w.word; });
-
-    add_weight_cells(trs_w, function (w) {
-        return w.weight / words[0].weight;
-    });
-
-};
-
-add_weight_cells = function (sel, f) {
-    sel.append("td").classed("weight", true)
-        .append("div")
-            .classed("proportion", true)
-            .style("margin-left", function (w) {
-                return d3.format(".1%")(1 - f(w));
-            })
-            .append("span")
-                .classed("proportion", true)
-                .html("&nbsp;");
-};
-
-topic_view_docs = function (m, t, n, year) {
-    var n_req, header_text, trs_d;
-
-    // FIXME transition the table items
-    //
-    // TODO asynchronous calculation of topic_docs with a web worker
-    // because dt().row_sum, called by m.topic_docs for every doc with a
-    // non-zero score for topic t, is expensive
-    view_calculating("#topic_docs", true);
-
-    if (isFinite(year)) {
-        header_text = "Top documents in " + year;
-        n_req = m.n_docs();
-
-        // the clear-selected-year button
-        d3.select("#topic_year_clear")
-            .classed("disabled", false)
-            .on("click", function () {
-                d3.select(".selected_year").classed("selected_year", false);
-                VIS.view_updating = true;
-                window.location.hash = topic_hash(t);
-            })
-            .classed("hidden", false);
-    } else {
-        n_req = n;
-        header_text = "Top documents";
-        d3.select("#topic_year_clear")
-            .classed("disabled", true);
-    }
-
-    m.topic_docs(t, n_req, function (ds) {
-        var docs = ds;
-
-        if (isFinite(year)) {
-            docs = utils.shorten(docs.filter(function (d) {
-                return m.doc_year(d.doc) === +year;
-            }), n);
-        }
-
-        view_calculating("#topic_docs", false);
-
-        d3.select("h3#topic_docs_header")
-            .text(header_text);
-
-        trs_d = d3.select("#topic_docs tbody")
-            .selectAll("tr")
-            .data(docs);
-
-        trs_d.enter().append("tr");
-        trs_d.exit().remove();
-
-        // clear rows
-        trs_d.selectAll("td").remove();
-
-        trs_d
-            .append("td").append("a")
-            .attr("href", function (d) {
-                return "#/doc/" + d.doc;
-            })
-            .html(function (d) {
-                return cite_doc(m, d.doc);
-            });
-
-        trs_d.on("click", function (d) {
-            window.location.hash = "/doc/" + d.doc;
-        });
-
-        add_weight_cells(trs_d, function (d) { return d.frac; });
-
-        trs_d
-            .append("td")
-            .text(function (d) {
-                return VIS.percent_format(d.frac);
-            });
-
-        trs_d
-            .append("td")
-            .text(function (d) {
-                return d.weight;
-            });
-    });
-};
-
-plot_topic_yearly = function (m, t, param) {
-    var series = [],
-        scale_x,
-        scale_y,
-        w,
-        w_click,
-        bars,
-        bars_click,
-        tip_text,
-        svg = param.svg,
-        spec = param.spec;
-
-    series = m.topic_yearly(t).keys().sort().map(function (y) {
-        return [new Date(+y, 0, 1), m.topic_yearly(t).get(y)];
-    });
-
-    scale_x = d3.time.scale()
-        .domain([series[0][0],
-                d3.time.day.offset(series[series.length - 1][0],
-                    spec.bar_width)])
-        .range([0, spec.w]);
-        //.nice();
-
-    w = scale_x(d3.time.day.offset(series[0][0], spec.bar_width)) -
-        scale_x(series[0][0]);
-
-    w_click = scale_x(d3.time.year.offset(series[0][0], 1)) -
-        scale_x(series[0][0]);
-
-    scale_y = d3.scale.linear()
-        .domain([0, d3.max(series, function (d) {
-            return d[1];
-        })])
-        .range([spec.h, 0])
-        .nice();
-
-    // axes
-    // ----
-
-    if (param.axes) {
-        // clear
-        svg.selectAll("g.axis").remove();
-
-        // x axis
-        svg.append("g")
-            .classed("axis", true)
-            .classed("x", true)
-            .attr("transform", "translate(0," + spec.h + ")")
-            .call(d3.svg.axis()
-                .scale(scale_x)
-                .orient("bottom")
-                .ticks(d3.time.years, spec.ticks));
-
-        // y axis
-        svg.append("g")
-            .classed("axis", true)
-            .classed("y", true)
-            .call(d3.svg.axis()
-                .scale(scale_y)
-                .orient("left")
-                .tickSize(-spec.w)
-                .outerTickSize(0)
-                .tickFormat(VIS.percent_format)
-                .ticks(spec.ticks));
-
-        svg.selectAll("g.axis.y g").filter(function (d) { return d; })
-            .classed("minor", true);
-    }
-
-    // bars
-    // ----
-
-    // clear
-    svg.selectAll("g.topic_proportion").remove();
-
-    bars = svg.selectAll("g.topic_proportion")
-        .data(series);
-
-    // for each year, we will have two rects in a g: one showing the yearly
-    // proportion and an invisible one for mouse interaction,
-    // following the example of http://bl.ocks.org/milroc/9842512
-    bars.enter().append("g")
-        .classed("topic_proportion", true);
-
-    // the g sets the x position of each pair of bars
-    bars.attr("transform", function (d) {
-        return "translate(" + scale_x(d[0]) + ",0)";
-    });
-
-    // set a selected year if any
-    bars.classed("selected_year", function (d) {
-        return String(d[0].getFullYear()) === param.year;
-    });
-
-    if (param.clickable) {
-        // add the clickable bars, which are as high as the plot
-        // and a year wide
-        bars_click = bars.append("rect")
-            .classed("interact", true)
-            .attr("x", -w_click / 2.0)
-            .attr("y", 0)
-            .attr("width", w_click)
-            .attr("height", function (d) {
-                return spec.h;
-            });
-    }
-
-    // add the visible bars
-    bars.append("rect")
-        .classed("display", true)
-        .attr("x", -w / 2.0)
-        .attr("y", function (d) {
-            return scale_y(d[1]);
-        })
-        .attr("width", w)
-        .attr("height", function (d) {
-            return spec.h - scale_y(d[1]);
-        })
-        .style("fill", param.color)
-        .style("stroke", param.color);
-
-    if (param.clickable) {
-        bars.on("mouseover", function (d) {
-                d3.select(this).classed("hover", true);
-            })
-            .on("mouseout", function (d) {
-                d3.select(this).classed("hover", false);
-            });
-
-        // interactivity for the bars
-
-        // tooltip text
-        tip_text = function (d) { return d[0].getFullYear(); };
-
-        // now set mouse event handlers
-
-        bars_click.on("mouseover", function (d) {
-                var g = d3.select(this.parentNode);
-                g.select(".display").classed("hover", true); // display bar
-                tooltip().text(tip_text(d));
-                tooltip().update_pos();
-                tooltip().show();
-            })
-            .on("mousemove", function (d) {
-                tooltip().update_pos();
-            })
-            .on("mouseout", function (d) {
-                d3.select(this.parentNode).select(".display") // display bar
-                    .classed("hover", false);
-                tooltip().hide();
-            })
-            .on("click", function (d) {
-                if(d3.select(this.parentNode).classed("selected_year")) {
-                    d3.select(this.parentNode).classed("selected_year", false);
-                    tooltip().text(tip_text(d));
-                    VIS.view_updating = true;
-                    window.location.hash = topic_hash(t);
-                } else {
-                    // TODO selection of multiple years
-                    // should use a brush http://bl.ocks.org/mbostock/6232537
-                    d3.selectAll(".selected_year")
-                        .classed("selected_year", false);
-                    d3.select(this.parentNode).classed("selected_year", true);
-                    tooltip().text(tip_text(d));
-                    VIS.view_updating = true;
-                    window.location.hash = topic_hash(t) + "/" +
-                        d[0].getFullYear();
-                }
-            });
-    }
-
-};
 
 
 word_view = function (m, w) {
-    var view = d3.select("div#word_view"),
+    var div = d3.select("div#word_view"),
         word = w,
         topics, n,
         words = [],
@@ -792,31 +457,31 @@ word_view = function (m, w) {
         });
 
     if (word) {
-        view.select("#word_view_help").classed("hidden", true);
+        div.select("#word_view_help").classed("hidden", true);
     } else {
-        view.select("#word_view_help").classed("hidden", false);
+        div.select("#word_view_help").classed("hidden", false);
         if (VIS.last.word) {
             word = VIS.last.word; // fall back to last word if available
-            view.select("a#last_word")
+            div.select("a#last_word")
                 .attr("href", "#/word/" + word)
                 .text(document.URL.replace(/#.*$/, "") + "#/word/" + word);
-            view.select("#last_word_help").classed("hidden", false);
+            div.select("#last_word_help").classed("hidden", false);
         } else {
-            view.select("#word_view_main").classed("hidden", true);
+            div.select("#word_view_main").classed("hidden", true);
             return true;
         }
     }
-    view.select("#word_view_main").classed("hidden", false);
+    div.select("#word_view_main").classed("hidden", false);
 
     VIS.last.word = word;
-    view.selectAll("#word_view span.word") // sets header and help
+    div.selectAll("#word_view span.word") // sets header and help
         .text(word);
 
     topics = m.word_topics(word);
 
-    view.select("#word_no_topics").classed("hidden", topics.length !== 0);
-    view.select("table#word_topics").classed("hidden", topics.length === 0);
-    view.select("#word_view_explainer").classed("hidden", topics.length === 0);
+    div.select("#word_no_topics").classed("hidden", topics.length !== 0);
+    div.select("table#word_topics").classed("hidden", topics.length === 0);
+    div.select("#word_view_explainer").classed("hidden", topics.length === 0);
 
     n = 1 + d3.max(topics, function (t) {
         return t.rank; // 0-based, so we rank + 1 
@@ -831,14 +496,14 @@ word_view = function (m, w) {
     words = topics.map(function (t) {
         var max_weight,
             ws = m.topic_words(t.topic).slice(0, n);
-        return ws.map(function (wrd, i) {
+        return ws.map(function (tw, i) {
             if (i === 0) {
-                max_weight = m.tw(t.topic, wrd);
+                max_weight = tw.weight;
             }
             // normalize weights relative to the weight of the word ranked 1
             return {
-                word: wrd,
-                weight: m.tw(t.topic, wrd) / max_weight
+                word: tw.word,
+                weight: tw.weight / max_weight
             };
         });
     });
@@ -850,7 +515,7 @@ word_view = function (m, w) {
     };
 
     row_height = VIS.word_view.row_height;
-    svg = plot_svg("#word_view_main", spec);
+    svg = view.plot_svg("#word_view_main", spec);
     // adjust svg height so that scroll bar isn't too long
     // and svg isn't so short it clips things weirdly
     d3.select("#word_view_main svg")
@@ -1013,7 +678,7 @@ words_view = function (m) {
 
 
 doc_view = function (m, d) {
-    var view = d3.select("div#doc_view"),
+    var div = d3.select("div#doc_view"),
         doc = d,
         topics,
         trs;
@@ -1036,70 +701,66 @@ doc_view = function (m, d) {
 
         // otherwise, fall back to last doc if none entered
         doc = VIS.last.doc;
-        view.select("a#last_doc")
+        div.select("a#last_doc")
             .attr("href", "#/doc/" + doc)
             .text(document.URL.replace(/#.*$/, "") + "#/doc/" + doc);
-        view.select("#last_doc_help").classed("hidden", false);
+        div.select("#last_doc_help").classed("hidden", false);
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
         VIS.last.doc = doc;
     }
     d3.select("#doc_view_main").classed("hidden", false);
 
-    view.select("h2#doc_header")
+    div.select("h2#doc_header")
         .html(cite_doc(m, doc));
 
-    view.select("#doc_remark")
-        .html(m.dt().row_sum(doc) + " tokens. "
-                + '<a class ="external" href="'
-                + doc_uri(m, doc)
-                + '">View '
-                + m.meta(doc).doi
-                + " on JSTOR</a>");
 
-    topics = m.doc_topics(doc, m.n());
-    render_updown("button#doc_topics", VIS.doc_view.topics,
-        VIS.doc_view.topics_increment, topics.length,
-        VIS.doc_view.topics_increment,
-        function (n) {
-            // Ensure the initial count persists in another doc view
-            VIS.doc_view.topics = n;
-            trs = view.select("table#doc_topics tbody")
-                .selectAll("tr")
-                .data(topics.slice(0, n));
+    m.doc_topics(doc, m.n(), function (topics) {
+        var total_tokens = d3.sum(topics, function (t) { return t.weight; });
+        div.select("#doc_remark")
+            .html(total_tokens + " tokens. "
+                    + '<a class ="external" href="'
+                    + doc_uri(m, doc)
+                    + '">View '
+                    + m.meta(doc).doi
+                    + " on JSTOR</a>");
 
-            trs.enter().append("tr");
-            trs.exit().remove();
+        trs = div.select("table#doc_topics tbody")
+            .selectAll("tr")
+            .data(topics);
 
-            // clear rows
-            trs.selectAll("td").remove();
+        trs.enter().append("tr");
+        trs.exit().remove();
 
-            trs.append("td")
-                .append("a")
-                    .attr("href", function (t) {
-                        return topic_link(t.topic);
-                    })
-                    .text(function (t) {
-                        return topic_label(m, t.topic, VIS.overview_words);
-                    });
+        // clear rows
+        trs.selectAll("td").remove();
 
-            trs.on("click", function (t) {
-                window.location.hash = topic_hash(t.topic);
-            });
-
-            add_weight_cells(trs, function (t) {
-                return t.weight / m.dt().row_sum(doc);
-            });
-
-            trs.append("td")
+        trs.append("td")
+            .append("a")
+                .attr("href", function (t) {
+                    return topic_link(t.topic);
+                })
                 .text(function (t) {
-                    return t.weight;
+                    return topic_label(m, t.topic, VIS.overview_words);
                 });
-            trs.append("td")
-                .text(function (t) {
-                    return VIS.percent_format(t.weight / m.dt().row_sum(doc));
-                });
+
+        trs.on("click", function (t) {
+            window.location.hash = topic_hash(t.topic);
         });
+
+        view.append_weight_tds(trs, function (t) {
+            return t.weight / total_tokens;
+        });
+
+        trs.append("td")
+            .text(function (t) {
+                return t.weight;
+            });
+        trs.append("td")
+            .text(function (t) {
+                return VIS.percent_format(t.weight / total_tokens);
+            });
+    });
 
     return true;
 
@@ -1107,7 +768,7 @@ doc_view = function (m, d) {
 };
 
 bib_view = function (m, maj, min) {
-    var view = d3.select("div#bib_view"),
+    var div = d3.select("div#bib_view"),
         major = maj,
         minor = min,
         ordering,
@@ -1177,9 +838,9 @@ bib_view = function (m, maj, min) {
     ordering = bib_sort(m, major, minor);
 
     // clear listings
-    view.selectAll("div#bib_main > div.panel").remove();
+    div.selectAll("div#bib_main > div.panel").remove();
 
-    sections = view.select("div#bib_main")
+    sections = div.select("div#bib_main")
         .selectAll("div")
         .data(d3.range(ordering.headings.length));
 
@@ -1339,10 +1000,12 @@ model_view_list = function (m, sort, dir) {
             .attr("href", topic_link);
 
         divs = trs.append("td").append("div").classed("spark", true);
-        append_svg(divs, VIS.model_view.list.spark)
+        view.append_svg(divs, VIS.model_view.list.spark)
             .each(function (t) {
-                plot_topic_yearly(m, t, {
+                view.topic.yearly({
                     svg: d3.select(this),
+                    t: t,
+                    yearly: m.topic_yearly(t),
                     axes: false,
                     clickable: false,
                     spec: VIS.model_view.list.spark
@@ -1351,18 +1014,20 @@ model_view_list = function (m, sort, dir) {
 
         trs.append("td").append("a")
             .text(function (t) {
-                return m.topic_words(t, VIS.overview_words).join(" ");
+                return topic_label(m, t, VIS.overview_words);
             })
             .attr("href", topic_link);
 
-        token_max = d3.max(m.dt().col_sum());
-        add_weight_cells(trs, function (t) {
-            return m.dt().col_sum(t) / token_max;
-        });
-        trs.append("td")
-            .text(function (t) {
-                return VIS.percent_format(m.dt().col_sum(t) / m.total_tokens());
+        m.col_sum(undefined, function (sums, total) { 
+            token_max = d3.max(sums);
+            view.append_weight_tds(trs, function (t) {
+                return sums[t] / token_max;
             });
+            trs.append("td")
+                .text(function (t) {
+                    return VIS.percent_format(sums[t] / total);
+                });
+        });
 
         VIS.ready.model_list = true;
     } // if (!VIS.ready.model_list)
@@ -1377,10 +1042,11 @@ model_view_list = function (m, sort, dir) {
     sort_dir = (sort_choice === VIS.last.model_list.sort) ?
         (dir || VIS.last.model_list.dir) : "up";
 
+    // TODO THREADING
     keys = d3.range(m.n());
     if (sort_choice === "words") {
         keys = keys.map(function (t) {
-            return m.topic_words(t, 5).join(" ");
+            return topic_label(m, t, 5);
         });
     } else if (sort_choice === "frac") {
         // default ordering should be largest frac to least,
@@ -1468,7 +1134,7 @@ model_view_plot = function(m, type) {
         }
     };
 
-    svg = plot_svg("#model_view_plot", spec);
+    svg = view.plot_svg("#model_view_plot", spec);
 
     // rough attempt to fill total circle area in plot window 
     // 2.25 rather than 2 is pure fudge factor
@@ -1533,12 +1199,12 @@ model_view_plot = function(m, type) {
     gs.enter().append("g")
         .each(function (p, t) {
             var g = d3.select(this),
-                max_wt = m.tw(t, m.topic_words(t, 1)),
+                max_wt = m.topic_words(t, 1)[0].weight,
                 wds = m.topic_words(t, VIS.model_view.words)
                     .map(function (w) {
                         return {
-                            text: w,
-                            size: Math.floor(scale_size(m.tw(t, w) / max_wt))
+                            text: w.word,
+                            size: Math.floor(scale_size(w.weight) / max_wt)
                         };
                     }),
                 up, down, toggle, i;
@@ -1668,7 +1334,7 @@ model_view_yearly = function (m, type) {
         paths, labels, render_labels,
         areas, zoom;
 
-    svg = plot_svg("#model_view_yearly", spec);
+    svg = view.plot_svg("#model_view_yearly", spec);
 
     raw = type ? (type === "raw") : VIS.last.model_yearly;
     VIS.last.model_yearly = raw;
@@ -1744,16 +1410,16 @@ model_view_yearly = function (m, type) {
         })
         .on("mouseover", function (d) {
             d3.select(this).style("fill", scale_color(d.t, true));
-            tooltip().text(topic_label(m, d.t, 4));
-            tooltip().update_pos();
-            tooltip().show();
+            view.tooltip().text(topic_label(m, d.t, 4));
+            view.tooltip().update_pos();
+            view.tooltip().show();
         })
         .on("mousemove", function (d) {
-            tooltip().update_pos();
+            view.tooltip().update_pos();
         })
         .on("mouseout", function (d) {
             d3.select(this).style("fill", scale_color(d.t));
-            tooltip().hide();
+            view.tooltip().hide();
         })
         .on("click", function (d) {
             if (!d3.event.shiftKey) {
@@ -2011,42 +1677,6 @@ yearly_stacked_series = function (m, raw) {
 
 };
 
-tooltip = function () {
-    var that = VIS.tooltip || { };
-
-    if (that.div) {
-        return that;
-    }
-
-    that.div = d3.select("body").append("div")
-        .attr("id", "tooltip")
-        .classed("bar_tooltip", true);
-    that.container = d3.select("body").node();
-
-    that.div.append("p");
-
-
-    that.update_pos = function () {
-        var mouse_pos = d3.mouse(this.container);
-        this.div.style({
-                left: (mouse_pos[0] + this.offset.x) + 'px',
-                top: (mouse_pos[1] + this.offset.y) + 'px',
-                position: "absolute"
-            });
-    };
-    that.text = function (text) {
-        this.div.select("p").text(text);
-    };
-    that.show = function () {
-        this.div.classed("hidden", false);
-    };
-    that.hide = function () {
-        this.div.classed("hidden", true);
-    };
-
-    VIS.tooltip = that;
-    return that;
-};
 
 view_loading = function (flag) {
     d3.select("div#loading").classed("hidden", !flag);
@@ -2064,6 +1694,10 @@ view_error = function (msg) {
         .append("p")
             .text(msg);
     d3.select("div#error").classed("hidden", false);
+};
+
+set_view = function (hash) {
+    window.location.hash = hash;
 };
 
 view_refresh = function (m, v) {
@@ -2147,34 +1781,6 @@ setup_vis = function (m) {
     };
 
     // TODO settings controls
-};
-
-plot_svg = function (selector, spec) {
-    var svg;
-
-    if (!VIS.svg) {
-        VIS.svg = d3.map();
-    }
-    if (VIS.svg.has(selector)) {
-        return VIS.svg.get(selector);
-    }
-
-    svg = append_svg(d3.select(selector), spec);
-
-    VIS.svg.set(selector, svg);
-    return svg;
-};
-
-append_svg = function(selection, spec) {
-    // mbostock margin convention
-    // http://bl.ocks.org/mbostock/3019563
-    return selection.append("svg")
-            .attr("width", spec.w + spec.m.left + spec.m.right)
-            .attr("height", spec.h + spec.m.top + spec.m.bottom)
-        // g element passes on xform to all contained elements
-        .append("g")
-            .attr("transform",
-                  "translate(" + spec.m.left + "," + spec.m.top + ")");
 };
 
 var load_data = function (target, callback) {

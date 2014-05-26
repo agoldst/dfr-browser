@@ -1,9 +1,10 @@
-/*global importScripts, dt, utils, onmessage, postMessage */
+/*global importScripts, doc_topics_matrix, utils, onmessage, postMessage */
 "use strict";
 importScripts("dt.js", "utils.js");
 
 var my = { },
-    topic_docs;
+    topic_docs,
+    doc_topics;
 
 onmessage = function (e) {
     console.log("message received at worker: " + e.data.what);
@@ -14,6 +15,11 @@ onmessage = function (e) {
         postMessage({
             what: "topic_docs/" + e.data.t + "/" + e.data.n,
             result: topic_docs(e.data.t, e.data.n)
+        });
+    } else if (e.data.what === "doc_topics") {
+        postMessage({
+            what: "doc_topics/" + e.data.d + "/" + e.data.n,
+            result: doc_topics(e.data.d, e.data.n)
         });
     } else {
         postMessage({ what: "error" });
@@ -74,5 +80,25 @@ topic_docs = function (t, n) {
     // biggest first
     return utils.shorten(result.reverse(), n, function (xs, i) {
         return xs[i].frac;
+    });
+};
+
+doc_topics = function (d, n) {
+    var topics = [ ], t, x;
+
+    for (t = 0; t < my.dt.n; t += 1) {
+        x = my.dt.get(d, t);
+        if (x > 0) {
+            topics.push({ topic: t, weight: x });
+        }
+    }
+        
+    topics.sort(function (a, b) {
+        return utils.desc(a.weight, b.weight) ||
+            utils.desc(a.t, b.t); // stabilize sort
+    });
+
+    return utils.shorten(topics, n, function (topics, i) {
+        return topics[i].weight;
     });
 };
