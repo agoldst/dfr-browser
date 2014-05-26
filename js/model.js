@@ -20,6 +20,7 @@ model = function (spec) {
         n,
         n_top_words,
         total_tokens,
+        topic_total,
         alpha,
         meta,
         vocab,
@@ -28,7 +29,6 @@ model = function (spec) {
         doc_year,
         valid_year,
         yearly_total,
-        years,
         topic_docs, // most salient _ in _
         topic_words,
         doc_topics,
@@ -39,6 +39,7 @@ model = function (spec) {
         set_meta,
         set_topic_scaled;
 
+    my.ready = { };
     my.worker = new Worker("js/model_worker.js");
     my.worker.fs = d3.map();
     my.worker.onmessage = function (e) {
@@ -51,8 +52,6 @@ model = function (spec) {
     my.worker.callback = function (key, f) {
         my.worker.fs.set(key, f);
     };
-    // TODO real ready
-    my.worker.callback("ready", function () { console.log("ready!"); });
 
     info = function (model_meta) {
         if (model_meta) {
@@ -139,6 +138,16 @@ model = function (spec) {
         return my.total_tokens;
     };
     that.total_tokens = total_tokens;
+
+    topic_total = function (t, callback) {
+        var topic = isFinite(t) ? t : "all";
+        my.worker.callback("topic_total/" + topic, callback);
+        my.worker.postMessage({
+            what: "topic_total",
+            t: topic
+        });
+    };
+    that.topic_total = topic_total;
 
     // alpha hyperparameters
     alpha = function (t) {
@@ -240,66 +249,40 @@ model = function (spec) {
     that.topic_scaled = topic_scaled;
 
     // get aggregate topic counts over years
-    yearly_total = function (year) {
-        var tally, y;
-        // memoization
-        if (!my.yearly_total) {
-            tally = d3.map();
-            for (n = 0; n < my.dt.i.length; n += 1) {
-                y = this.doc_year(my.dt.i[n]);
-                if (tally.has(y)) {
-                    tally.set(y, tally.get(y) + my.dt.x[n]);
-                } else {
-                    tally.set(y, my.dt.x[n]);
-                }
-            }
-            my.yearly_total = tally;
+    yearly_total = function (year, callback) {
+        var y = (year === undefined) ? "all" : year,
+            f = callback;
+        if (y === "all") {
+            f = function (yearly_total) {
+                callback(d3.map(yearly_total));
+            };
         }
-
-        return isFinite(year) ? my.yearly_total.get(year) : my.yearly_total;
+        my.worker.callback("topic_yearly/" + y, f);
+        my.worker.postMessage({
+            what: "yearly_total",
+            y: y
+        });
     };
     that.yearly_total = yearly_total;
 
-    years = function () {
-        return this.yearly_total().keys();
-    };
-    that.years = years;
-
     // yearly proportions for topic t
-    topic_yearly = function (t) {
-        var result, j, y;
-
-        // cached? 
-        if (!my.topic_yearly) {
-            my.topic_yearly = [];
-        } else if (my.topic_yearly[t]) {
-            return my.topic_yearly[t];
+    topic_yearly = function (t, callback) {
+        var topic = (t === undefined) ? "all" : t,
+            f;
+        if (topic === "all") {
+            f = function (yearly) {
+                callback(yearly.map(d3.map));
+            };
+        } else {
+            f = function (yearly) {
+                callback(d3.map(yearly));
+            };
         }
-        if (!my.dt || !this.meta()) {
-            return undefined;
-        }
-
-        result = d3.map();
-
-        for (j = my.dt.p[t]; j < my.dt.p[t + 1]; j += 1) {
-            y = this.doc_year(my.dt.i[j]);
-            if (result.has(y)) {
-                result.set(y, result.get(y) + my.dt.x[j]);
-            } else {
-                result.set(y, my.dt.x[j]);
-            }
-        }
-
-        // divide through
-        result.forEach(function (y, w) {
-            // have to use "that" and not "this" because "this" changes
-            // inside forEach
-            result.set(y, w / that.yearly_total(y));
+        my.worker.callback("topic_yearly/" + topic, f);
+        my.worker.postMessage({
+            what: "topic_yearly",
+            t: topic
         });
-
-        // cache if this is the first time through
-        my.topic_yearly[t] = result;
-        return result;
     };
     that.topic_yearly = topic_yearly;
 
@@ -308,7 +291,7 @@ model = function (spec) {
     // necessarily give the docs where t is most salient
     topic_docs = function (t, n, year, callback) {
         var n_req = n, f = callback;
-        if (this.valid_year(year, t)) {
+        if (year !== undefined) {
             n_req = this.n_docs();
             f = function (docs) {
                 var year_docs = docs.filter(function (d) {
@@ -396,6 +379,7 @@ model = function (spec) {
     that.word_topics = word_topics;
 
     year_topics = function (year, n) {
+        // TODO DEPRECATED. Not used by the browser.
         var t, series, result = [];
 
         // *Could* calculate totals just for this year, but that still
@@ -452,8 +436,12 @@ model = function (spec) {
         if (!my.n) {
             my.n = my.dt.n;
         }
+
+        my.worker.callback("set_dt", function (result) {
+            my.ready.dt = result;
+        });
         my.worker.postMessage({
-            what: "set",
+            what: "set_dt",
             dt: JSON.parse(dt_s)
         });
     };
@@ -461,7 +449,7 @@ model = function (spec) {
 
     // load meta from a string of CSV lines
     set_meta = function (meta_s) {
-        var s;
+        var s, doc_years = [ ];
         if (typeof meta_s !== 'string') {
             return;
         }
@@ -480,9 +468,10 @@ model = function (spec) {
             var a_str = d[2].trim(), // author
                 date = new Date(d[6].trim()); // pubdate
 
-                // set min and max date range
-                my.start_date = date < my.start_date ? date : my.start_date;
-                my.end_date = date > my.end_date ? date : my.end_date;
+            doc_years.push(date.getFullYear()); // store to pass into worker
+            // set min and max date range
+            my.start_date = date < my.start_date ? date : my.start_date;
+            my.end_date = date > my.end_date ? date : my.end_date;
 
             return {
                 doi: d[0].trim(), // id
@@ -497,6 +486,15 @@ model = function (spec) {
                     .replace(/-/g, "–")
             };
         });
+
+        my.worker.callback("set_doc_years", function (result) {
+            my.ready.doc_years = result;
+        });
+        my.worker.postMessage({
+            what: "set_doc_years",
+            doc_years: doc_years
+        });
+        my.valid_years = d3.set(doc_years);
     };
     that.set_meta = set_meta;
 

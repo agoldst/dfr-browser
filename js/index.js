@@ -355,7 +355,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 // -----------------------------------
 
 topic_view = function (m, t, year) {
-    var docs, words;
+    var words;
 
     if (!m.meta() || !m.dt() || !m.tw()) {
         // not ready yet; show loading message
@@ -374,11 +374,6 @@ topic_view = function (m, t, year) {
         return true;
     }
 
-    // if the year is invalid, we'll just ignore it
-    if (!m.valid_year(year, t)) {
-        year = undefined;
-    }
-
     words = m.topic_words(t);
 
     view.topic({
@@ -391,10 +386,13 @@ topic_view = function (m, t, year) {
     });
 
     view.topic.words(utils.shorten(words, VIS.topic_view.words));
-    view.topic.yearly({
-        t: t,
-        year: year,
-        yearly: m.topic_yearly(t)
+
+    m.topic_yearly(t, function (yearly) {
+        view.topic.yearly({
+            t: t,
+            year: year,
+            yearly: yearly
+        });
     });
 
     view.calculating("#topic_docs", true); 
@@ -929,136 +927,22 @@ model_view = function (m, type, p1, p2) {
 };
 
 model_view_list = function (m, sort, dir) {
-    var trs, divs, token_max,
-        keys, sorter, sort_choice, sort_dir;
+    view.calculating("#model_view_list", true);
 
-    if (!VIS.ready.model_list) {
-        d3.select("th#model_view_list_year a")
-            .text(d3.min(m.years()) + "—" + d3.max(m.years()));
-
-        trs = d3.select("#model_view_list table tbody")
-            .selectAll("tr")
-            .data(d3.range(m.n()))
-            .enter().append("tr");
-
-        trs.on("click", function (t) {
-                window.location.hash = topic_hash(t);
+    m.topic_total(undefined, function (sums) {
+        m.topic_yearly(undefined, function (yearly) {
+            view.calculating("#model_view_list", false);
+            view.model.list({
+                yearly: yearly,
+                sums: sums,
+                words: d3.range(m.n()).map(function (t) {
+                    return m.topic_words(t, VIS.overview_words);
+                }),
+                sort: sort,
+                dir: dir
             });
-
-        trs.append("td").append("a")
-            .text(function (t) { return t + 1; }) // sigh
-            .attr("href", topic_link);
-
-        divs = trs.append("td").append("div").classed("spark", true);
-        view.append_svg(divs, VIS.model_view.list.spark)
-            .each(function (t) {
-                view.topic.yearly({
-                    svg: d3.select(this),
-                    t: t,
-                    yearly: m.topic_yearly(t),
-                    axes: false,
-                    clickable: false,
-                    spec: VIS.model_view.list.spark
-                });
-            });
-
-        trs.append("td").append("a")
-            .text(function (t) {
-                return topic_label(m, t, VIS.overview_words);
-            })
-            .attr("href", topic_link);
-
-        m.col_sum(undefined, function (sums, total) { 
-            token_max = d3.max(sums);
-            view.append_weight_tds(trs, function (t) {
-                return sums[t] / token_max;
-            });
-            trs.append("td")
-                .text(function (t) {
-                    return VIS.percent_format(sums[t] / total);
-                });
         });
-
-        VIS.ready.model_list = true;
-    } // if (!VIS.ready.model_list)
-
-    // sorting
-
-    if (!VIS.last.model_list) {
-        VIS.last.model_list = { };
-    }
-
-    sort_choice = sort || VIS.last.model_list.sort;
-    sort_dir = (sort_choice === VIS.last.model_list.sort) ?
-        (dir || VIS.last.model_list.dir) : "up";
-
-    // TODO THREADING
-    keys = d3.range(m.n());
-    if (sort_choice === "words") {
-        keys = keys.map(function (t) {
-            return topic_label(m, t, 5);
-        });
-    } else if (sort_choice === "frac") {
-        // default ordering should be largest frac to least,
-        // so the sort keys are negative proportions
-        keys = keys.map(function (t) {
-            return -m.dt().col_sum(t) / m.total_tokens();
-        });
-    } else if (sort_choice === "year") {
-        keys = keys.map(function (t) {
-            var result, max_weight = 0;
-            m.topic_yearly(t).forEach(function (year, weight) {
-                if (weight > max_weight) {
-                    result = year;
-                    max_weight = weight;
-                }
-            });
-            return result;
-        });
-    } else {
-        // otherwise, enforce the default: by topic number
-        sort_choice = "topic";
-    }
-
-    if (sort_dir === "down") {
-        sorter = function (a, b) {
-            return d3.descending(keys[a], keys[b]) ||
-                d3.descending(a, b); // stabilize sort
-        };
-    } else {
-        // default: up
-        sorter = function (a, b) {
-            return d3.ascending(keys[a], keys[b]) ||
-                d3.ascending(a, b); // stabilize sort
-        };
-    }
-
-    // remember for the next time we visit #/model/list
-    VIS.last.model_list.sort = sort_choice;
-    VIS.last.model_list.dir = sort_dir;
-
-    d3.selectAll("#model_view_list table tbody tr")
-        .sort(sorter)
-        .order();
-
-    d3.selectAll("#model_view_list th.sort")
-        .classed("active", function () {
-            return !!this.id.match(sort_choice);
-        })
-        .each(function () {
-            var ref = "#/" + this.id.replace(/_(view_)?/g, "/");
-            if (this.id.match(sort_choice)) {
-                ref += (sort_dir === "down") ? "/up" : "/down";
-            }
-
-            d3.select(this).select("a")
-                .attr("href", ref);
-        })
-        .on("click", function () {
-            window.location.hash = d3.select(this).select("a")
-                .attr("href").replace(/#/, "");
-        });
-
+    });
 
     return true;
 };
@@ -1546,7 +1430,7 @@ yearly_stacked_series = function (m, raw) {
     if (!VIS.model_view.yearly.data) {
         VIS.model_view.yearly.data = { };
 
-        year_keys = m.years().sort();
+        year_keys = m.years().sort(); // TODO deprecated
         years = year_keys.map(function (y) {
             return new Date(+y, 0, 1);
         });

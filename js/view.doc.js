@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, citation, topic_link, utils, d3 */
+/*global view, VIS, set_view, citation, topic_link, topic_hash, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
