@@ -24,11 +24,12 @@ var view = (function () {
     that.updating = updating;
 
     loading = function (flag) {
-        d3.select("div#loading").classed("hidden", !flag);
+        d3.select("#loading_message").classed("hidden", !flag);
     };
     that.loading = loading;
 
     calculating = function (sel, flag) {
+        d3.select("#calc_message").classed("hidden", !flag);
         d3.selectAll(sel + " .calc").classed("hidden", !flag);
         d3.selectAll(sel + " .calc-done").classed("hidden", flag);
     };

@@ -40,15 +40,13 @@
         <li id="nav_words"><a href="#/words">All words</a></li>
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
+      <p id="loading_message" class="navbar-text help">Loading...</p>
+      <p id="calc_message" class="navbar-text help hidden">Calculating...</p>
     </div><!--/.navbar-collapse -->
   </div>
 </div>
 
 <div id="main_container" class="container">
-
-  <div id="loading" class="well">
-    <p>Loading...</p>
-  </div>
 
   <div id="error" class="hidden">
   </div>
@@ -97,9 +95,6 @@
       </div>
     </nav>
     <div id="model_view_list" class="hidden">
-      <div class="well calc">
-        <p>Calculating...</p>
-      </div>
       <table class="table table-condensed calc-done">
         <thead>
           <tr class="info">
@@ -180,9 +175,6 @@
           </div>
           <div id="topic_docs">
             <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
-            <div class="well calc">
-              <p>Calculating...</p>
-            </div>
             <div class="btn-group btn-group-xs calc-done">
               <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
               <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
@@ -206,9 +198,6 @@
   </div>
 
   <div id="doc_view" class="hidden">
-    <div class="well calc">
-      <p>Calculating...</p>
-    </div>
     <div id="doc_view_help">
       <p class="help">Choose a specific document to view from 
       <a class="external" href="#/bib">the bibliography</a> or from
