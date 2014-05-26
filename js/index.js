@@ -100,7 +100,6 @@ var bib_sort,   // bibliography sorting
     cite_doc,
     cite_docs,
     citation,
-    doc_uri,
     render_updown,      // view generation
     topic_view,
     topic_view_words,
@@ -309,12 +308,6 @@ citation = function (doc) {
     return result;
 };
 
-doc_uri = function (m, d) {
-    return "http://dx.doi.org"
-        + VIS.uri_proxy
-        + "/"
-        + m.meta(d).doi;
-};
 
 // utility for views
 // -----------------
@@ -706,55 +699,17 @@ doc_view = function (m, d) {
     }
     d3.select("#doc_view_main").classed("hidden", false);
 
-    div.select("h2#doc_header")
-        .html(cite_doc(m, doc));
-
-
+    view.calculating("#doc_view", true);
     m.doc_topics(doc, m.n(), function (topics) {
-        var total_tokens = d3.sum(topics, function (t) { return t.weight; });
-        div.select("#doc_remark")
-            .html(total_tokens + " tokens. "
-                    + '<a class ="external" href="'
-                    + doc_uri(m, doc)
-                    + '">View '
-                    + m.meta(doc).doi
-                    + " on JSTOR</a>");
-
-        trs = div.select("table#doc_topics tbody")
-            .selectAll("tr")
-            .data(topics);
-
-        trs.enter().append("tr");
-        trs.exit().remove();
-
-        // clear rows
-        trs.selectAll("td").remove();
-
-        trs.append("td")
-            .append("a")
-                .attr("href", function (t) {
-                    return topic_link(t.topic);
-                })
-                .text(function (t) {
-                    return topic_label(m, t.topic, VIS.overview_words);
-                });
-
-        trs.on("click", function (t) {
-            window.location.hash = topic_hash(t.topic);
+        view.calculating("#doc_view", false);
+        view.doc({
+            topics: topics,
+            meta: m.meta(doc),
+            total_tokens: d3.sum(topics, function (t) { return t.weight; }),
+            words: topics.map(function (t) {
+                return m.topic_words(t.topic, VIS.overview_words);
+            })
         });
-
-        view.append_weight_tds(trs, function (t) {
-            return t.weight / total_tokens;
-        });
-
-        trs.append("td")
-            .text(function (t) {
-                return t.weight;
-            });
-        trs.append("td")
-            .text(function (t) {
-                return VIS.percent_format(t.weight / total_tokens);
-            });
     });
 
     return true;

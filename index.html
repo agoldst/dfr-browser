@@ -203,13 +203,16 @@
   </div>
 
   <div id="doc_view" class="hidden">
+    <div class="well calc">
+      <p>Calculating...</p>
+    </div>
     <div id="doc_view_help">
       <p class="help">Choose a specific document to view from 
       <a class="external" href="#/bib">the bibliography</a> or from
         <a class="external" href="#/topic">a topic page</a>.</p>
       <p class="help hidden" id="last_doc_help">Below: the last-viewed document. Stable link to this view: <a class="external" id="last_doc" href="#/doc"></a></p>
     </div>
-    <div id="doc_view_main">
+    <div id="doc_view_main calc-done">
       <h2 class="h-small" id="doc_header"></h2>
       <p id="doc_remark"></p>
       <div class="btn-group btn-group-xs">
@@ -329,6 +332,7 @@
 <script type="text/javascript" src="js/model.js"></script>
 <script type="text/javascript" src="js/view.js"></script>
 <script type="text/javascript" src="js/view.topic.js"></script>
+<script type="text/javascript" src="js/view.doc.js"></script>
 <script type="text/javascript" src="js/index.js"></script>
 
 </body>
