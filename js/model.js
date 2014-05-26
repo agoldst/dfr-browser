@@ -126,16 +126,16 @@ model = function (spec) {
     };
     that.n_top_words = n_top_words;
 
-    total_tokens = function () {
-        if (!my.dt) {
-            return undefined;
-        }
-
+    total_tokens = function (callback) {
         if (!my.total_tokens) {
-            my.total_tokens = d3.sum(my.dt.x);
+            my.worker.callback("total_tokens", function (tot) {
+                my.total_tokens = tot;
+                callback(tot);
+            });
+            my.worker.postMessage({ what: "total_tokens" });
+        } else { 
+            callback(my.total_tokens);
         }
-
-        return my.total_tokens;
     };
     that.total_tokens = total_tokens;
 

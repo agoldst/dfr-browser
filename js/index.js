@@ -375,19 +375,25 @@ topic_view = function (m, t, year) {
         return true;
     }
 
-    words = m.topic_words(t);
+    words = utils.shorten(m.topic_words(t), VIS.topic_view.words);
 
-    view.topic({
-        t: t,
-        year: year,
-        words: words,
-        alpha: m.alpha(t),
-        col_sum: m.dt().col_sum(t),
-        total_tokens: m.total_tokens()
+    m.total_tokens(function (total) {
+        m.topic_total(t, function (topic_total) {
+            view.topic({
+                t: t,
+                year: year,
+                words: words,
+                alpha: m.alpha(t),
+                col_sum: topic_total,
+                total_tokens: total
+            });
+        });
     });
 
-    view.topic.words(utils.shorten(words, VIS.topic_view.words));
+    // topic word subview
+    view.topic.words(words);
 
+    // topic yearly barplot subview
     m.topic_yearly(t, function (yearly) {
         view.topic.yearly({
             t: t,
@@ -396,6 +402,7 @@ topic_view = function (m, t, year) {
         });
     });
 
+    // topic top documents subview
     view.calculating("#topic_docs", true); 
     m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
         view.calculating("#topic_docs", false);

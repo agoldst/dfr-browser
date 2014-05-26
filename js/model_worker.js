@@ -3,6 +3,7 @@
 importScripts("dt.js", "utils.js");
 
 var my = { },
+    total_tokens,
     topic_docs,
     doc_topics,
     topic_yearly,
@@ -21,6 +22,11 @@ onmessage = function (e) {
         postMessage({
             what: "set_doc_years",
             result: my.doc_years !== undefined
+        });
+    } else if (e.data.what === "total_tokens") {
+        postMessage({
+            what: "total_tokens",
+            result: total_tokens()
         });
     } else if (e.data.what === "topic_docs") {
         postMessage({
@@ -50,6 +56,14 @@ onmessage = function (e) {
     } else {
         postMessage({ what: "error" });
     }
+};
+
+total_tokens = function () {
+    var i, result = 0;
+    for (i = 0; i < my.dt.x.length; i += 1) {
+        result += my.dt.x[i];
+    }
+    return result;
 };
 
 topic_docs = function (t, n) {
