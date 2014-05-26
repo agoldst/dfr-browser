@@ -853,11 +853,7 @@ bib_view = function (m, maj, min) {
 };
 
 about_view = function (m) {
-    if(!VIS.ready.about) {
-        d3.select("div#meta_info")
-            .html(m.info().meta_info);
-        VIS.ready.about = true;
-    }
+    view.about(m.info().meta_info);
     view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
