@@ -358,7 +358,7 @@ render_updown = function (selector, start, min, max, increment, render) {
 topic_view = function (m, t, year) {
     var words;
 
-    if (!m.meta() || !m.dt() || !m.tw()) {
+    if (!m.meta() || !m.has_dt() || !m.tw()) {
         // not ready yet; show loading message
         view.loading(true);
         return true;
@@ -666,7 +666,7 @@ doc_view = function (m, d) {
     var div = d3.select("div#doc_view"),
         doc = d;
 
-    if (!m.meta() || !m.dt() || !m.tw()) {
+    if (!m.meta() || !m.has_dt() || !m.tw()) {
         view.loading(true);
         return true;
     }
@@ -880,7 +880,7 @@ model_view = function (m, type, p1, p2) {
     d3.selectAll(".model_view_yearly").classed("hidden", true);
 
     if (type_chosen === "list") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta() || !m.has_dt()) {
             view.loading(true);
             return true;
         }
@@ -889,7 +889,7 @@ model_view = function (m, type, p1, p2) {
         d3.selectAll(".model_view_list").classed("hidden", false);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
-        if (!m.meta() || !m.dt()) {
+        if (!m.meta() || !m.has_dt()) {
             view.loading(true);
             return true;
         }
@@ -900,7 +900,7 @@ model_view = function (m, type, p1, p2) {
     } else { // default to grid
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
-        if (!m.topic_scaled() || !m.dt()) {
+        if (!m.topic_scaled() || !m.has_dt()) {
             view.loading(true);
             return true;
         }
@@ -1218,8 +1218,9 @@ main = function () {
             view_refresh(m, window.location.hash);
         });
         load_data(dfb.files.dt, function (error, dt_s) {
-            m.set_dt(dt_s);
-            view_refresh(m, window.location.hash);
+            m.set_dt(dt_s, function (result) {
+                view_refresh(m, window.location.hash);
+            });
         });
         load_data(dfb.files.tw, function (error, tw_s) {
             if (typeof tw_s === 'string') {

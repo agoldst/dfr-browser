@@ -1,4 +1,4 @@
-/*global d3, utils, dt, Worker */
+/*global d3, utils, Worker */
 "use strict";
 var model;
 
@@ -6,7 +6,6 @@ var model;
 // -------------------
 // data stored internally as follows:
 // tw: array of d3.map()s keyed to words as strings
-// dt: column-compressed sparse matrix { i, p, x }
 // alpha: alpha values for topics
 // meta: array of objects holding document citations
 
@@ -14,8 +13,8 @@ model = function (spec) {
     var my = spec || { }, // private members
         that = { }, // resultant object
         info, // accessors and pseudo-accessors
-        dt,
         n_docs,
+        has_dt,
         tw,
         n,
         n_top_words,
@@ -27,7 +26,6 @@ model = function (spec) {
         topic_scaled,
         topic_yearly, // time-slicing
         doc_year,
-        valid_year,
         yearly_total,
         topic_docs, // most salient _ in _
         topic_words,
@@ -61,33 +59,23 @@ model = function (spec) {
     };
     that.info = info;
 
-    dt = function (d, t) {
-        return my.dt ? my.dt.get(d, t) : undefined;
-    };
-    that.dt = dt;
-
     n_docs = function () {
         var result;
         if (my.n_docs !== undefined) {
             result = my.n_docs;
         } else if (my.meta) {
             result = my.meta.length;
-        } else if (my.dt) {
-            result = -1;
-            // n_docs = max row index
-            // for each column, the row indices are in order in my.dt.i,
-            // so we only need to look at the last row index for each column
-            for (n = 1; n < my.dt.p.length; n += 1) {
-                if (result < my.dt.i[my.dt.p[n] - 1]) {
-                    result = my.dt.i[my.dt.p[n] - 1];
-                }
-            }
-            result += 1;
-        }
-        my.n_docs = result;
-        return result; // undefined if both my.meta and my.dt are missing
+        } 
+
+        return result; // undefined if my.meta is missing
     };
     that.n_docs = n_docs;
+
+    // has dt been loaded?
+    has_dt = function () {
+        return !!my.ready.dt;
+    };
+    that.has_dt = has_dt;
 
     // access top key words per topic
     tw = function (t, word) {
@@ -198,17 +186,6 @@ model = function (spec) {
         return my.doc_year[d];
     };
     that.doc_year = doc_year;
-
-    valid_year = function (y, t) {
-        if (!my.meta || !my.dt || !isFinite(y)) {
-            return undefined;
-        }
-
-        // This looks egregious, but we're going to cache these results
-        // anyway.
-        return this.topic_yearly(t).has(y);
-    };
-    that.valid_year = valid_year;
 
     // aggregate vocabulary of all top words in tw
     vocab = function () {
@@ -435,17 +412,14 @@ model = function (spec) {
     that.set_tw = set_tw;
 
     // load dt from a string of JSON
-    set_dt = function (dt_s) {
+    set_dt = function (dt_s, callback) {
         if (typeof dt_s  !== 'string') {
             return;
-        }
-        my.dt = doc_topics_matrix(JSON.parse(dt_s)); // TODO remove this duplication
-        if (!my.n) {
-            my.n = my.dt.n;
         }
 
         my.worker.callback("set_dt", function (result) {
             my.ready.dt = result;
+            callback(result);
         });
         my.worker.postMessage({
             what: "set_dt",
@@ -501,7 +475,6 @@ model = function (spec) {
             what: "set_doc_years",
             doc_years: doc_years
         });
-        my.valid_years = d3.set(doc_years);
     };
     that.set_meta = set_meta;
 
