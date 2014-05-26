@@ -26,7 +26,9 @@ var VIS = {
                 top: 20,
                 bottom: 20
             },
-            label_threshold: 40 // px
+            label_threshold: 40, // px
+            words: 4,
+            label_words: 2 // should be <= words
         },
         list: {
             spark: {
@@ -943,221 +945,29 @@ model_view_plot = function (m, type) {
 };
 
 model_view_yearly = function (m, type) {
-    var spec = VIS.model_view.yearly, svg,
-        scale_x, scale_y, axis_x, area,
-        scale_color,
-        raw,
-        to_plot,
-        paths, labels, render_labels,
-        areas, zoom;
-
-    svg = view.plot_svg("#model_view_yearly", spec);
-
-    raw = type ? (type === "raw") : VIS.last.model_yearly;
-    VIS.last.model_yearly = raw;
-
-    to_plot = yearly_stacked_series(m, raw);
-
-    if (!VIS.ready.model_yearly) {
-        svg.append("rect")
-            .attr("width", spec.w)
-            .attr("height", spec.h)
-            .classed("bg", true);
-
-        svg.append("clipPath").attr("id", "clip")
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", spec.w)
-            .attr("height", spec.h);
-
-        VIS.ready.model_yearly = true;
-    } // if (!VIS.ready.model_yearly)
-
-    // scales
-    // ------
-
-    // color: a visual cue to distinguish topics. // Unfortunately,
-    // 20 colors is as far as any sane person would go, so we'll just
-    // stupidly repeat colors at intervals of 20. We can at least
-    // make sure repeated colors aren't adjacent.
-    // TODO make better (shape, pattern?)
-    scale_color = (function () {
-        var cat20 = d3.scale.category20(),
-            seq = [ ];
-            to_plot.order.forEach(function (k, r) { seq[k] = r; });
-        return function (t, highlight) {
-            var c = cat20(seq[t] % 20);
-            return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
-        };
-    }());
-
-    scale_x = d3.time.scale()
-        .domain(to_plot.domain_x)
-        .range([0, spec.w]);
-
-    scale_y = d3.scale.linear()
-        .domain(to_plot.domain_y)
-        .range([spec.h, 0])
-        .nice();
-
-    // clear axes
-    svg.selectAll("g.axis").remove();
-
-    // x axis (no y axis: streamgraph makes it meaningless)
-    axis_x = d3.svg.axis()
-        .scale(scale_x)
-        .orient("bottom");
-
-    svg.append("g")
-        .classed("axis", true)
-        .classed("x", true)
-        .attr("transform", "translate(0," + spec.h + ")")
-        .call(axis_x);
-
-    paths = svg.selectAll("path.topic_area")
-        .data(to_plot.data);
-
-    paths.enter()
-        .append("path")
-        .classed("topic_area", true)
-        .attr("clip-path", "url(#clip)")
-        .style("fill", function (d) {
-            return scale_color(d.t);
-        })
-        .on("mouseover", function (d) {
-            d3.select(this).style("fill", scale_color(d.t, true));
-            view.tooltip().text(topic_label(m, d.t, 4));
-            view.tooltip().update_pos();
-            view.tooltip().show();
-        })
-        .on("mousemove", function (d) {
-            view.tooltip().update_pos();
-        })
-        .on("mouseout", function (d) {
-            d3.select(this).style("fill", scale_color(d.t));
-            view.tooltip().hide();
-        })
-        .on("click", function (d) {
-            if (!d3.event.shiftKey) {
-                window.location.hash = topic_hash(d.t);
-            }
-        });
-
-    labels = svg.selectAll("text.layer_label")
-        .data(to_plot.data);
-
-    labels.enter().append("text")
-        .classed("layer_label", true)
-        .attr("clip-path", "url(#clip)");
-
-    render_labels = function (sel) {
-        var t, i, xs, cur, show = [ ], max = [ ],
-            x0 = scale_x.domain()[0],
-            x1 = scale_x.domain()[1],
-            y0 = scale_y.domain()[0],
-            y1 = scale_y.domain()[1],
-            b = scale_y(0); // area heights are b - scale_y(y)
-        for (t = 0; t < m.n(); t += 1) {
-            show[t] = false;
-            xs = to_plot.data[t].values;
-            for (i = 0, cur = 0; i < xs.length; i += 1) {
-                if (xs[i].x >= x0 && xs[i].x <= x1
-                        && xs[i].y0 + xs[i].y >= y0
-                        && xs[i].y0 + xs[i].y <= y1) {
-                    if (xs[i].y > cur
-                            && b - scale_y(xs[i].y) >
-                            VIS.model_view.yearly.label_threshold) {
-                        show[t] = true;
-                        max[t] = i;
-                        cur = xs[i].y;
-                    }
-                }
-            }
-        }
-
-        sel.attr("display", function (d) {
-            return show[d.t] ? "inherit" : "none";
-        });
-
-        sel.filter(function (d) { return show[d.t]; })
-            .attr("x", function (d) {
-                return scale_x(d.values[max[d.t]].x);
-            })
-            .attr("y", function (d) {
-                return scale_y(d.values[max[d.t]].y0 +
-                    d.values[max[d.t]].y / 2);
-            })
-            .text(function (d) {
-                return topic_label(m, d.t, 2);
-            });
+    var p = {
+        type: type,
+        words: m.topic_words(undefined, VIS.model_view.yearly.words)
     };
 
-    d3.select("div#model_view_yearly").classed("hidden", false);
 
-    area = d3.svg.area()
-        .x(function (d) { return scale_x(d.x); })
-        .y0(function (d) { return scale_y(d.y0); })
-        .y1(function (d) { return scale_y(d.y0 + d.y); });
+    if (VIS.ready.model_yearly) {
+        view.model.yearly(p);
+        return true;
+    }
 
-    // purely geometric smoothing is possible with
-    // area.interpolate("basis");
-    // or
-    // area.interpolate("monotone");
-    // These are quite slow.
+    // otherwise:
+    view.calculating("#model_view_yearly", true);
+    m.yearly_total(undefined, function (totals) {
+        console.log("entering m.topic_yearly");
+        m.topic_yearly(undefined, function (yearly) {
+            view.calculating("#model_view_yearly", false);
+            p.yearly_totals = totals;
+            p.yearly = yearly;
 
-    areas = function (d) { return area(d.values); };
-
-    // ensure transition for raw/frac swap
-    paths.transition()
-        .duration(2000)
-        .attr("d", areas);
-
-    render_labels(labels.transition().duration(2000));
-
-    // set up zoom
-    zoom = d3.behavior.zoom()
-        .x(scale_x)
-        .y(scale_y)
-        .scaleExtent([1, 5])
-        .on("zoom", function () {
-            if (VIS.zoom_transition) {
-                paths.transition()
-                    .duration(2000)
-                    .attr("d", areas);
-                svg.select("g.x.axis").transition()
-                    .duration(2000)
-                    .call(axis_x);
-                render_labels(labels.transition().duration(2000));
-                VIS.zoom_transition = false;
-            } else {
-                paths.attr("d", areas);
-                render_labels(labels);
-                svg.select("g.x.axis").call(axis_x);
-            }
+            view.model.yearly(p);
         });
-
-    // zoom reset button
-    d3.select("button#reset_zoom")
-        .on("click", function () {
-            VIS.zoom_transition = true;
-            zoom.translate([0, 0])
-                .scale(1)
-                .event(svg);
-        });
-
-    zoom(svg);
-
-    d3.select("button#yearly_raw_toggle")
-        .text(raw ? "Show proportions" : "Show counts")
-        .on("click", function () {
-            window.location.hash = raw ? "/model/yearly/frac"
-                : "/model/yearly/raw";
-        });
-
-    d3.selectAll("#yearly_choice li").classed("active", false);
-    d3.select(raw ? "#nav_model_yearly_raw" : "#nav_model_yearly_frac")
-        .classed("active", true);
+    });
 
     return true;
 };
