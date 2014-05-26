@@ -1,4 +1,5 @@
-/*global view */
+/*global view, VIS, d3 */
+"use strict";
 
 view.words = function (vocab) {
     if (!VIS.ready.words) {
