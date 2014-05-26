@@ -117,9 +117,6 @@ var bib_sort,   // bibliography sorting
     model_view_yearly,
     topic_coords_grid,
     yearly_stacked_series,
-    view_loading,
-    view_calculating,
-    view_error,
     set_view,
     view_refresh,
     setup_vis,          // initialization
@@ -369,7 +366,7 @@ topic_view = function (m, t, year) {
 
     if (!m.meta() || !m.dt() || !m.tw()) {
         // not ready yet; show loading message
-        view_loading(true);
+        view.loading(true);
         return true;
     }
 
@@ -380,7 +377,7 @@ topic_view = function (m, t, year) {
     if (!isFinite(t) || t < 0 || t >= m.n()) {
         d3.select("#topic_view_help").classed("hidden", false);
         d3.select("#topic_view_main").classed("hidden", true);
-        view_loading(false);
+        view.loading(false);
         return true;
     }
 
@@ -407,8 +404,9 @@ topic_view = function (m, t, year) {
         yearly: m.topic_yearly(t)
     });
 
-    view_calculating("#topic_docs", true); 
+    view.calculating("#topic_docs", true); 
     m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
+        view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
             docs: docs,
@@ -416,11 +414,8 @@ topic_view = function (m, t, year) {
             year: year
         });
     });
-    view_calculating("#topic_docs", false);
 
-    view.updating(false);
-    view_loading(false);
-
+    view.loading(false);
     return true;
     // (later: nearby topics by J-S div or cor on log probs)
 };
@@ -441,10 +436,10 @@ word_view = function (m, w) {
         tx_w;
 
     if (!m.tw()) {
-        view_loading(true);
+        view.loading(true);
         return true;
     }
-    view_loading(false);
+    view.loading(false);
 
     // word form setup
     d3.select("form#word_view_form")
@@ -659,10 +654,10 @@ word_view = function (m, w) {
 
 words_view = function (m) {
     if (!m.tw()) {
-        view_loading(true);
+        view.loading(true);
         return true;
     }
-    view_loading(false);
+    view.loading(false);
 
     d3.select("ul#vocab_list").selectAll("li")
         .data(m.vocab())
@@ -684,11 +679,11 @@ doc_view = function (m, d) {
         trs;
 
     if (!m.meta() || !m.dt() || !m.tw()) {
-        view_loading(true);
+        view.loading(true);
         return true;
     }
 
-    view_loading(false);
+    view.loading(false);
 
     if (!isFinite(doc) || doc < 0 || doc >= m.n_docs()) {
         d3.select("#doc_view_help").classed("hidden", false);
@@ -790,7 +785,7 @@ bib_view = function (m, maj, min) {
     }
 
     if (!m.meta()) {
-        view_loading(true);
+        view.loading(true);
         return true;
     }
 
@@ -896,7 +891,7 @@ bib_view = function (m, maj, min) {
 
     VIS.ready.bib = true;
 
-    view_loading(false);
+    view.loading(false);
 
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
@@ -910,7 +905,7 @@ about_view = function (m) {
             .html(m.info().meta_info);
         VIS.ready.about = true;
     }
-    view_loading(false);
+    view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
 };
@@ -922,7 +917,7 @@ model_view = function (m, type, p1, p2) {
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
     // but fall through to choosing the grid below
     if (!m.tw() || !m.topic_scaled()) {
-        view_loading(true);
+        view.loading(true);
         return true;
     }
 
@@ -940,7 +935,7 @@ model_view = function (m, type, p1, p2) {
 
     if (type_chosen === "list") {
         if (!m.meta() || !m.dt()) {
-            view_loading(true);
+            view.loading(true);
             return true;
         }
 
@@ -949,7 +944,7 @@ model_view = function (m, type, p1, p2) {
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
         if (!m.meta() || !m.dt()) {
-            view_loading(true);
+            view.loading(true);
             return true;
         }
 
@@ -960,7 +955,7 @@ model_view = function (m, type, p1, p2) {
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
         if (!m.topic_scaled() || !m.dt()) {
-            view_loading(true);
+            view.loading(true);
             return true;
         }
 
@@ -974,7 +969,7 @@ model_view = function (m, type, p1, p2) {
     }
     VIS.last.model = type_chosen;
 
-    view_loading(false);
+    view.loading(false);
     return true;
 };
 
@@ -1677,25 +1672,6 @@ yearly_stacked_series = function (m, raw) {
 
 };
 
-
-view_loading = function (flag) {
-    d3.select("div#loading").classed("hidden", !flag);
-};
-
-view_calculating = function (sel, flag) {
-    d3.selectAll(sel + " .calc").classed("hidden", !flag);
-    d3.selectAll(sel + " .calc-done").classed("hidden", flag);
-};
-
-view_error = function (msg) {
-    d3.select("div#error").append("div")
-        .classed("alert", true)
-        .classed("alert-danger", true)
-        .append("p")
-            .text(msg);
-    d3.select("div#error").classed("hidden", false);
-};
-
 set_view = function (hash) {
     window.location.hash = hash;
 };
@@ -1706,7 +1682,7 @@ view_refresh = function (m, v) {
     view_parsed = v.split("/");
     param = view_parsed[2];
 
-    if (VIS.cur_view !== undefined && !VIS.view_updating) {
+    if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
     }
 
@@ -1753,7 +1729,7 @@ view_refresh = function (m, v) {
         } 
     }
 
-    VIS.view_updating = false;
+    view.updating(false);
 
     VIS.cur_view.classed("hidden", false);
 
@@ -1864,7 +1840,7 @@ main = function () {
 
                 view_refresh(m, window.location.hash);
             } else {
-                view_error("Unable to load topic words from " + dfb.files.tw);
+                view.error("Unable to load topic words from " + dfb.files.tw);
             }
         });
         load_data(dfb.files.topic_scaled, function (error, s) {
