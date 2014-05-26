@@ -649,16 +649,7 @@ words_view = function (m) {
     }
     view.loading(false);
 
-    d3.select("ul#vocab_list").selectAll("li")
-        .data(m.vocab())
-        .enter().append("li")
-        .append("a")
-        .text(function (w) { return w; })
-        .attr("href", function (w) {
-            return "#/word/" + w;
-        });
-
-    return true;
+    return view.words(m.vocab());
 };
 
 
