@@ -50,7 +50,7 @@ select:
 	ln -s $(out_dir) data
 
 lint:
-	jslint --regexp --todo --white $(src)
+	jslint --regexp --todo --white $(src) $(src_skip)
 
 uglify: $(dfbjs) $(minified)
 
