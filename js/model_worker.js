@@ -10,7 +10,6 @@ var my = { },
     yearly_total;
 
 onmessage = function (e) {
-    console.log("message received at worker: " + e.data.what);
     if (e.data.what === "set_dt") {
         my.dt = doc_topics_matrix(e.data.dt);
         postMessage({

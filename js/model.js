@@ -45,7 +45,6 @@ model = function (spec) {
         if (f) {
             f(e.data.result);
         }
-        console.log("message received at model: " + e.data.what);
     };
     my.worker.callback = function (key, f) {
         my.worker.fs.set(key, f);

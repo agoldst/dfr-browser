@@ -662,7 +662,6 @@ model_view_yearly = function (m, type) {
     // otherwise:
     view.calculating("#model_view_yearly", true);
     m.yearly_total(undefined, function (totals) {
-        console.log("entering m.topic_yearly");
         m.topic_yearly(undefined, function (yearly) {
             view.calculating("#model_view_yearly", false);
             p.yearly_totals = totals;
