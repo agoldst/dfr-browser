@@ -101,8 +101,7 @@ var bib_sort,   // bibliography sorting
     cite_doc,
     cite_docs,
     citation,
-    render_updown,      // view generation
-    topic_view,
+    topic_view, // view generation
     topic_view_words,
     topic_view_docs,
     word_view,
