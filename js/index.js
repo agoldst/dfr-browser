@@ -1,4 +1,4 @@
-/*global d3, $, JSZip, model, utils, dfb, view, window, document */
+/*global d3, $, JSZip, model, utils, view, window, document */
 "use strict";
 
 /* declaration of global object (initialized in setup_vis) */
@@ -6,6 +6,13 @@ var VIS = {
     ready: { }, // which viz already generated?
     last: { }, // which subviews last shown?
     view_updating: false, // do we need to redraw the whole view?
+    files: { // what data files to request
+        info: "data/info.json",
+        meta: "data/meta.csv.zip",  // remove .zip to use uncompressed data
+        dt: "data/dt.json.zip",     // (name the actual file accordingly)
+        tw: "data/tw.json",
+        topic_scaled: "data/topic_scaled.csv"
+    },
     bib_sort: {
         major: "year",
         minor: "alpha"
@@ -808,7 +815,7 @@ load_data = function (target, callback) {
 // ----
 
 main = function () {
-    load_data(dfb.files.info,function (error, info_s) {
+    load_data(VIS.files.info,function (error, info_s) {
         var m = model();
 
         // We need to know whether we got new VIS parameters before we
@@ -818,7 +825,7 @@ main = function () {
         if (typeof info_s === 'string') {
             m.info(JSON.parse(info_s));
         } else {
-            view.warning("Unable to load model info from " + dfb.files.info);
+            view.warning("Unable to load model info from " + VIS.files.info);
         }
 
         setup_vis(m);
@@ -829,25 +836,25 @@ main = function () {
         // __END_DEV_ONLY__
 
         // now launch remaining data loading; ask for a refresh when done
-        load_data(dfb.files.meta, function (error, meta_s) {
+        load_data(VIS.files.meta, function (error, meta_s) {
             if (typeof meta_s === 'string') {
                 m.set_meta(meta_s);
                 view_refresh(m, window.location.hash);
             } else {
-                view.error("Unable to load metadata from " + dfb.files.meta);
+                view.error("Unable to load metadata from " + VIS.files.meta);
             }
         });
-        load_data(dfb.files.dt, function (error, dt_s) {
+        load_data(VIS.files.dt, function (error, dt_s) {
             m.set_dt(dt_s, function (result) {
                 if (result) {
                     view_refresh(m, window.location.hash);
                 } else {
                     view.error("Unable to load document topics from "
-                        + dfb.files.dt);
+                        + VIS.files.dt);
                 }
             });
         });
-        load_data(dfb.files.tw, function (error, tw_s) {
+        load_data(VIS.files.tw, function (error, tw_s) {
             if (typeof tw_s === 'string') {
                 m.set_tw(tw_s);
 
@@ -865,10 +872,10 @@ main = function () {
 
                 view_refresh(m, window.location.hash);
             } else {
-                view.error("Unable to load topic words from " + dfb.files.tw);
+                view.error("Unable to load topic words from " + VIS.files.tw);
             }
         });
-        load_data(dfb.files.topic_scaled, function (error, s) {
+        load_data(VIS.files.topic_scaled, function (error, s) {
             if (typeof s === 'string') {
                 m.set_topic_scaled(s);
             } else {
