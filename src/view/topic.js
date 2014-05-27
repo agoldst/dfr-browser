@@ -20,7 +20,7 @@ view.topic.remark = function (p) {
                 + "; "
                 + VIS.percent_format(p.col_sum / p.total_tokens)
                 + " of corpus.");
-}
+};
 
 view.topic.words = function (words) {
     var trs_w;
