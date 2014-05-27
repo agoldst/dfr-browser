@@ -49,7 +49,7 @@ var VIS = {
         words_increment: 5,
         docs: 20,           // should be divisible by docs_increment
         docs_increment: 5,
-        w: 640, // fixed dimensions; this will need tweaking
+        w: 800, // fixed dimensions; this will need tweaking
         h: 300,
         m: {
             left: 40,
