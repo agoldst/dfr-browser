@@ -357,7 +357,9 @@ topic_view = function (m, t, year) {
     view.topic.words(words);
 
     // topic yearly barplot subview
-    d3.select("#topic_plot").classed("hidden", true);
+    if (!view.updating()) {
+        d3.select("#topic_plot").classed("hidden", true);
+    }
     m.topic_yearly(t, function (yearly) {
         view.topic.yearly({
             t: t,
