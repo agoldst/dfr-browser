@@ -50,7 +50,7 @@ var VIS = {
         docs: 20,           // should be divisible by docs_increment
         docs_increment: 5,
         w: 800, // fixed dimensions; this will need tweaking
-        h: 300,
+        h: 300, // NB the topic_plot div has a fixed height in index.css
         m: {
             left: 40,
             right: 20,

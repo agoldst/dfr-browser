@@ -138,12 +138,14 @@
   </div>
 
   <div id="topic_view" class="hidden">
-    <div id="topic_view_help">
+    <div id="topic_view_help" class="hidden">
       <p class="help">Select a topic from the "Topic" menu above.</p>
     </div>
     <div id="topic_view_main">
-      <h2 class="h-small" id="topic_header"></h2>
-      <p id="topic_remark"></p>
+      <div id="topic_view_header">
+        <h2 class="h-small" id="topic_header"></h2>
+        <p id="topic_remark"></p>
+      </div>
       <div class="row">
         <div id="topic_words" class="col-md-3">
           <h3 class="h-small">Top words</h3>
@@ -171,7 +173,8 @@
           </div>
           <div id="topic_docs">
             <h3 id="topic_docs_header" class="h-small">Top documents</h3>
-            <table class="table table-condensed calc-done" id="topic_docs">
+            <table class="table table-condensed hidden calc-done"
+              id="topic_docs">
               <thead>
                 <tr>
                   <th>Document</th>
