@@ -223,10 +223,6 @@ bib_sort = function (m, major, minor) {
 // -- stringifiers
 //    ------------
 
-topic_label = function (m, t, n) {
-    return view.topic.label(t, m.topic_words(t, n));
-};
-
 topic_link = function (t) {
     return "#" + topic_hash(t);
 };
