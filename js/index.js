@@ -823,9 +823,9 @@ main = function () {
 
         setup_vis(m);
 
-        // TODO no need to globally expose the model, but handy for debugging
+        // no need to globally expose the model, but handy for debugging
         // __DEV_ONLY__
-        VIS.m = m;
+        // VIS.m = m;
         // __END_DEV_ONLY__
 
         // now launch remaining data loading; ask for a refresh when done
