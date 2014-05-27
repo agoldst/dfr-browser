@@ -116,7 +116,6 @@ var bib_sort,   // bibliography sorting
     model_view_list,
     model_view_plot,
     model_view_yearly,
-    yearly_stacked_series,
     set_view,
     view_refresh,
     setup_vis,          // initialization
@@ -805,97 +804,6 @@ model_view_yearly = function (m, type) {
     });
 
     return true;
-};
-
-
-yearly_stacked_series = function (m, raw) {
-    var year_keys, years, all_series,
-        stack, ord,
-        data_frac, data_raw,
-        stack_domain_y;
-
-    if (!VIS.model_view.yearly.data) {
-        VIS.model_view.yearly.data = { };
-
-        year_keys = m.years().sort(); // TODO deprecated
-        years = year_keys.map(function (y) {
-            return new Date(+y, 0, 1);
-        });
-
-        // save x range
-        VIS.model_view.yearly.domain_years = d3.extent(years);
-
-        all_series = d3.range(m.n()).map(function (t) {
-            var wts = m.topic_yearly(t),
-                series = { t: t };
-            series.values = year_keys.map(function (yr, j) {
-                var result = {
-                    yr: yr,
-                    x: years[j],
-                    y: wts.get(yr) || 0
-                };
-                return result;
-            });
-            return series;
-        });
-
-        stack = d3.layout.stack()
-            .values(function (d) {
-                return d.values;
-            })
-            .offset("wiggle") // streamgraph
-            .order("inside-out"); // pick a "good" layer order
-
-        data_frac = stack(all_series);
-
-        // retrieve layer order (by recalculating it: dumb)
-        ord = stack.order()(all_series.map(function (ds) {
-            return ds.values.map(function (d) { return [d.x, d.y]; });
-        }));
-
-        // for raw-counts, enforce same order, even if not "good"
-        stack.order(function (d) {
-            return ord;
-        });
-
-        data_raw = stack(all_series.map(function (s) {
-            return {
-                t: s.t,
-                values: s.values.map(function (d) {
-                    return {
-                        x: d.x,
-                        y: d.y * m.yearly_total(d.yr)
-                    };
-                })
-            };
-        }));
-
-        stack_domain_y = function (xs) {
-            return [0, d3.max(xs.map(function (ds) {
-                return d3.max(ds.values, function (d) {
-                    return d.y0 + d.y;
-                });
-            }))];
-        };
-
-        VIS.model_view.yearly.domain_frac =
-            stack_domain_y(data_frac);
-        VIS.model_view.yearly.domain_raw =
-            stack_domain_y(data_raw);
-
-        VIS.model_view.yearly.order = ord;
-
-        VIS.model_view.yearly.data.frac = data_frac;
-        VIS.model_view.yearly.data.raw = data_raw;
-    } // if (!VIS.model_view.yearly.data)
-
-    return {
-        data: VIS.model_view.yearly.data[raw ? "raw" : "frac"],
-        domain_x: VIS.model_view.yearly.domain_years,
-        domain_y: VIS.model_view.yearly[raw ? "domain_raw" : "domain_frac"],
-        order: VIS.model_view.yearly.order
-    };
-
 };
 
 set_view = function (hash) {
