@@ -894,7 +894,4 @@ main = function () {
     });
 };
 
-// execution
-
-main();
-
+// execution is up to you: main()
