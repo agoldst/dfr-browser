@@ -1,4 +1,4 @@
-/*global d3, utils */
+/*global d3, utils, Worker */
 "use strict";
 var model;
 
@@ -6,7 +6,6 @@ var model;
 // -------------------
 // data stored internally as follows:
 // tw: array of d3.map()s keyed to words as strings
-// dt: column-compressed sparse matrix { i, p, x }
 // alpha: alpha values for topics
 // meta: array of objects holding document citations
 
@@ -14,21 +13,20 @@ model = function (spec) {
     var my = spec || { }, // private members
         that = { }, // resultant object
         info, // accessors and pseudo-accessors
-        dt,
         n_docs,
+        has_dt,
         tw,
         n,
         n_top_words,
         total_tokens,
+        topic_total,
         alpha,
         meta,
         vocab,
         topic_scaled,
         topic_yearly, // time-slicing
         doc_year,
-        valid_year,
         yearly_total,
-        years,
         topic_docs, // most salient _ in _
         topic_words,
         doc_topics,
@@ -39,6 +37,19 @@ model = function (spec) {
         set_meta,
         set_topic_scaled;
 
+    my.ready = { };
+    my.worker = new Worker("js/model_worker.js");
+    my.worker.fs = d3.map();
+    my.worker.onmessage = function (e) {
+        var f = my.worker.fs.get(e.data.what);
+        if (f) {
+            f(e.data.result);
+        }
+        console.log("message received at model: " + e.data.what);
+    };
+    my.worker.callback = function (key, f) {
+        my.worker.fs.set(key, f);
+    };
 
     info = function (model_meta) {
         if (model_meta) {
@@ -48,99 +59,23 @@ model = function (spec) {
     };
     that.info = info;
 
-    dt = function (d, t) {
-        var p0, p;
-        if (!my.dt) {
-            return undefined;
-        }
-
-        // dt() for the whole matrix
-        if (d === undefined) {
-            return my.dt;
-        }
-
-        // dt(d) for a whole document row
-        if (t === undefined) {
-            return d3.range(this.n()).map(function (j) {
-                return this.dt(d, j);
-            });
-        }
-
-        // dt(d, t) for one entry
-        p0 = my.dt.p[t];
-        p = d3.bisectLeft(my.dt.i.slice(p0, my.dt.p[t + 1]), d);
-
-        // if there is no d entry for column t, return 0
-        return (my.dt.i[p + p0] === d) ? my.dt.x[p + p0] : 0;
-    };
-    // a naive row_sum method for the dt object
-    dt.row_sum = function (d) {
-        var result, t;
-        if (!my.dt) {
-            return undefined;
-        }
-
-        // memoize, at least
-        if (!my.dt_row_sum) {
-            my.dt_row_sum = [ ];
-        }
-
-        if (!my.dt_row_sum[d]) {
-            result = 0;
-            for (t = 0; t < my.n; t += 1) {
-                result += this(d, t);
-            }
-            my.dt_row_sum[d] = result;
-        }
-        return my.dt_row_sum[d];
-    };
-    // a col_sum method: this takes advantages of the column compression
-    dt.col_sum = function (t) {
-        var i;
-
-        // memoization
-        if (!my.col_sums) {
-            my.col_sums = [];
-        }
-
-        // dt.col_sum() returns an array of sums
-        if (t === undefined) {
-            return d3.range(my.n).map(this.col_sum);
-        }
-
-        // otherwise, return the sum for column t
-        if (!my.col_sums[t]) {
-            my.col_sums[t] = 0;
-            for (i = my.dt.p[t]; i < my.dt.p[t + 1]; i += 1) {
-                my.col_sums[t] += my.dt.x[i];
-            }
-        }
-        return my.col_sums[t];
-    };
-    that.dt = dt;
-
     n_docs = function () {
         var result;
         if (my.n_docs !== undefined) {
             result = my.n_docs;
         } else if (my.meta) {
             result = my.meta.length;
-        } else if (my.dt) {
-            result = -1;
-            // n_docs = max row index
-            // for each column, the row indices are in order in my.dt.i,
-            // so we only need to look at the last row index for each column
-            for (n = 1; n < my.dt.p.length; n += 1) {
-                if (result < my.dt.i[my.dt.p[n] - 1]) {
-                    result = my.dt.i[my.dt.p[n] - 1];
-                }
-            }
-            result += 1;
-        }
-        my.n_docs = result;
-        return result; // undefined if both my.meta and my.dt are missing
+        } 
+
+        return result; // undefined if my.meta is missing
     };
     that.n_docs = n_docs;
+
+    // has dt been loaded?
+    has_dt = function () {
+        return !!my.ready.dt;
+    };
+    that.has_dt = has_dt;
 
     // access top key words per topic
     tw = function (t, word) {
@@ -179,18 +114,28 @@ model = function (spec) {
     };
     that.n_top_words = n_top_words;
 
-    total_tokens = function () {
-        if (!this.dt()) {
-            return undefined;
-        }
-
+    total_tokens = function (callback) {
         if (!my.total_tokens) {
-            my.total_tokens = d3.sum(my.dt.x);
+            my.worker.callback("total_tokens", function (tot) {
+                my.total_tokens = tot;
+                callback(tot);
+            });
+            my.worker.postMessage({ what: "total_tokens" });
+        } else { 
+            callback(my.total_tokens);
         }
-
-        return my.total_tokens;
     };
     that.total_tokens = total_tokens;
+
+    topic_total = function (t, callback) {
+        var topic = isFinite(t) ? t : "all";
+        my.worker.callback("topic_total/" + topic, callback);
+        my.worker.postMessage({
+            what: "topic_total",
+            t: topic
+        });
+    };
+    that.topic_total = topic_total;
 
     // alpha hyperparameters
     alpha = function (t) {
@@ -210,7 +155,16 @@ model = function (spec) {
         }
 
         // meta(d) for one row of doc metadata or meta() for all of them
-        return isFinite(d) ? my.meta[d] : my.meta;
+        if (isFinite(d)) {
+            return my.meta[d];
+        }
+        
+        if (d === undefined) {
+            return my.meta;
+        }
+
+        // otherwise, assume d is an array of indices
+        return d.map(function (j) { return my.meta[j]; });
     };
     that.meta = meta;
 
@@ -232,17 +186,6 @@ model = function (spec) {
         return my.doc_year[d];
     };
     that.doc_year = doc_year;
-
-    valid_year = function (y, t) {
-        if (!my.meta || !my.dt || !isFinite(y)) {
-            return undefined;
-        }
-
-        // This looks egregious, but we're going to cache these results
-        // anyway.
-        return this.topic_yearly(t).has(y);
-    };
-    that.valid_year = valid_year;
 
     // aggregate vocabulary of all top words in tw
     vocab = function () {
@@ -283,123 +226,63 @@ model = function (spec) {
     that.topic_scaled = topic_scaled;
 
     // get aggregate topic counts over years
-    yearly_total = function (year) {
-        var tally, y;
-        // memoization
-        if (!my.yearly_total) {
-            tally = d3.map();
-            for (n = 0; n < my.dt.i.length; n += 1) {
-                y = this.doc_year(my.dt.i[n]);
-                if (tally.has(y)) {
-                    tally.set(y, tally.get(y) + my.dt.x[n]);
-                } else {
-                    tally.set(y, my.dt.x[n]);
-                }
-            }
-            my.yearly_total = tally;
+    yearly_total = function (year, callback) {
+        var y = (year === undefined) ? "all" : year,
+            f = callback;
+        if (y === "all") {
+            f = function (yearly_total) {
+                callback(d3.map(yearly_total));
+            };
         }
-
-        return isFinite(year) ? my.yearly_total.get(year) : my.yearly_total;
+        my.worker.callback("yearly_total/" + y, f);
+        my.worker.postMessage({
+            what: "yearly_total",
+            y: y
+        });
     };
     that.yearly_total = yearly_total;
 
-    years = function () {
-        return this.yearly_total().keys();
-    };
-    that.years = years;
-
     // yearly proportions for topic t
-    topic_yearly = function (t) {
-        var result, j, y;
-
-        // cached? 
-        if (!my.topic_yearly) {
-            my.topic_yearly = [];
-        } else if (my.topic_yearly[t]) {
-            return my.topic_yearly[t];
+    topic_yearly = function (t, callback) {
+        var topic = (t === undefined) ? "all" : t,
+            f;
+        if (topic === "all") {
+            f = function (yearly) {
+                callback(yearly.map(d3.map));
+            };
+        } else {
+            f = function (yearly) {
+                callback(d3.map(yearly));
+            };
         }
-        if (!this.dt() || !this.meta()) {
-            return undefined;
-        }
-
-        result = d3.map();
-
-        for (j = my.dt.p[t]; j < my.dt.p[t + 1]; j += 1) {
-            y = this.doc_year(my.dt.i[j]);
-            if (result.has(y)) {
-                result.set(y, result.get(y) + my.dt.x[j]);
-            } else {
-                result.set(y, my.dt.x[j]);
-            }
-        }
-
-        // divide through
-        result.forEach(function (y, w) {
-            // have to use "that" and not "this" because "this" changes
-            // inside forEach
-            result.set(y, w / that.yearly_total(y));
+        my.worker.callback("topic_yearly/" + topic, f);
+        my.worker.postMessage({
+            what: "topic_yearly",
+            t: topic
         });
-
-        // cache if this is the first time through
-        my.topic_yearly[t] = result;
-        return result;
     };
     that.topic_yearly = topic_yearly;
 
     // Get n top documents for topic t. Uses a naive document ranking,
     // by the proportion of words assigned to t, which does *not*
     // necessarily give the docs where t is most salient
-    topic_docs = function (t, n) {
-        var p0 = my.dt.p[t],
-            p1 = my.dt.p[t + 1],
-            docs,
-            bisect,
-            insert,
-            i,
-            result = [];
-
-        // column slice
-        docs = d3.range(p0, p1).map(function (p) {
-            return {
-                doc: my.dt.i[p],
-                frac: my.dt.x[p] / that.dt.row_sum(my.dt.i[p]),
-                weight: my.dt.x[p]
+    topic_docs = function (t, n, year, callback) {
+        var n_req = n, f = callback;
+        if (year !== undefined) {
+            n_req = this.n_docs();
+            f = function (docs) {
+                var year_docs = docs.filter(function (d) {
+                    return that.doc_year(d.doc) === +year;
+                });
+                return callback(utils.shorten(year_docs, n));
             };
-        });
-
-        // return them all, sorted, if there are fewer than n hits
-        if (n >= docs.length) {
-            docs.sort(function (a, b) {
-                return d3.descending(a.frac, b.frac) ||
-                    d3.descending(a.doc, b.doc); // stabilize sort
-            });
-            return docs;
         }
 
-        // initial guess. simplifies the conditionals below to do it this way,
-        // and sorting n elements is no biggie
-
-        result = docs.slice(0, n).sort(function (a, b) {
-            return d3.ascending(a.frac, b.frac) ||
-                d3.ascending(a.doc, b.doc); // stabilize sort
-        });
-
-        bisect = d3.bisector(function (d) { return d.frac; }).left;
-
-        for (i = n; i < docs.length; i += 1) {
-            insert = bisect(result, docs[i].frac);
-            if (insert > 0) {
-                result.splice(insert, 0, docs[i]);
-                result.shift();
-            } else if (result[0].frac === docs[i].frac) {
-                // insert = 0 but a tie
-                result.unshift(docs[i]);
-            }
-        }
-
-        // biggest first
-        return utils.shorten(result.reverse(), n, function (xs, i) {
-            return xs[i].frac;
+        my.worker.callback("topic_docs/" + t + "/" + n_req, f);
+        my.worker.postMessage({
+            what: "topic_docs",
+            t: t,
+            n: n_req
         });
     };
     that.topic_docs = topic_docs;
@@ -408,27 +291,12 @@ model = function (spec) {
     // go to lengths to avoid sorting n_topics entries, since
     // n_topics << n_docs. The expensive step is the row slice, which we
     // have to do anyway.
-    doc_topics = function (d, n) {
-        var topics;
-
-        topics = d3.range(my.n)
-            .map(function (t) {
-                return {
-                    topic: t,
-                    weight: that.dt(d, t)
-                };
-            })
-            .filter(function (d) {
-                return d.weight > 0;
-            })
-            .sort(function (a, b) {
-                return d3.descending(a.weight, b.weight) ||
-                    d3.descending(a.t, b.t); // stabilize sort
-            });
-
-
-        return utils.shorten(topics, n, function (topics, i) {
-            return topics[i].weight;
+    doc_topics = function (d, n, callback) {
+        my.worker.callback("doc_topics/" + d + "/" + n, callback);
+        my.worker.postMessage({
+            what: "doc_topics",
+            d: d,
+            n: n
         });
     };
     that.doc_topics = doc_topics;
@@ -436,7 +304,14 @@ model = function (spec) {
     // Get n top words for topic t.
     topic_words = function (t, n) {
         var n_words = n || this.n_top_words(),
-            words = this.tw(t).entries(); // d3.map method
+            words;
+        if (t === undefined) {
+            return d3.range(this.n()).map(function (topic) {
+                return that.topic_words(topic, n);
+            });
+        }
+        
+        words = this.tw(t).entries(); // d3.map method
         words.sort(function (w1, w2) {
             return d3.descending(w1.value, w2.value) ||
                 d3.ascending(w1.key, w2.key); // stabilize sort: alphabetical
@@ -445,7 +320,12 @@ model = function (spec) {
         return utils.shorten(words, n_words, function (ws, i) {
             return ws[i].value;
         })
-            .map(function (w) { return w.key; });
+            .map(function (w) {
+                return {
+                    word: w.key,
+                    weight: w.value
+                };
+            });
     };
     that.topic_words = topic_words;
 
@@ -483,6 +363,7 @@ model = function (spec) {
     that.word_topics = word_topics;
 
     year_topics = function (year, n) {
+        // TODO DEPRECATED. Not used by the browser.
         var t, series, result = [];
 
         // *Could* calculate totals just for this year, but that still
@@ -531,20 +412,25 @@ model = function (spec) {
     that.set_tw = set_tw;
 
     // load dt from a string of JSON
-    set_dt = function (dt_s) {
+    set_dt = function (dt_s, callback) {
         if (typeof dt_s  !== 'string') {
             return;
         }
-        my.dt = JSON.parse(dt_s);
-        if (!my.n) {
-            my.n = my.dt.p.length - 1;
-        }
+
+        my.worker.callback("set_dt", function (result) {
+            my.ready.dt = result;
+            callback(result);
+        });
+        my.worker.postMessage({
+            what: "set_dt",
+            dt: JSON.parse(dt_s)
+        });
     };
     that.set_dt = set_dt;
 
     // load meta from a string of CSV lines
     set_meta = function (meta_s) {
-        var s;
+        var s, doc_years = [ ];
         if (typeof meta_s !== 'string') {
             return;
         }
@@ -563,9 +449,10 @@ model = function (spec) {
             var a_str = d[2].trim(), // author
                 date = new Date(d[6].trim()); // pubdate
 
-                // set min and max date range
-                my.start_date = date < my.start_date ? date : my.start_date;
-                my.end_date = date > my.end_date ? date : my.end_date;
+            doc_years.push(date.getFullYear()); // store to pass into worker
+            // set min and max date range
+            my.start_date = date < my.start_date ? date : my.start_date;
+            my.end_date = date > my.end_date ? date : my.end_date;
 
             return {
                 doi: d[0].trim(), // id
@@ -579,6 +466,14 @@ model = function (spec) {
                     .replace(/^p?p\. /, "")
                     .replace(/-/g, "–")
             };
+        });
+
+        my.worker.callback("set_doc_years", function (result) {
+            my.ready.doc_years = result;
+        });
+        my.worker.postMessage({
+            what: "set_doc_years",
+            doc_years: doc_years
         });
     };
     that.set_meta = set_meta;
