@@ -38,7 +38,7 @@ model = function (spec) {
         set_topic_scaled;
 
     my.ready = { };
-    my.worker = new Worker("js/model_worker.js");
+    my.worker = new Worker("js/worker.min.js");
     my.worker.fs = d3.map();
     my.worker.onmessage = function (e) {
         var f = my.worker.fs.get(e.data.what);
