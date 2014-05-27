@@ -412,9 +412,10 @@ model = function (spec) {
     that.set_tw = set_tw;
 
     // load dt from a string of JSON
+    // callback should take one parameter, a Boolean indicating success
     set_dt = function (dt_s, callback) {
         if (typeof dt_s  !== 'string') {
-            return;
+            callback(false);
         }
 
         my.worker.callback("set_dt", function (result) {

@@ -10,6 +10,7 @@ var view = (function () {
         loading,
         calculating,
         error,
+        warning,
         tooltip,
         append_weight_tds,
         plot_svg,
@@ -36,14 +37,21 @@ var view = (function () {
     that.calculating = calculating;
 
     error = function (msg) {
-        d3.select("div#error").append("div")
-            .classed("alert", true)
-            .classed("alert-danger", true)
-            .append("p")
-                .text(msg);
-        d3.select("div#error").classed("hidden", false);
+        d3.select("div#error")
+            .classed("hidden", false)
+            .append("p").text(msg);
+
+        this.loading(false);
+        VIS.error = true;
     };
     that.error = error;
+
+    warning = function (msg) {
+        d3.select("div#warning")
+            .classed("hidden", false)
+            .append("p").text(msg);
+    };
+    that.warning = warning;
 
     // singleton tooltip
     tooltip = function () {

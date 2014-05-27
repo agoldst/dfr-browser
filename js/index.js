@@ -116,9 +116,8 @@ var bib_sort,   // bibliography sorting
     set_view,
     view_refresh,
     view_loading,
-    view_alert,
     setup_vis,          // initialization
-    read_files,
+    load_data,
     main;               // main program
 
 
@@ -673,15 +672,6 @@ model_view_yearly = function (m, type) {
         });
     });
 
-view_alert = function (type, msg) {
-    d3.select("div#" + type)
-        .classed("hidden", false)
-        .append("p").text(msg);
-
-    if (type === "error") {
-        view_loading(false);
-        VIS.error = true;
-    }
     return true;
 };
 
@@ -774,7 +764,7 @@ setup_vis = function (m) {
     // TODO settings controls
 };
 
-var load_data = function (target, callback) {
+load_data = function (target, callback) {
     var target_base, target_id;
 
     if (target === undefined) {
@@ -829,8 +819,7 @@ main = function () {
         if (typeof info_s === 'string') {
             m.info(JSON.parse(info_s));
         } else {
-            view_alert("warning",
-                "Unable to load model info from " + dfb.files.info);
+            view.warning("Unable to load model info from " + dfb.files.info);
         }
 
         setup_vis(m);
@@ -846,8 +835,7 @@ main = function () {
                 m.set_meta(meta_s);
                 view_refresh(m, window.location.hash);
             } else {
-                view_alert("error",
-                    "Unable to load metadata from " + dfb.files.meta);
+                view.error("Unable to load metadata from " + dfb.files.meta);
             }
         });
         load_data(dfb.files.dt, function (error, dt_s) {
@@ -855,8 +843,8 @@ main = function () {
                 if (result) {
                     view_refresh(m, window.location.hash);
                 } else {
-                    view_alert("error",
-                        "Unable to load document topics from " + dfb.files.dt);
+                    view.error("Unable to load document topics from "
+                        + dfb.files.dt);
                 }
             });
         });
