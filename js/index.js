@@ -95,8 +95,7 @@ var VIS = {
 /* declaration of functions */
 
 var bib_sort,   // bibliography sorting
-    topic_label,        // stringifiers
-    topic_link,
+    topic_link, // stringifiers
     topic_hash,
     doc_author_string,
     cite_doc,
@@ -882,8 +881,9 @@ main = function () {
                 d3.select("ul#topic_dropdown").selectAll("li")
                     .data(d3.range(m.n()))
                     .enter().append("li").append("a")
-                    .text(function (topic) {
-                        return topic_label(m, topic, VIS.model_view.words);
+                    .text(function (t) {
+                        return view.topic.label(t,
+                            m.topic_words(t, VIS.model_view.words));
                     })
                     .attr("href", topic_link);
 
