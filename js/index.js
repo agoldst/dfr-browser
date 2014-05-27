@@ -106,7 +106,6 @@ var bib_sort,   // bibliography sorting
     topic_view,
     topic_view_words,
     topic_view_docs,
-    plot_topic_yearly,
     word_view,
     words_view,
     doc_view,
