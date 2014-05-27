@@ -66,4 +66,6 @@ dfb.tar.gz: $(dfb_files)
 
 tarball: dfb.tar.gz
 
+.DEFAULT_GOAL := uglify
+
 .PHONY: lint prepare select test uglify tarball
