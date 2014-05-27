@@ -302,49 +302,6 @@ citation = function (doc) {
     return result;
 };
 
-
-// utility for views
-// -----------------
-
-// Renders buttons for incrementing and decrementing a counter. The state
-// of the counter is stored privately by making it a variable within a closure
-// that is immediately evaluated.
-render_updown = function (selector, start, min, max, increment, render) {
-    return (function () {
-        var counter = start;
-        if (counter <= min) {
-            counter = min;
-            d3.select(selector + "_up").classed("disabled", true);
-        } else if (counter >= max) {
-            counter = max;
-            d3.select(selector + "_down").classed("disabled", true);
-        }
-        d3.select(selector + "_down")
-            .on("click", function () {
-                counter += increment;
-                if (counter > max) {
-                    counter = Math.ceil(max / increment) * increment;
-                    d3.select(this).classed("disabled", true);
-                }
-                d3.select(selector + "_up").classed("disabled", false);
-                render(counter);
-            });
-
-        d3.select(selector + "_up")
-            .on("click", function () {
-                counter -= increment;
-                if (counter < min) {
-                    counter = increment;
-                    d3.select(this).classed("disabled", true);
-                }
-                d3.select(selector + "_down").classed("disabled", false);
-                render(counter);
-            });
-
-        render(counter);
-    }());
-};
-
 // Principal view-generating functions
 // -----------------------------------
 
