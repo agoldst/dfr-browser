@@ -4,10 +4,6 @@
 view.topic = function (p) {
     var div = d3.select("div#topic_view");
 
-    // otherwise, proceed to render the view
-    d3.select("#topic_view_help").classed("hidden", true);
-    d3.select("#topic_view_main").classed("hidden", false);
-
     // heading information
     // -------------------
 
@@ -15,15 +11,16 @@ view.topic = function (p) {
         .text(view.topic.label(p.t,
                     utils.shorten(p.words, VIS.overview_words)));
 
-    div.select("p#topic_remark")
+    // (later: nearby topics by J-S div or cor on log probs)
+};
+
+view.topic.remark = function (p) {
+    d3.select("#topic_view p#topic_remark")
         .text("α = " + VIS.float_format(p.alpha)
                 + "; "
                 + VIS.percent_format(p.col_sum / p.total_tokens)
                 + " of corpus.");
-
-    return true;
-    // (later: nearby topics by J-S div or cor on log probs)
-};
+}
 
 view.topic.words = function (words) {
     var trs_w;

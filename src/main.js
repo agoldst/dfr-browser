@@ -334,12 +334,18 @@ topic_view = function (m, t, year) {
 
     words = utils.shorten(m.topic_words(t), VIS.topic_view.words);
 
+    view.topic({
+        t: t,
+        words: words
+    });
+
+    // reveal the view div
+    d3.select("#topic_view_help").classed("hidden", true);
+    d3.select("#topic_view_main").classed("hidden", false);
+
     m.total_tokens(function (total) {
         m.topic_total(t, function (topic_total) {
-            view.topic({
-                t: t,
-                year: year,
-                words: words,
+            view.topic.remark({
                 alpha: m.alpha(t),
                 col_sum: topic_total,
                 total_tokens: total
