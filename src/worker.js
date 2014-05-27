@@ -49,7 +49,7 @@ doc_topics_matrix = function (data) {
 
     // a naive row_sum method for the dt object
     that.row_sum = function (d) {
-        var result, t;
+        var result, t, i;
         if (!this.x) {
             return undefined;
         }
@@ -59,6 +59,19 @@ doc_topics_matrix = function (data) {
             my.row_sum = [ ];
         }
 
+        if (d === undefined) {
+            for (t = 0; t < this.n; t += 1) {
+                for (i = this.p[t]; i < this.p[t + 1]; i += 1) {
+                    if (my.row_sum[this.i[i]] === undefined) {
+                        my.row_sum[this.i[i]] = 0;
+                    }
+                    my.row_sum[this.i[i]] += this.x[i];
+                }
+            }
+            return my.row_sum;
+        }
+
+        // single row calculation: can't do better than ncol lookup calls
         if (!my.row_sum[d]) {
             result = 0;
             for (t = 0; t < this.n; t += 1) {
@@ -79,7 +92,7 @@ doc_topics_matrix = function (data) {
 
         // dt.col_sum() returns an array of sums
         if (t === undefined) {
-            for (i = 0; i <= this.n; i += 1) {
+            for (i = 0; i < this.n; i += 1) {
                 this.col_sum(i); // stores the result
             }
             return my.col_sum;
@@ -253,6 +266,10 @@ yearly_total = function (year) {
 onmessage = function (e) {
     if (e.data.what === "set_dt") {
         my.dt = doc_topics_matrix(e.data.dt);
+        // precalculate row sums
+        if (my.dt) {
+            my.dt.row_sum();
+        }
         postMessage({
             what: "set_dt",
             result: my.dt !== undefined
