@@ -129,6 +129,9 @@ view.model.plot = function (param) {
                     .order();
             });
 
+    // TODO though it's silly to regenerate the word "cloud" on each view redraw
+    // as we do here, actually let's keep this in place in anticipation of
+    // making the word clouds grow and shrink on zoom.
     gs.selectAll("text")
         .data(function (p) {
             var max_wt = param.words[p.t][0].weight,
