@@ -81,10 +81,6 @@ var VIS = {
             bottom: 0
         }
     },
-    doc_view: {
-        topics: 10,         // should be divisible by...
-        topics_increment: 2
-    },
     float_format: function (x) {
         return d3.round(x, 3);
     },
