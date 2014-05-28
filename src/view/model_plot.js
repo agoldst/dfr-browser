@@ -182,9 +182,14 @@ view.model.plot = function (param) {
         return result;
     };
 
-    gs.transition()
-        .duration(1000)
-        .attr("transform", translation);
+    if (gs.enter().empty()) {
+        gs.transition()
+            .duration(1000)
+            .attr("transform", translation);
+    } else {
+        // on first setup, no gratuitous translation
+        gs.attr("transform", translation);
+    }
 
     zoom = d3.behavior.zoom()
         .x(scale_x)
