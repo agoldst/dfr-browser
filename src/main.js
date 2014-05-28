@@ -562,11 +562,17 @@ about_view = function (m) {
 };
 
 settings_view = function (m) {
-    view.settings({
+    var p = {
         max_words: m.n_top_words(),
         max_docs: m.n_docs()
-    });
+    }
+    if (p.max_words === undefined || p.max_docs === undefined) {
+        return false;
+    }
 
+    view.settings(p);
+
+    view.loading(false);
     d3.select("#settings_view").classed("hidden", false);
     return true;
 };
