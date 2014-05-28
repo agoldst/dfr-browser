@@ -1,4 +1,5 @@
-/*global view, VIS */
+/*global view, VIS, d3 */
+"use strict";
 
 view.settings = function (p) {
     if (VIS.ready.settings) {
