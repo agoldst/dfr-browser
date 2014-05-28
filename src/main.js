@@ -53,9 +53,7 @@ var VIS = {
     },
     topic_view: {
         words: 50,
-        words_increment: 5,
-        docs: 20,           // should be divisible by docs_increment
-        docs_increment: 5,
+        docs: 20,
         w: 800, // fixed dimensions; this will need tweaking
         h: 300, // NB the topic_plot div has a fixed height in index.css
         m: {
@@ -564,30 +562,10 @@ about_view = function (m) {
 };
 
 settings_view = function (m) {
-    if (!VIS.ready.settings) {
-        d3.select("#reveal_hidden"); // TODO hide/reveal topics
-
-        d3.select("#n_words_list")
-            .property("max", m.n_top_words())
-            .property("value", VIS.overview_words)
-            .on("change", function () {
-                VIS.overview_words = this.valueAsNumber;
-                // TODO reset VIS.ready appropriately
-            });
-        d3.select("#n_words_topic")
-            .property("max", m.n_top_words())
-            .property("value", VIS.topic_view.words)
-            .on("change", function () {
-                VIS.topic_view.words = this.valueAsNumber;
-                // TODO reset VIS.ready  if needed
-            });
-        d3.select("#n_topic_docs")
-            .property("max", m.n_docs())
-            .property("value", VIS.topic_view.docs)
-            .on("change", function () {
-                VIS.topic_view.docs = this.valueAsNumber;
-            });
-    }
+    view.settings({
+        max_words: m.n_top_words(),
+        max_docs: m.n_docs()
+    });
 
     d3.select("#settings_view").classed("hidden", false);
     return true;
