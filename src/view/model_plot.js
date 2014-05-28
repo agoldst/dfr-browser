@@ -191,32 +191,38 @@ view.model.plot = function (param) {
         gs.attr("transform", translation);
     }
 
-    zoom = d3.behavior.zoom()
-        .x(scale_x)
-        .y(scale_y)
-        .scaleExtent([1, 10])
-        .on("zoom", function () {
-            if (VIS.zoom_transition) {
-                gs.transition()
-                    .duration(1000)
-                    .attr("transform", translation);
-                VIS.zoom_transition = false;
-            } else {
-                gs.attr("transform", translation);
-            }
-        });
+    // TODO zoom circle sizes and add words in but this makes some
+    // complications for the scaled view where the main use of zoom is to
+    // see overlapping circles.
+    // TODO and then, re-enable zoom in the grid view.
 
-    // zoom reset button
-    d3.select("button#reset_zoom")
-        .on("click", function () {
-            VIS.zoom_transition = true;
-            zoom.translate([0, 0])
-                .scale(1)
-                .event(svg);
-        });
+    if (param.type === "scaled") {
+        zoom = d3.behavior.zoom()
+            .x(scale_x)
+            .y(scale_y)
+            .scaleExtent([1, 10])
+            .on("zoom", function () {
+                if (VIS.zoom_transition) {
+                    gs.transition()
+                        .duration(1000)
+                        .attr("transform", translation);
+                    VIS.zoom_transition = false;
+                } else {
+                    gs.attr("transform", translation);
+                }
+            });
 
+        // zoom reset button
+        d3.select("button#reset_zoom")
+            .on("click", function () {
+                VIS.zoom_transition = true;
+                zoom.translate([0, 0])
+                    .scale(1)
+                    .event(svg);
+            });
 
-    zoom(svg);
+        zoom(svg);
+    }
 };
 
 view.model.grid_coords = function (n) {

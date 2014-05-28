@@ -599,7 +599,6 @@ model_view = function (m, type, p1, p2) {
         }
 
         model_view_list(m, p1, p2);
-        d3.selectAll(".model_view_list").classed("hidden", false);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "yearly") {
         if (!m.meta() || !m.has_dt()) {
@@ -608,9 +607,8 @@ model_view = function (m, type, p1, p2) {
         }
 
         model_view_yearly(m, p1);
-        d3.selectAll(".model_view_yearly").classed("hidden", false);
         d3.select("#model_view_yearly").classed("hidden", false);
-    } else { // default to grid
+    } else { // grid or scaled
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
         if (!m.topic_scaled() || !m.has_dt()) {
@@ -618,15 +616,17 @@ model_view = function (m, type, p1, p2) {
             return true;
         }
 
-        if (type_chosen === "scaled" && m.topic_scaled().length !== m.n()) {
+        if (type_chosen !== "scaled" || m.topic_scaled().length !== m.n()) {
             // default to grid if there are no scaled coords to be found
+            // or if type is misspecified
             type_chosen = "grid";
         }
         model_view_plot(m, type_chosen);
-        d3.selectAll(".model_view_plot").classed("hidden", false);
         d3.select("#model_view_plot").classed("hidden", false);
     }
     VIS.last.model = type_chosen;
+    // reveal interface elements
+    d3.selectAll(".model_view_" + type_chosen).classed("hidden", false);
 
     view.loading(false);
     return true;
