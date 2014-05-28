@@ -191,7 +191,7 @@ view.model.plot = function (param) {
         gs.attr("transform", translation);
     }
 
-    // TODO zoom circle sizes and add words in but this makes some
+    // TODO zoom circle sizes and add words in, but this makes some
     // complications for the scaled view where the main use of zoom is to
     // see overlapping circles.
     // TODO and then, re-enable zoom in the grid view.
@@ -222,6 +222,8 @@ view.model.plot = function (param) {
             });
 
         zoom(svg);
+    } else {
+        svg.on(".zoom", null);
     }
 };
 
