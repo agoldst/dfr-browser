@@ -66,7 +66,6 @@ view.model.plot = function (param) {
     domain_x = d3.extent(coords, function (d) { return d.x; });
     domain_y = d3.extent(coords, function (d) { return d.y; });
 
-
     scale_x = d3.scale.linear()
         .domain(domain_x)
         .range([range_padding, spec.w - range_padding]);
@@ -87,61 +86,60 @@ view.model.plot = function (param) {
         .data(coords, function (p) { return p.t; });
 
     gs.enter().append("g")
-        .each(function (p, t) {
-            var g = d3.select(this),
-                max_wt = param.words[t][0].weight,
-                wds = param.words[t].map(function (w) {
+        .append("circle")
+            .attr("cx", 0)
+            .attr("cy", 0)
+            .attr("r", function (p) {
+                return p.r;
+            })
+            .classed("topic_cloud", true)
+            .attr("stroke-width", function (p) {
+                return scale_stroke(param.topic_totals[p.t]);
+            })
+            .on("click", function (p) {
+                if (!d3.event.shiftKey) {
+                    set_view(topic_hash(p.t));
+                }
+            })
+            .on("mouseover", function (p) {
+                gs.sort(function (a, b) {
+                    // to bring the hovered circle to front, draw it last
+                    // by reordering all the gs
+                    if (a.t === b.t) {
+                        return 0;
+                    }
+
+                    if (a.t === p.t) {
+                        return 1;
+                    }
+
+                    if (b.t === p.t) {
+                        return -1;
+                    }
+
+                    // otherwise
+                    return d3.ascending(a.t, b.t);
+                })
+                    .order();
+            })
+            .on("mouseout",function() {
+                gs.sort(function (a, b) {
+                        return d3.ascending(a.t, b.t);
+                    })
+                    .order();
+            });
+
+    gs.selectAll("text")
+        .data(function (p) {
+            var max_wt = param.words[p.t][0].weight,
+                wds = param.words[p.t].map(function (w) {
                     return {
                         text: w.word,
                         size: Math.floor(scale_size(w.weight / max_wt))
                     };
                 }),
-                up, down, toggle, i;
+                up = 0, down = 0, toggle = false, i;
 
-            g.append("circle")
-                .attr("cx", 0)
-                .attr("cy", 0)
-                .attr("r", function (p) {
-                    return p.r;
-                })
-                .classed("topic_cloud", true)
-                .attr("stroke-width", function (p) {
-                    return scale_stroke(param.topic_totals[p.t]);
-                })
-                .on("click", function (p) {
-                    if (!d3.event.shiftKey) {
-                        set_view(topic_hash(t));
-                    }
-                })
-                .on("mouseover", function (p) {
-                    gs.sort(function (a, b) {
-                        if (a.t === b.t) {
-                            return 0;
-                        }
-
-                        if (a.t === t) {
-                            return 1;
-                        }
-
-                        if (b.t === t) {
-                            return -1;
-                        }
-
-                        // otherwise
-                        return d3.ascending(a.t, b.t);
-                    })
-                        .order();
-                })
-                .on("mouseout",function() {
-                    gs.sort(function (a, b) {
-                            return d3.ascending(a.t, b.t);
-                        })
-                        .order();
-                });
-
-            up = 0;
-            down = 0;
-            toggle = false;
             for (i = 0; i < wds.length; i += 1, toggle = !toggle) {
                 if (toggle) {
                     wds[i].y = up;
@@ -155,26 +153,21 @@ view.model.plot = function (param) {
                     break;
                 }
             }
-
-            g.selectAll("text")
-                .data(wds.slice(0, i))
-                .enter().append("text")
-                    .text(function (wd) {
-                        return wd.text;
-                    })
-                    .style("font-size", function (wd) {
-                        return wd.size + "px";
-                    })
-                    .attr("x", 0)
-                    .attr("y", function (wd) {
-                        return wd.y;
-                    })
-                    .on("click", function (wd) {
-                        set_view(topic_hash(t));
-                    }) 
-                    .classed("topic_label", true);
-                    // TODO coloring
-        });
+            return wds.slice(0, i);
+        })
+        .enter().append("text")
+            .text(function (wd) {
+                return wd.text;
+            })
+            .style("font-size", function (wd) {
+                return wd.size + "px";
+            })
+            .attr("x", 0)
+            .attr("y", function (wd) {
+                return wd.y;
+            })
+            .classed("topic_label", true);
+            // TODO coloring
 
     translation = function (p) {
         var result = "translate(" + scale_x(p.x);
