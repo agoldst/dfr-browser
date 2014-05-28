@@ -84,7 +84,7 @@ view.model.plot = function (param) {
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
-        .data(coords);
+        .data(coords, function (p) { return p.t; });
 
     gs.enter().append("g")
         .each(function (p, t) {
