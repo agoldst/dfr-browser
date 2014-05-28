@@ -585,7 +585,9 @@ model_view = function (m, type, p1, p2) {
     d3.select("#model_view_plot").classed("hidden", true);
     d3.select("#model_view_list").classed("hidden", true);
     d3.select("#model_view_yearly").classed("hidden", true);
-    d3.selectAll(".model_view_plot").classed("hidden", true);
+
+    d3.selectAll(".model_view_grid").classed("hidden", true);
+    d3.selectAll(".model_view_scaled").classed("hidden", true);
     d3.selectAll(".model_view_list").classed("hidden", true);
     d3.selectAll(".model_view_yearly").classed("hidden", true);
 
