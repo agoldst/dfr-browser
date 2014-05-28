@@ -7,13 +7,14 @@ view.model.list = function (p) {
         keys, sorter, sort_choice, sort_dir,
         years = p.yearly[0].keys();
 
+    trs = d3.select("#model_view_list table tbody")
+        .selectAll("tr");
+
     if (!VIS.ready.model_list) {
         d3.select("th#model_view_list_year a")
             .text(d3.min(years) + "—" + d3.max(years));
 
-        trs = d3.select("#model_view_list table tbody")
-            .selectAll("tr")
-            .data(d3.range(p.yearly.length))
+        trs = trs.data(d3.range(p.yearly.length))
             .enter().append("tr");
 
         trs.on("click", function (t) {
@@ -37,12 +38,7 @@ view.model.list = function (p) {
                 });
             });
 
-        trs.append("td").append("a")
-            .text(function (t) {
-                return p.words[t].map(function (w) { return w.word; })
-                    .join(" ");
-            })
-            .attr("href", topic_link);
+        trs.append("td").append("a").classed("topic_words", true);
 
         token_max = d3.max(p.sums);
         view.append_weight_tds(trs, function (t) {
@@ -55,6 +51,15 @@ view.model.list = function (p) {
 
         VIS.ready.model_list = true;
     } // if (!VIS.ready.model_list)
+
+    // since the number of topic words can be changed, we need to
+    // rewrite the topic words column
+    trs.selectAll("td a.topic_words")
+        .text(function (t) {
+            return p.words[t].map(function (w) { return w.word; })
+                .join(" ");
+        })
+        .attr("href", topic_link);
 
     // sorting
 
@@ -112,9 +117,7 @@ view.model.list = function (p) {
     VIS.last.model_list.sort = sort_choice;
     VIS.last.model_list.dir = sort_dir;
 
-    d3.selectAll("#model_view_list table tbody tr")
-        .sort(sorter)
-        .order();
+    trs.sort(sorter).order();
 
     d3.selectAll("#model_view_list th.sort")
         .classed("active", function () {

@@ -12,7 +12,6 @@ view.settings = function (p) {
         .property("value", VIS.overview_words)
         .on("change", function () {
             VIS.overview_words = this.valueAsNumber;
-            // TODO model view list needs to be marked for re-render
         });
     d3.select("#n_words_topic")
         .property("max", p.max_words)
