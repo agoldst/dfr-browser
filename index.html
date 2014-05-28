@@ -92,7 +92,7 @@
 
 <p>Again, space limitations mean the browser cannot make use of the full information the model provides about which words in each document have been assigned to which topics.</p>
 
-<h3>The all-words view</h3>
+<h3>The word index view</h3>
 
 <p>This is a list of the vocabulary of prominent words in any topic (<a href="demo/#/words">demo</a>). Each word links back to the word view. It is not identical with the vocabulary of the topic model, since any word which is not among the top &ldquo;key words&rdquo; supplied to the browser will not be listed. In future I may investigate the feasibility of using the whole topic-word matrix and not just the &ldquo;key words&rdquo;: this matrix could be manageable for relatively restricted vocabularies.</p>
 
@@ -103,6 +103,10 @@
 <p><em>Known issues:</em> the sorting seems to be glitchy for metadata about nineteenth-century articles; the generated citations are imperfectly formatted. Also, this view can take a couple of seconds to load. If I ever work further on this <em>alpha release</em>, I will look for ways to either speed it up or load it incrementally as you scroll.</p>
 
 <p><em>Possible future additions:</em> Eventually, I hope to add some ways to explore the abstract space of documents created by the topic breakdowns, on the model of the scaled topic-space visualization.</p>
+
+<h3>Settings</h3>
+
+<p>This (for now) very minimal page lets you adjust the number of words and documents listed with each topic.</p>
 
 <h3>Permalinks</h3>
 
