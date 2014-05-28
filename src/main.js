@@ -13,6 +13,7 @@ var VIS = {
         tw: "data/tw.json",
         topic_scaled: "data/topic_scaled.csv"
     },
+    default_view: "/model", // specify the part after the #
     bib_sort: {
         major: "year",
         minor: "alpha"
@@ -565,7 +566,7 @@ settings_view = function (m) {
     var p = {
         max_words: m.n_top_words(),
         max_docs: m.n_docs()
-    }
+    };
     if (p.max_words === undefined || p.max_docs === undefined) {
         return false;
     }
@@ -712,17 +713,17 @@ view_refresh = function (m, v) {
     var view_parsed, param, success;
 
     view_parsed = v.split("/");
-    param = view_parsed[2];
 
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
     }
 
+    if (view_parsed[1] === undefined || view_parsed[1] === "") {
+        view_parsed = VIS.default_view.split("/");
+    }
+
+    param = view_parsed[2];
     switch (view_parsed[1]) {
-        case undefined:
-            view_parsed[1] = "model";
-            success = model_view(m);
-            break;
         case "model":
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
@@ -759,6 +760,7 @@ view_refresh = function (m, v) {
     } else {
         if (VIS.cur_view === undefined) {
             // fall back on model_view
+            // TODO make this go to default_view instead
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
         } 
