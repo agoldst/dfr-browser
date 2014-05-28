@@ -116,6 +116,7 @@ var bib_sort,   // bibliography sorting
     doc_view,
     bib_view,
     about_view,
+    settings_view,
     model_view,
     model_view_list,
     model_view_plot,
@@ -566,6 +567,36 @@ about_view = function (m) {
     return true;
 };
 
+settings_view = function (m) {
+    if (!VIS.ready.settings) {
+        d3.select("#reveal_hidden"); // TODO hide/reveal topics
+
+        d3.select("#n_words_list")
+            .property("max", m.n_top_words())
+            .property("value", VIS.overview_words)
+            .on("change", function () {
+                VIS.overview_words = this.valueAsNumber;
+                // TODO reset VIS.ready appropriately
+            });
+        d3.select("#n_words_topic")
+            .property("max", m.n_top_words())
+            .property("value", VIS.topic_view.words)
+            .on("change", function () {
+                VIS.topic_view.words = this.valueAsNumber;
+                // TODO reset VIS.ready  if needed
+            });
+        d3.select("#n_topic_docs")
+            .property("max", m.n_docs())
+            .property("value", VIS.topic_view.docs)
+            .on("change", function () {
+                VIS.topic_view.docs = this.valueAsNumber;
+            });
+    }
+
+    d3.select("#settings_view").classed("hidden", false);
+    return true;
+};
+
 model_view = function (m, type, p1, p2) {
     var type_chosen = type || VIS.last.model || "grid";
 
@@ -717,6 +748,9 @@ view_refresh = function (m, v) {
             break;
         case "about":
             success = about_view(m);
+            break;
+        case "settings":
+            success = settings_view(m);
             break;
         case "bib":
             success = bib_view(m, param, view_parsed[3]);
