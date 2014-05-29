@@ -308,8 +308,8 @@ citation = function (doc) {
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (m, t, year) {
-    var words;
+topic_view = function (m, t, y) {
+    var words, year;
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         // not ready yet; show loading message
@@ -327,6 +327,9 @@ topic_view = function (m, t, year) {
         view.loading(false);
         return true;
     }
+
+    // validate the year
+    year = m.valid_year(y) ? y : undefined;
 
     words = utils.shorten(m.topic_words(t), VIS.topic_view.words);
 

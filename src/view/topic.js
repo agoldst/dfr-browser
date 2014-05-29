@@ -59,7 +59,7 @@ view.topic.docs = function (p) {
     var header_text, trs_d,
         docs = p.docs;
 
-    if (isFinite(p.year)) {
+    if (p.year !== undefined) {
         header_text = " in " + p.year;
 
         // the clear-selected-year button
