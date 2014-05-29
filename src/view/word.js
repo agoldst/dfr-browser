@@ -24,7 +24,7 @@ view.word = function (p) {
     div.selectAll("#word_view span.word") // sets header and help
         .text(word);
 
-    div.select("#word_no_topics").classed("hidden", p.topics.length !== 0);
+    div.selectAll("#word_view .none").classed("hidden", p.topics.length !== 0);
     div.select("table#word_topics").classed("hidden", p.topics.length === 0);
     div.select("#word_view_explainer").classed("hidden", p.topics.length === 0);
 
