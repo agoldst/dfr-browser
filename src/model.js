@@ -154,7 +154,7 @@ model = function (spec) {
         }
 
         // meta(d) for one row of doc metadata or meta() for all of them
-        if (isFinite(d)) {
+        if (typeof d === 'number') {
             return my.meta[d];
         }
         

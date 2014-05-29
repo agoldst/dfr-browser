@@ -280,7 +280,7 @@ cite_doc = function (m, d) {
 };
 
 cite_docs = function (m, ds) {
-    return m.meta(ds).map(citation);
+    return (ds && ds.length) ? m.meta(ds).map(citation) : undefined;
 };
 
 citation = function (doc) {
