@@ -13,6 +13,7 @@ var VIS = {
         tw: "data/tw.json",
         topic_scaled: "data/topic_scaled.csv"
     },
+    default_view: "/model", // specify the part after the #
     bib_sort: {
         major: "year",
         minor: "alpha"
@@ -279,7 +280,7 @@ cite_doc = function (m, d) {
 };
 
 cite_docs = function (m, ds) {
-    return m.meta(ds).map(citation);
+    return (ds && ds.length) ? m.meta(ds).map(citation) : undefined;
 };
 
 citation = function (doc) {
@@ -307,8 +308,8 @@ citation = function (doc) {
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (m, t, year) {
-    var words;
+topic_view = function (m, t, y) {
+    var words, year;
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         // not ready yet; show loading message
@@ -326,6 +327,9 @@ topic_view = function (m, t, year) {
         view.loading(false);
         return true;
     }
+
+    // validate the year
+    year = m.valid_year(y) ? y : undefined;
 
     words = utils.shorten(m.topic_words(t), VIS.topic_view.words);
 
@@ -381,15 +385,10 @@ topic_view = function (m, t, year) {
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-
-
-
-
-
 word_view = function (m, w) {
     var div = d3.select("div#word_view"),
         word = w,
-        topics, n;
+        topics, n = 0;
 
     if (!m.tw()) {
         view.loading(true);
@@ -409,6 +408,7 @@ word_view = function (m, w) {
             div.select("#last_word_help").classed("hidden", false);
         } else {
             div.select("#word_view_main").classed("hidden", true);
+            view.word({ word: undefined });
             return true;
         }
     }
@@ -416,16 +416,17 @@ word_view = function (m, w) {
 
     VIS.last.word = word;
 
-
     topics = m.word_topics(word);
-    n = 1 + d3.max(topics, function (t) {
-        return t.rank; // 0-based, so we rank + 1 
-    });
-    // now figure out how many words per row, taking account of possible ties
-    n = d3.max(topics, function (t) {
-        return m.topic_words(t.topic, n).length;
-    });
-    // but not too few words
+    if (topics.length > 0) {
+        n = 1 + d3.max(topics, function (t) {
+            return t.rank; // 0-based, so we rank + 1
+        });
+        // now figure out how many words per row, taking account of possible ties
+        n = d3.max(topics, function (t) {
+            return m.topic_words(t.topic, n).length;
+        });
+    }
+    // but not too few words. Also take care of topics.length = 0 case
     n = Math.max(VIS.word_view.n_min, n);
 
     view.word({
@@ -565,7 +566,7 @@ settings_view = function (m) {
     var p = {
         max_words: m.n_top_words(),
         max_docs: m.n_docs()
-    }
+    };
     if (p.max_words === undefined || p.max_docs === undefined) {
         return false;
     }
@@ -712,17 +713,17 @@ view_refresh = function (m, v) {
     var view_parsed, param, success;
 
     view_parsed = v.split("/");
-    param = view_parsed[2];
 
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
     }
 
+    if (view_parsed[1] === undefined || view_parsed[1] === "") {
+        view_parsed = VIS.default_view.split("/");
+    }
+
+    param = view_parsed[2];
     switch (view_parsed[1]) {
-        case undefined:
-            view_parsed[1] = "model";
-            success = model_view(m);
-            break;
         case "model":
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
@@ -759,6 +760,7 @@ view_refresh = function (m, v) {
     } else {
         if (VIS.cur_view === undefined) {
             // fall back on model_view
+            // TODO make this go to default_view instead
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
         } 

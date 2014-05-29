@@ -1,8 +1,3 @@
-/* head clearance for bootstrap navbar */
-body {
-    padding-top: 60px;
-    padding-bottom: 60px;
-}
 
 .hidden {
     display: none;
@@ -80,6 +75,11 @@ th.th-right {
 th.wide {
     min-width: 20em;
 }
+
+td.td-right {
+    text-align: right;
+}
+
 /* model_view aka overview */
 
 #topic_hover p {

@@ -21,10 +21,15 @@ view.word = function (p) {
             set_view("/word/" + input_word);
         });
 
+    // setting word to undefined means: do setup only
+    if (p.word === undefined) {
+        return;
+    }
+
     div.selectAll("#word_view span.word") // sets header and help
         .text(word);
 
-    div.select("#word_no_topics").classed("hidden", p.topics.length !== 0);
+    div.selectAll("#word_view .none").classed("hidden", p.topics.length !== 0);
     div.select("table#word_topics").classed("hidden", p.topics.length === 0);
     div.select("#word_view_explainer").classed("hidden", p.topics.length === 0);
 
@@ -62,7 +67,7 @@ view.word = function (p) {
         .range([0, spec.w]);
     scale_y = d3.scale.linear()
         .domain([0, Math.max(1, p.topics.length - 1)])
-        .range([row_height, row_height * p.topics.length]);
+        .range([row_height, row_height * (Math.max(p.topics.length, 1) + 1)]);
     scale_bar = d3.scale.linear()
         .domain([0, 1])
         .range([0, row_height / 2]);

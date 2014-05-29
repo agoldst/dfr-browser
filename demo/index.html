@@ -13,7 +13,7 @@
 </head>
 
 <body>
-<div class="navbar navbar-inverse navbar-fixed-top">
+<div class="navbar navbar-inverse navbar-default">
   <div class="container">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -25,7 +25,7 @@
     </div>
     <div class="collapse navbar-collapse">
       <ul id="nav_main" class="nav navbar-nav">
-        <li id="nav_model"><a href="#">Overview</a></li>
+        <li id="nav_model"><a href="#/model">Overview</a></li>
         <li id="nav_topic" class="dropdown">
           <a href="#/topic" class="dropdown-toggle" data-toggle="dropdown" data-target="#" id="topic_dropdown_toggle">
             Topic<b class="caret"></b>
@@ -202,15 +202,15 @@
             </div>
           </div>
           <div id="topic_docs">
-            <h3 id="topic_docs_header" class="h-small">Top documents</h3>
-            <table class="table table-condensed hidden calc-done"
-              id="topic_docs">
+            <h3 id="topic_docs_header" class="h-small">Top documents<span class="topic_year"></span></h3>
+            <p class="help none">There are no documents containing this topic<span class="topic_year"></span>.</p>
+            <table class="table table-condensed hidden calc-done">
               <thead>
                 <tr>
                   <th>Document</th>
                   <th></th>
                   <th class="th-right">%</th>
-                  <th class="th-right">Weight</th>
+                  <th class="th-right">Tokens</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,7 +272,7 @@
       <div id="word_view_explainer">
         <p class="help">Click row labels to go to the topic view; click a word to show the topic list for that word.</p>
       </div>
-      <div id="word_no_topics" class="alert alert-info hidden">
+      <div class="alert alert-info none hidden">
         <p>There are no topics in which this word is prominent.</p>
       </div>
     </div>

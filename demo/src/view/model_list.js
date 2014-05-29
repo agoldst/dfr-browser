@@ -67,10 +67,11 @@ view.model.list = function (p) {
         VIS.last.model_list = { };
     }
 
-    sort_choice = p.sort || VIS.last.model_list.sort;
-    sort_dir = (sort_choice === VIS.last.model_list.sort) ?
-        (p.dir || VIS.last.model_list.dir) : "up";
+    sort_choice = p.sort || VIS.last.model_list.sort || "topic";
+    sort_dir = p.dir || ((sort_choice === VIS.last.model_list.sort) ?
+        VIS.last.model_list.dir : "up") || "up";
 
+    // default sort: by topic number
     keys = d3.range(p.yearly.length);
     if (sort_choice === "words") {
         keys = keys.map(function (t) {
@@ -95,9 +96,6 @@ view.model.list = function (p) {
             });
             return result;
         });
-    } else {
-        // otherwise, enforce the default: by topic number
-        sort_choice = "topic";
     }
 
     if (sort_dir === "down") {

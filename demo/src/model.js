@@ -25,7 +25,7 @@ model = function (spec) {
         vocab,
         topic_scaled,
         topic_yearly, // time-slicing
-        doc_year,
+        valid_year,
         yearly_total,
         topic_docs, // most salient _ in _
         topic_words,
@@ -154,7 +154,7 @@ model = function (spec) {
         }
 
         // meta(d) for one row of doc metadata or meta() for all of them
-        if (isFinite(d)) {
+        if (typeof d === 'number') {
             return my.meta[d];
         }
         
@@ -167,24 +167,14 @@ model = function (spec) {
     };
     that.meta = meta;
 
-    // convenience function for getting doc dates as years
-    doc_year = function (d) {
-        if (!my.meta) {
+    // validate dates
+    valid_year = function (y) {
+        if (!my.years) {
             return undefined;
         }
-
-        // memoization
-        if (!my.doc_year) {
-            my.doc_year = [];
-        }
-        if (my.doc_year[d] !== undefined) {
-            return my.doc_year[d];
-        }
-
-        my.doc_year[d] = meta(d).date.getFullYear();
-        return my.doc_year[d];
+        return my.years.has(y);
     };
-    that.doc_year = doc_year;
+    that.valid_year = valid_year;
 
     // aggregate vocabulary of all top words in tw
     vocab = function () {
@@ -271,7 +261,7 @@ model = function (spec) {
             n_req = this.n_docs();
             f = function (docs) {
                 var year_docs = docs.filter(function (d) {
-                    return that.doc_year(d.doc) === +year;
+                    return that.meta(d.doc).date.getFullYear() === +year;
                 });
                 return callback(utils.shorten(year_docs, n));
             };
@@ -475,6 +465,7 @@ model = function (spec) {
             what: "set_doc_years",
             doc_years: doc_years
         });
+        my.years = d3.set(doc_years);
     };
     that.set_meta = set_meta;
 
