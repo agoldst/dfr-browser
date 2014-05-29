@@ -75,6 +75,11 @@ th.th-right {
 th.wide {
     min-width: 20em;
 }
+
+td.td-right {
+    text-align: right;
+}
+
 /* model_view aka overview */
 
 #topic_hover p {

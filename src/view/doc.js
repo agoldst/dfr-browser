@@ -48,12 +48,14 @@ view.doc = function (p) {
     });
 
     trs.append("td")
-        .text(function (t) {
-            return t.weight;
-        });
-    trs.append("td")
+        .classed("td-right", true)
         .text(function (t) {
             return VIS.percent_format(t.weight / total_tokens);
+        });
+    trs.append("td")
+        .classed("td-right", true)
+        .text(function (t) {
+            return t.weight;
         });
 };
 

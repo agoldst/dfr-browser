@@ -119,14 +119,14 @@ view.topic.docs = function (p) {
 
     view.append_weight_tds(trs_d, function (d) { return d.frac; });
 
-    trs_d
-        .append("td")
+    trs_d.append("td")
+        .classed("td-right", true)
         .text(function (d) {
             return VIS.percent_format(d.frac);
         });
 
-    trs_d
-        .append("td")
+    trs_d.append("td")
+        .classed("td-right", true)
         .text(function (d) {
             return d.weight;
         });
