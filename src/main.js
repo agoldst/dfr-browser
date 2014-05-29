@@ -382,11 +382,6 @@ topic_view = function (m, t, year) {
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-
-
-
-
-
 word_view = function (m, w) {
     var div = d3.select("div#word_view"),
         word = w,
