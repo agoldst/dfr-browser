@@ -388,7 +388,7 @@ topic_view = function (m, t, y) {
 word_view = function (m, w) {
     var div = d3.select("div#word_view"),
         word = w,
-        topics, n;
+        topics, n = 0;
 
     if (!m.tw()) {
         view.loading(true);
@@ -408,6 +408,7 @@ word_view = function (m, w) {
             div.select("#last_word_help").classed("hidden", false);
         } else {
             div.select("#word_view_main").classed("hidden", true);
+            view.word({ word: undefined });
             return true;
         }
     }
@@ -415,16 +416,17 @@ word_view = function (m, w) {
 
     VIS.last.word = word;
 
-
     topics = m.word_topics(word);
-    n = 1 + d3.max(topics, function (t) {
-        return t.rank; // 0-based, so we rank + 1 
-    });
-    // now figure out how many words per row, taking account of possible ties
-    n = d3.max(topics, function (t) {
-        return m.topic_words(t.topic, n).length;
-    });
-    // but not too few words
+    if (topics.length > 0) {
+        n = 1 + d3.max(topics, function (t) {
+            return t.rank; // 0-based, so we rank + 1
+        });
+        // now figure out how many words per row, taking account of possible ties
+        n = d3.max(topics, function (t) {
+            return m.topic_words(t.topic, n).length;
+        });
+    }
+    // but not too few words. Also take care of topics.length = 0 case
     n = Math.max(VIS.word_view.n_min, n);
 
     view.word({
