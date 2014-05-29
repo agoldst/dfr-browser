@@ -60,7 +60,7 @@ view.topic.docs = function (p) {
         docs = p.docs;
 
     if (isFinite(p.year)) {
-        header_text = "Top documents in " + p.year;
+        header_text = " in " + p.year;
 
         // the clear-selected-year button
         d3.select("#topic_year_clear")
@@ -73,14 +73,26 @@ view.topic.docs = function (p) {
             .classed("hidden", false);
 
     } else {
-        header_text = "Top documents";
+        header_text = "";
         d3.select("#topic_year_clear")
             .classed("disabled", true);
     }
 
 
-    d3.select("h3#topic_docs_header")
+    d3.selectAll("#topic_docs span.topic_year")
         .text(header_text);
+
+    if (docs === undefined || docs.length === 0) {
+        d3.selectAll("#topic_docs .none")
+            .classed("hidden", false);
+        d3.select("#topic_docs table")
+            .classed("hidden", true);
+        return true;
+    }
+    d3.selectAll("#topic_docs .none")
+        .classed("hidden", true);
+    d3.select("#topic_docs table")
+        .classed("hidden", false);
 
     trs_d = d3.select("#topic_docs tbody")
         .selectAll("tr")
