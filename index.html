@@ -13,7 +13,7 @@
 </head>
 
 <body>
-<div class="navbar navbar-default navbar-inverse">
+<div class="navbar navbar-inverse navbar-default">
   <div class="container">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -25,7 +25,7 @@
     </div>
     <div class="collapse navbar-collapse">
       <ul id="nav_main" class="nav navbar-nav">
-        <li id="nav_model"><a href="#">Overview</a></li>
+        <li id="nav_model"><a href="#/model">Overview</a></li>
         <li id="nav_topic" class="dropdown">
           <a href="#/topic" class="dropdown-toggle" data-toggle="dropdown" data-target="#" id="topic_dropdown_toggle">
             Topic<b class="caret"></b>
@@ -41,9 +41,12 @@
         <li id="nav_about"><a href="#/about">Interpreting this site</a></li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
+        <li id="nav_settings"><a href="#/settings">Settings</a></li>
         <li id="nav_problems"><a href="problems">Problems?</a></li>
         <li id="nav_help"><a>Getting started</a></li>
       </ul>
+      <p id="loading_message" class="navbar-text help">Loading...</p>
+      <p id="calc_message" class="navbar-text help hidden">Calculating...</p>
     </div><!--/.navbar-collapse -->
     <div class="hidden" id="help_box">
       <div id="help_box_content">
@@ -60,10 +63,6 @@
 </div>
 
 <div id="main_container" class="container">
-
-  <div id="loading" class="alert alert-info">
-    <p>Loading...</p>
-  </div>
 
   <div id="error" class="alert alert-danger alert-dismissable hidden">
     <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -91,8 +90,11 @@
           </li>
         </ul>
         <div class="navbar-right">
+          <p class="navbar-text help model_view_grid hidden">
+            click a circle for more about a topic
+          </p>
           <p id="model_view_help"
-          class="navbar-text help model_view_plot model_view_yearly hidden">
+          class="navbar-text help model_view_scaled model_view_yearly hidden">
           scroll to zoom; shift-drag to pan; click for more about a topic</p>
           <p id="list_view_help"
           class="navbar-text help model_view_list hidden">
@@ -110,7 +112,8 @@
             </li>
           </ul>
           <button id="reset_zoom" type="button"
-            class="btn btn-default navbar-btn model_view_plot model_view_yearly hidden">
+            class="btn btn-default navbar-btn
+              model_view_scaled model_view_yearly hidden">
             Reset zoom
           </button>
         </div>
@@ -142,7 +145,7 @@
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="calc-done">
         </tbody>
       </table>
     </div>
@@ -253,20 +256,36 @@
     </div><!-- row -->
   </div><!-- about_view -->
 
+  <div id="settings_view" class="hidden">
+    <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
+    <form role="form">
+      <div>
+        <label>Number of top words to display in lists</label>
+        <input id="n_words_list" type="number">
+      </div>
+      <div>
+        <label>Number of top words to display on topic page</label>
+        <input id="n_words_topic" type="number">
+      </div>
+      <div>
+        <label>Number of top documents to display on topic page</label>
+        <input id="n_topic_docs" type="number">
+      </div>
+    </form>
+  </div>
+
   <div id="topic_view" class="hidden">
-    <div id="topic_view_help">
+    <div id="topic_view_help" class="hidden">
       <p class="help">Select a topic from the "Topic" menu above.</p>
     </div>
     <div id="topic_view_main">
-      <h2 class="h-small" id="topic_header"></h2>
-      <p id="topic_remark"></p>
+      <div id="topic_view_header">
+        <h2 class="h-small" id="topic_header"></h2>
+        <p id="topic_remark"></p>
+      </div>
       <div class="row">
         <div id="topic_words" class="col-md-3">
           <h3 class="h-small">Top words</h3>
-          <div class="btn-group btn-group-xs">
-            <button id="topic_words_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
-            <button id="topic_words_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
-          </div>
           <table class="table table-condensed" id="topic_words">
             <thead>
               <tr>
@@ -279,7 +298,7 @@
           </table>
         </div>
         <div class="col-md-9">
-          <div id="topic_plot">
+          <div id="topic_yearly">
             <h3 class="h-small">Yearly proportion of words in topic</h3>
             <p class="pull-left help">
               Click a bar to limit documents to that year
@@ -288,24 +307,25 @@
               <button class="btn btn-default disabled" type="button"
                 id="topic_year_clear">clear selected year</button>
             </div>
+            <div id="topic_plot">
+            </div>
           </div>
-          <h3 id="topic_docs_header" class="h-small">Documents with largest proportion</h3>
-          <div class="btn-group btn-group-xs">
-            <button id="topic_docs_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
-            <button id="topic_docs_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
-          </div>
-          <table class="table table-condensed" id="topic_docs">
-            <thead>
-              <tr>
-                <th>Document</th>
-                <th></th>
-                <th class="th-right">%</th>
-                <th class="th-right">Weight</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
+          <div id="topic_docs">
+            <h3 id="topic_docs_header" class="h-small">Top documents<span class="topic_year"></span></h3>
+            <p class="help none">There are no documents containing this topic<span class="topic_year"></span>.</p>
+            <table class="table table-condensed hidden calc-done">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th></th>
+                  <th class="th-right">%</th>
+                  <th class="th-right">Tokens</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div> <!-- #topic_docs -->
         </div>
       </div>
     </div> <!-- #topic_view_main -->
@@ -318,13 +338,9 @@
         <a class="external" href="#/topic">a topic page</a>.</p>
       <p class="help hidden" id="last_doc_help">Below: the last-viewed document. Stable link to this view: <a class="external" id="last_doc" href="#/doc"></a></p>
     </div>
-    <div id="doc_view_main">
+    <div id="doc_view_main" class="calc-done">
       <h2 class="h-small" id="doc_header"></h2>
       <p id="doc_remark"></p>
-      <div class="btn-group btn-group-xs">
-        <button id="doc_topics_up" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-up"></span> show fewer</button>
-        <button id="doc_topics_down" class="btn btn-default" type="button"><span class="glyphicon glyphicon-chevron-down"></span> show more</button>
-      </div>
       <table class="table table-condensed" id="doc_topics">
         <thead>
           <tr>
@@ -365,7 +381,7 @@
       <div id="word_view_explainer">
         <p class="help">Click row labels to go to the topic view; click a word to show the topic list for that word.</p>
       </div>
-      <div id="word_no_topics" class="alert alert-info hidden">
+      <div class="alert alert-info none hidden">
         <p>There are no topics in which this word is prominent.</p>
       </div>
     </div>
@@ -426,16 +442,16 @@
 
 <script type="text/javascript" src="lib/jquery-1.11.0.min.js"></script>
 <script type="text/javascript" src="lib/bootstrap.min.js"></script>
-<script type="text/javascript" src="lib/jszip.js"></script>
-<script type="text/javascript" src="lib/jszip-load.js"></script>
-<script type="text/javascript" src="lib/jszip-inflate.js"></script>
+<script type="text/javascript" src="lib/jszip.min.js"></script>
 
 <!-- __DATA__ -->
 
-<script type="text/javascript" src="js/dfb.js"></script>
-<script type="text/javascript" src="js/utils.js"></script>
-<script type="text/javascript" src="js/model.js"></script>
-<script type="text/javascript" src="js/index.js"></script>
+<script type="text/javascript" src="js/utils.min.js"></script>
+<script type="text/javascript" src="js/dfb.min.js"></script>
+
+<script type="text/javascript">
+  main();
+</script>
 
 </body>
 
