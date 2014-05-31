@@ -555,8 +555,8 @@ bib_view = function (m, maj, min) {
 
 };
 
-about_view = function (m) {
-    view.about(m.info().meta_info);
+about_view = function (m, section) {
+    view.about(section);
     view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
@@ -731,7 +731,7 @@ view_refresh = function (m, v) {
             success = model_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "about":
-            success = about_view(m);
+            success = about_view(m, param);
             break;
         case "settings":
             success = settings_view(m);
