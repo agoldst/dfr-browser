@@ -258,6 +258,11 @@ view.model.grid_coords = function (n) {
         }
     }
 
+    // "validation"
+    if (d3.sum(rows) !== n) {
+        view.error("The topic grid has gone wrong. This is a bug.");
+    }
+
     // generate coordinates
     for (i = 0; i < n_row; i += 1) {
         for (j = 0; j < rows[i]; j += 1) {
