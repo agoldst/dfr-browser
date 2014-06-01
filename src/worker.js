@@ -1,4 +1,4 @@
-/*global importScripts, doc_topics_matrix, utils, onmessage, postMessage */
+/*global importScripts, utils, onmessage, postMessage */
 "use strict";
 importScripts("utils.min.js");
 
