@@ -225,10 +225,10 @@ view.model.plot = function (param) {
 
 view.model.grid_coords = function (n) {
     var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
-        n_row = Math.floor(n / n_col),
+        n_row = Math.round(n / n_col),
         remain = n - n_row * n_col,
-        remain_odd = Math.max(remain - Math.floor(n_row / 2), 0),
-        cols,
+        sgn = d3.ascending(remain, 0),
+        rows = [],
         vskip,
         i, j,
         result = [];
@@ -239,28 +239,32 @@ view.model.grid_coords = function (n) {
     vskip = Math.sqrt(3.0) / 2.0;
 
     // if n is not exactly n_row * n_col, we'll do our best sticking
-    // things on the right-side margin
+    // things on the right-side margin. Since we indent odd rows, we
+    // stick extra entries on even rows first before going to odd rows,
+    // but we stick extra holes on odd rows first.
 
-    for (i = 0; i < n_row; i += 1) {
-        cols = n_col;
-        if (remain > 0) {
-            remain -= 1;
-            if (i % 2 === 0) {
-                cols = n_col + 1;
-            } else {
-                if (remain_odd > 0) {
-                    remain_odd -= 1;
-                    cols = n_col + 1;
-                }
-            }
+    for (i = (sgn === 1) ? 0 : 1; i < n_row; i += 2) {
+        rows[i] = n_col;
+        if (Math.abs(remain) > 0) {
+            rows[i] += sgn;
+            remain -= sgn;
         }
+    }
+    for (i = (sgn === 1) ? 1 : 0; i < n_row; i += 2) {
+        rows[i] = n_col;
+        if (Math.abs(remain) > 0) {
+            rows[i] += sgn;
+            remain -= sgn;
+        }
+    }
 
-        for (j = 0; j < cols; j += 1) {
+    // generate coordinates
+    for (i = 0; i < n_row; i += 1) {
+        for (j = 0; j < rows[i]; j += 1) {
             result.push({
                 x: j + 0.5 + ((i % 2 === 0) ? 0 : 0.5),
                 y: (n_row - i) * vskip + 0.5 });
         }
     }
-
     return result;
 };
