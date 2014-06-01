@@ -39,28 +39,37 @@ view.bib = function (p) {
         .on("click", (function () {
             var descend = true;
             return function () {
-                d3.selectAll("div#bib_main div.panel-default")
-                    .sort(descend ? d3.descending : d3.ascending)
-                    .order(); // stable because bound data is just indices
+                var sel = d3.selectAll("div#bib_main div.panel-default");
+                if (descend) {
+                    sel.sort(function (a, b) {
+                        return d3.descending(a.heading, b.heading);
+                    }).order();
+                } else {
+                    sel.sort(function (a, b) {
+                        return d3.ascending(a.heading, b.heading);
+                    }).order();
+                }
+                // better be stable since headings are distinct by construction
                 descend = !descend;
             };
         }())); // up/down state is preserved in the closure
 
-    // clear listings
-    div.selectAll("div#bib_main > div.panel").remove();
-
     sections = div.select("div#bib_main")
         .selectAll("div")
-        .data(d3.range(ordering.headings.length));
+        .data(ordering, function (o) {
+            return o.heading;
+        });
 
     panels = sections.enter().append("div")
         .classed("panel", true)
         .classed("panel-default", true);
 
+    sections.exit().remove();
+
     panels.append("div")
         .classed("panel-heading", true)
-        .on("click", function (i) {
-            $("#" + ordering.headings[i]).collapse("toggle");
+        .on("click", function (o) {
+            $("#" + o.heading).collapse("toggle");
         })
         .on("mouseover", function () {
             d3.select(this).classed("panel_heading_hover", true);
@@ -70,11 +79,11 @@ view.bib = function (p) {
         })
         .append("h2")
             .classed("panel-title", true)
-            .html(function (i) {
+            .html(function (o) {
                 var a = '<a class="accordion-toggle"';
                 a += ' data-toggle="collapse"';
-                a += ' href="#' + ordering.headings[i] + '">';
-                a += ordering.headings[i];
+                a += ' href="#' + o.heading + '">';
+                a += o.heading;
                 a += '</a>';
                 return a;
             });
@@ -83,20 +92,19 @@ view.bib = function (p) {
         .classed("panel-collapse", true)
         .classed("collapse", true)
         .classed("in", true)
-        .attr("id", function (i) { return ordering.headings[i]; }) 
+        .attr("id", function (o) { return o.heading; })
         .append("div")
             .classed("panel-body", true)
             .classed("bib_section", true)
             .selectAll("a")
-                .data(function (i) {
-                    return ordering.docs[i];
+                .data(function (o) {
+                    return o.docs;
                 });
 
     as.enter().append("a");
     as.exit().remove();
 
-    as
-        .attr("href", function (d) {
+    as.attr("href", function (d) {
             return "#/doc/" + d;
         })
         .html(function (d) {

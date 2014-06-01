@@ -129,10 +129,7 @@ var bib_sort,   // bibliography sorting
 
 // bibliography sorting
 bib_sort = function (m, major, minor) {
-    var result = {
-            headings: [],
-            docs: []
-        },
+    var result = [],
         docs,
         major_key,
         minor_key,
@@ -206,7 +203,9 @@ bib_sort = function (m, major, minor) {
     for (i = 0, cur_major = ""; i < docs.length; i += 1) {
         if (docs[i].major !== cur_major) {
             partition.push(i);
-            result.headings.push(docs[i].major);
+            result.push({
+                heading: docs[i].major
+            });
             cur_major = docs[i].major;
         }
     }
@@ -214,7 +213,7 @@ bib_sort = function (m, major, minor) {
     partition.push(docs.length); // make sure we get the tail 
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
-        result.docs.push(docs.slice(last, partition[i]).map(get_id));
+        result[i].docs = docs.slice(last, partition[i]).map(get_id);
         last = partition[i];
     }
 
