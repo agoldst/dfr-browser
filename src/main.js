@@ -172,7 +172,7 @@ bib_sort = function (m, major, minor) {
                 result_m = doc.journaltitle;
 
             result_m += d3.format("05d")(doc.volume);
-            result_m += d3.format("05d")(doc.issue ? 0
+            result_m += d3.format("05d")((doc.issue === "") ? 0
                     : doc.issue.replace(/\/.*$/, ""));
             if (doc.pagerange.search(/^\d/) !== -1) {
                 result_m += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
