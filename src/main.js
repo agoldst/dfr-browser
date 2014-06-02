@@ -222,18 +222,20 @@ bib_sort = function (m, major, minor) {
     return result;
 };
 
+// validate major/minor sort terms. The output is the same as the input,
+// except an invalid term is replaced with undefined.
 bib_sort.validate = function (p) {
     var result = p;
     if (p.major !== "decade"
             && p.major !== "year"
             && p.major !== "journal"
             && p.major !== "alpha") {
-        result.major = "alpha";
+        result.major = undefined;
     }
     if (p.minor !== "date"
             && p.minor !== "journal"
             && p.minor !== "alpha") {
-        result.minor = "alpha";
+        result.minor = undefined;
     }
 
     return result;
@@ -532,15 +534,17 @@ bib_view = function (m, maj, min) {
     }
 
     sorting = bib_sort.validate(sorting);
+    // it's not really clear how to respond to a URL like #/bib/year,
+    // but we'll use the default minor sort in that case
+    if (sorting.minor === undefined) {
+        if (sorting.major === undefined) {
+            sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
+        } else  {
+            sorting.minor = VIS.bib_sort.minor;
+        }
+    }
     if (sorting.major === undefined) {
         sorting.major = VIS.last.bib.major || VIS.bib_sort.major;
-    } else if (sorting.minor === undefined) {
-        sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
-    }
-
-    if (VIS.last.bib.major === sorting.major
-            && VIS.last.bib.minor === sorting.minor) {
-        return true;
     }
 
     VIS.last.bib = sorting;
