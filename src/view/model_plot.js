@@ -25,9 +25,10 @@ view.model.plot = function (param) {
 
     svg = view.plot_svg("#model_view_plot", spec);
 
-    // rough attempt to fill total circle area in plot window 
-    // 2.25 rather than 2 is pure fudge factor
-    circle_radius = Math.floor(spec.w /
+    // if no user-supplied circle radius, attempt to fill total circle
+    // area in plot window; 2.25 rather than 2 is pure fudge factor
+
+    circle_radius = VIS.model_view.radius || Math.floor(spec.w /
             (2.25 * Math.sqrt(VIS.model_view.aspect * n)));
     // Allow the cloud to spill outside circle a little
     cloud_size = Math.floor(circle_radius * 2.1);
@@ -52,7 +53,8 @@ view.model.plot = function (param) {
         });
     } else {
         // default to grid
-        coords = view.model.grid_coords(n)
+        coords = view.model.grid_coords(n, VIS.model_view.cols
+                || Math.floor(Math.sqrt(VIS.model_view.aspect * n)))
             .map(function (p, j) {
                 return {
                     x: p.x,
@@ -223,8 +225,8 @@ view.model.plot = function (param) {
     }
 };
 
-view.model.grid_coords = function (n) {
-    var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
+view.model.grid_coords = function (n, cols) {
+    var n_col = cols || Math.floor(Math.sqrt(n)),
         n_row = Math.round(n / n_col),
         remain = n - n_row * n_col,
         sgn = d3.ascending(remain, 0),
@@ -256,6 +258,11 @@ view.model.grid_coords = function (n) {
             rows[i] += sgn;
             remain -= sgn;
         }
+    }
+
+    // if we've doing holes, we want the longer rows on top, not on bottom
+    if (sgn === -1) {
+        rows.reverse();
     }
 
     // "validation"
