@@ -2,18 +2,17 @@
 "use strict";
 
 view.bib = function (p) {
-    var div = d3.select("div#bib_view"),
-        major = p.major,
-        minor = p.minor,
-        ordering = p.ordering,
-        sections,
-        panels,
-        as;
+    var ordering = p.ordering.map(function (o) {
+            var result = o;
+            o.key = o.heading + "_" + p.minor; // Used in the data bind
+            return result;
+        }),
+        panels, divs, as;
 
     // set up sort order menu
-    d3.select("select#select_bib_sort option")
+    d3.selectAll("select#select_bib_sort option")
         .each(function () {
-            this.selected = (this.value === major + "_" + minor);
+            this.selected = (this.value === p.major + "_" + p.minor);
         });
     d3.select("select#select_bib_sort")
         .on("change", function () {
@@ -54,22 +53,30 @@ view.bib = function (p) {
             };
         }())); // up/down state is preserved in the closure
 
-    sections = div.select("div#bib_main")
-        .selectAll("div")
+    panels = d3.select("div#bib_main")
+        .selectAll("div.panel")
         .data(ordering, function (o) {
-            return o.heading;
+            // Ensure that we'll update even if only the minor key has changed
+            // (in which case headings stay the same)
+            return o.key;
         });
 
-    panels = sections.enter().append("div")
+    // The structure is:
+    // <div class="panel">
+    //   <div class="panel-heading">...</div>
+    //   <div class="panel-collapse">
+    //     <div class="panel-body bib_section">...</div>
+    //   </div>
+    // </div>
+
+    divs = panels.enter().append("div")
         .classed("panel", true)
         .classed("panel-default", true);
 
-    sections.exit().remove();
-
-    panels.append("div")
+    divs.append("div")
         .classed("panel-heading", true)
         .on("click", function (o) {
-            $("#" + o.heading).collapse("toggle");
+            $("#panel_" + o.heading).collapse("toggle");
         })
         .on("mouseover", function () {
             d3.select(this).classed("panel_heading_hover", true);
@@ -79,27 +86,37 @@ view.bib = function (p) {
         })
         .append("h2")
             .classed("panel-title", true)
-            .html(function (o) {
-                var a = '<a class="accordion-toggle"';
-                a += ' data-toggle="collapse"';
-                a += ' href="#' + o.heading + '">';
-                a += o.heading;
-                a += '</a>';
-                return a;
-            });
+            .append("a")
+                .classed("accordion-toggle", true)
+                .attr("data-toggle", "collapse")
+                .attr("href", function (o) {
+                    return "#panel_" + o.heading;
+                })
+                .text(function (o) {
+                    return o.heading;
+                });
 
-    as = panels.append("div")
+    divs.append("div")
         .classed("panel-collapse", true)
         .classed("collapse", true)
         .classed("in", true)
-        .attr("id", function (o) { return o.heading; })
+        .attr("id", function (o) { return "panel_" + o.heading; })
         .append("div")
             .classed("panel-body", true)
-            .classed("bib_section", true)
-            .selectAll("a")
-                .data(function (o) {
-                    return o.docs;
-                });
+            .classed("bib_section", true);
+
+    panels.exit().remove();
+
+    // Cheating here. We are not going to update the headings in the
+    // update selection, since we know that if something is in update
+    // but not enter, its heading isn't changing (because the data is
+    // keyed by headings).
+
+    as = panels.selectAll(".bib_section")
+        .selectAll("a")
+            .data(function (o) {
+                return o.docs;
+            });
 
     as.enter().append("a");
     as.exit().remove();
@@ -110,7 +127,6 @@ view.bib = function (p) {
         .html(function (d) {
             return p.citations[d];
         });
-
 
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
