@@ -4,7 +4,9 @@
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
     ready: { }, // which viz already generated?
-    last: { }, // which subviews last shown?
+    last: { // which subviews last shown?
+        bib: { }
+    },
     view_updating: false, // do we need to redraw the whole view?
     files: { // what data files to request
         info: "data/info.json",
@@ -152,7 +154,7 @@ bib_sort = function (m, major, minor) {
         major_key = function (i) {
             return m.meta(i).journaltitle;
         };
-    } else {
+    } else { // expected: major === "alpha"
         // default to alphabetical by author
         major_key = function (i) {
             return doc_author_string(m.meta(i)).replace(/^\W*/, "")[0]
@@ -179,7 +181,7 @@ bib_sort = function (m, major, minor) {
             }
             return result_m;
         };
-    } else {
+    } else { // expected: minor === "alpha"
         // default to alphabetical by author then title
         minor_key = function (i) {
             return doc_author_string(m.meta(i)) + m.meta(i).title;
@@ -220,7 +222,22 @@ bib_sort = function (m, major, minor) {
     return result;
 };
 
+bib_sort.validate = function (p) {
+    var result = p;
+    if (p.major !== "decade"
+            && p.major !== "year"
+            && p.major !== "journal"
+            && p.major !== "alpha") {
+        result.major = "alpha";
+    }
+    if (p.minor !== "date"
+            && p.minor !== "journal"
+            && p.minor !== "alpha") {
+        result.minor = "alpha";
+    }
 
+    return result;
+};
 
 // -- stringifiers
 //    ------------
@@ -503,34 +520,32 @@ doc_view = function (m, d) {
 };
 
 bib_view = function (m, maj, min) {
-    var major = maj,
-        minor = min,
+    var sorting = {
+            major: maj,
+            minor: min
+    },
         ordering;
-
-    if (major === undefined) {
-        major = VIS.bib_sort.major;
-    }
-    if (minor === undefined) {
-        minor = VIS.bib_sort.minor;
-    }
-
-    if (VIS.last.bib) {
-        if (VIS.last.bib.major === major && VIS.last.bib.minor === minor) {
-            return true;
-        }
-    }
 
     if (!m.meta()) {
         view.loading(true);
         return true;
     }
 
-    VIS.last.bib = {
-        major: major,
-        minor: minor
-    };
+    sorting = bib_sort.validate(sorting);
+    if (sorting.major === undefined) {
+        sorting.major = VIS.last.bib.major || VIS.bib_sort.major;
+    } else if (sorting.minor === undefined) {
+        sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
+    }
 
-    ordering = bib_sort(m, major, minor);
+    if (VIS.last.bib.major === sorting.major
+            && VIS.last.bib.minor === sorting.minor) {
+        return true;
+    }
+
+    VIS.last.bib = sorting;
+
+    ordering = bib_sort(m, sorting.major, sorting.minor);
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
@@ -541,8 +556,8 @@ bib_view = function (m, maj, min) {
 
     view.bib({
         ordering: ordering,
-        major: major,
-        minor: minor,
+        major: sorting.major,
+        minor: sorting.minor,
         citations: VIS.bib_citations
     });
 
