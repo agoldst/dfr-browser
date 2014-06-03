@@ -7,8 +7,6 @@ view.bib = function (p) {
             o.key = o.heading + "_" + p.minor; // Used in the data bind
             return result;
         }),
-        cmp = p.descend ? d3.descending : d3.ascending,
-        pagination, pp = 1,
         lis;
 
     // set up sort order menu
@@ -29,9 +27,13 @@ view.bib = function (p) {
 
     // set up spy
     view.bib.spy = $("div#bib_main");
-    view.bib.spy.scrollspy({ target: "#bib_view .nav.headings" });
+    view.bib.spy.scrollspy({ target: "#bib_view #bib_headings" });
+    // TODO BUG doesn't work
+    view.bib.spy.on("activate.bs.scrollspy", function () {
+        console.log("Scrollspied");
+    });
 
-    // TODO reverse support, use cmp
+    // TODO reverse support, use URL
     d3.select("button#bib_sort_dir")
         .on("click", (function () {
             var descend = true;
@@ -51,104 +53,33 @@ view.bib = function (p) {
             };
         }())); // up/down state is preserved in the closure
 
-    // pagination
-    pagination = view.bib.paginate(ordering, VIS.bib_view.window_lines);
-
-    lis = d3.select("#bib_view ul.nav.headings")
+    lis = d3.select("#bib_view ul#bib_headings")
         .selectAll("li")
-        .data(ordering.map(function (o) { return o.heading; }));
+        .data(ordering, function (o) { return o.key; });
 
     lis.enter().append("li")
         .append("a");
     lis.exit().remove();
     lis.selectAll("a")
         .attr("href", function (o) {
-            return "#" + view.bib.id(o);
+            return "#" + view.bib.id(o.heading);
         })
         .on("click", function (o) {
-            if (cmp(o, pagination.pp[pp - 1].heading === 1)) {
-                view.bib.render(pagination.pp.slice(0, pagination.head.get(o)));
-            }
+            d3.event.preventDefault();
+            d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return o;
+            return o.heading;
         });
 
-    pp = pagination.pp.length;
-    view.bib.render(pagination.pp.slice(0, pp), p.citations);
-    view.bib.spy.waypoint(function () {
-        pp += 1;
-        console.log("waypoint trigger: pp: " + pp);
-        if (pp >= pagination.pp.length) {
-            view.bib.spy.waypoint("destroy");
-        }
-        view.bib.render(pagination.pp.slice(0, pp), p.citations);
-    },
-    {
-        offset: "bottom-in-view"
-    });
-
-
+    view.bib.render(ordering, p.citations);
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
     return true;
 };
 
-view.bib.paginate = function (ordering, ll_max) {
-    var i, page, pages, ll, d, remain, head = d3.map();
-
-    for (i = 0, ll = 0, page = [], pages = []; i < ordering.length; i += 1) {
-        head.set(ordering[i].heading, pages.length);
-        if (ll + ordering[i].docs.length <= ll_max) {
-            page.push(ordering[i]);
-            ll += ordering[i].docs.length;
-        } else {
-            // current heading overflows page line limit. Fill the page:
-            d = ll_max - ll;
-            page.push({
-                heading: ordering[i].heading,
-                key: ordering[i].key,
-                docs: ordering[i].docs.slice(0, d)
-            });
-            pages.push(page);
-            // And allocate as many pages as needed to this heading
-            for (remain = ordering[i].docs.length - d; remain > 0;
-                    remain -= ll_max, d += ll_max) {
-                page = [{
-                    heading: ordering[i].heading,
-                    key: ordering[i].key,
-                    docs: ordering[i].docs.slice(d, Math.min(remain, ll_max)),
-                    cont: true
-                }];
-                if (remain > ll_max) {
-                    pages.push(page);
-                } else {
-                    ll = remain;
-                    // and loop will terminate, with page to be filled out by
-                    // next heading
-                }
-            }
-        }
-    }
-    return {
-        pp: pages,
-        head: head
-    };
-};
-
-view.bib.render = function (pages, citations) {
-    var ordering = pages.reduce(function (acc, x) {
-            return acc.concat(x);
-        }).reduce(function (acc, x) {
-            var result = acc.length ? acc : [acc];
-            if (result[result.length - 1].heading === x.heading) {
-                result[result.length - 1].docs.push(x.docs);
-            } else {
-                result.push(x);
-            }
-            return result;
-        }),
-        sections, as;
+view.bib.render = function (ordering, citations) {
+    var sections, as;
 
     view.loading(true);
     sections = d3.select(view.bib.spy.selector)
