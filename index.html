@@ -33,9 +33,9 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
 
-      <p>Thanks to the easy availability of <a href="http://dfr.jstor.org">counts of words occurring in JSTOR articles</a>, humanists have grown interested in seeing what they can learn about those articles in the aggregate. How can we analyze this digital archive to learn about large-scale patterns in scholarly fields over the last century or more? Recently, one algorithmic approach to investigating patterns in a big set of documents has received quite a bit of attention in the humanities and social sciences: topic modeling with Latent Dirichlet Allocation (see <a href="http://www.sciencedirect.com/science/article/pii/S0304422X13000442">this overview article from the sociology journal <em>Poetics</em></a>, <a href="http://www.matthewjockers.net/2011/09/29/the-lda-buffet-is-now-open-or-latent-dirichlet-allocation-for-english-majors/">this explanation for &ldquo;English majors,&rdquo;</a> or the <a href="http://dl.acm.org/citation.cfm?id=944937">original paper about the algorithm</a>).</p>
+      <p>Thanks to the easy availability of <a href="http://dfr.jstor.org">counts of words occurring in JSTOR articles</a>, humanists have grown interested in seeing what they can learn about those articles in the aggregate. How can we analyze this digital archive to learn about large-scale patterns in scholarly fields over the last century or more? Recently, one algorithmic approach to investigating patterns in a big set of documents has received quite a bit of attention in the humanities and social sciences: topic modeling with Latent Dirichlet Allocation (see <a href="http://www.sciencedirect.com/science/article/pii/S0304422X13000442">this overview article from the sociology journal <em>Poetics</em></a>, <a href="http://www.matthewjockers.net/2011/09/29/the-lda-buffet-is-now-open-or-latent-dirichlet-allocation-for-english-majors/">this explanation for &ldquo;English majors,&rdquo;</a>, the <a href="http://dl.acm.org/citation.cfm?id=944937">original paper about the algorithm</a>, or the essay I co-wrote with Ted Underwood, <a href="http://dx.doi.org/doi:10.7282/T3222RZT">The Quiet Transformations of Literary Studies: What Thirteen Thousand Scholars Could Tell Us</a>).</p>
       
-      <p>So: take data from DfR, <a href="http://github.com/agoldst/dfr-analysis">wrangle it a little</a>, feed it to <a href="http://mallet.cs.umass.edu">MALLET</a>, and poof! the algorithm yields a topic model. For example, a model of all the articles from the century-long run of <em>PMLA</em>. <em>So what is that?</em></p>
+      <p>So: take data from DfR, <a href="http://github.com/agoldst/dfrtopics">wrangle it a little</a>, feed it to <a href="http://mallet.cs.umass.edu">MALLET</a>, and poof! the algorithm yields a topic model. For example, a model of all the articles from the century-long run of <em>PMLA</em>. <em>So what is that?</em></p>
 
 <h2><a href="demo">Try the demo &rarr;</a></h2>
 
@@ -112,11 +112,11 @@
 
 <p>Thanks to <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">this post by Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser&rsquo;s URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo&rsquo;s view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>.</p>
 
-<p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>view_refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/js/index.js">main source file, index.js</a>. This function is set as the <code>hashchange</code> handler.</p>
+<p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>view_refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/src/main.js">controller source, main.js</a>. This function is set as the <code>hashchange</code> handler.</p>
 
 <h2>Browsing your own models</h2>
 
-<p>To build your own browser using this code, grab the source on <a href="https://github.com/agoldst/dfr-browser">github</a>. The <a href="https://github.com/agoldst/dfr-browser">github project page</a> (which is the same as the repository README file) includes more details on how to set up and run dfr-browser with your own topic models, as well as some pointers on how to tune the visualization parameters. I hope to write a more comprehensive tutorial on using my <a href="http://github.com/agoldst/dfr-analysis">dfr-analysis</a> scripts to produce a topic model and visualize it with this browser soon (i.e., sometime in 2013–2014).</p>
+<p>To build your own browser using this code, grab the source on <a href="https://github.com/agoldst/dfr-browser">github</a>, drop the necessary data files in the <code>data</code> subdirectory, and launch a local webserver. The <a href="https://github.com/agoldst/dfr-browser">github project page</a> (which is the same as the repository README file) includes more details on how to create those data files and run dfr-browser, as well as some pointers on how to tune the visualization parameters and a couple of notes on adapting the source doe to other uses. I plan to write a more comprehensive tutorial on using my <a href="http://github.com/agoldst/dfrtopics">dfrtopics</a> R package to produce a topic model and visualize it with this browser sometime in 2014.</p>
 
 <h3>License</h3>
 
@@ -132,6 +132,8 @@
 <p><a href="http://glimmer.rstudio.com/cpsievert/LDAviz/">LDAviz</a>, by Carson Sievert, uses the Shiny R server to support statistically-sophisticated visualizations of both individual topics and the interrelations among topics.</p>
 
 <p><a href="http://www.networkedcorpus.com/">The Networked Corpus</a> is a beautiful way to visualize a topic model of a full-text corpus. </p>
+
+<p><a href="http://chrisjr.github.io/papermachines/">Paper Machines</a>, by Jo Guldi and Chris Johnson-Robertson, is a Zotero extension that offers a point-and-click interface to multiple visualizations of a corpus, including some facilities for topic-modeling JSTOR Data for Research wordcounts.</p>
 
 <p>David Mimno&rsquo;s <a href="http://mimno.infosci.cornell.edu/jsLDA/">jsLDA</a> computes the topic model in the browser as well as visualizing it in interesting ways.</p>
 
