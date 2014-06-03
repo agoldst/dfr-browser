@@ -16,10 +16,6 @@ var VIS = {
         topic_scaled: "data/topic_scaled.csv"
     },
     default_view: "/model", // specify the part after the #
-    bib_sort: {
-        major: "year",
-        minor: "alpha"
-    },
     overview_words: 15,     // may need adjustment
     model_view: {
         w: 1140,            // px: the bootstrap container width
@@ -81,6 +77,11 @@ var VIS = {
             top: 20,
             bottom: 0
         }
+    },
+    bib_view: {
+        window_lines: 100,
+        major: "year",
+        minor: "alpha"
     },
     float_format: function (x) {
         return d3.round(x, 3);
@@ -538,13 +539,13 @@ bib_view = function (m, maj, min) {
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
         if (sorting.major === undefined) {
-            sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
+            sorting.minor = VIS.last.bib.minor || VIS.bib_view.minor;
         } else  {
-            sorting.minor = VIS.bib_sort.minor;
+            sorting.minor = VIS.bib_view.minor;
         }
     }
     if (sorting.major === undefined) {
-        sorting.major = VIS.last.bib.major || VIS.bib_sort.major;
+        sorting.major = VIS.last.bib.major || VIS.bib_view.major;
     }
 
     VIS.last.bib = sorting;

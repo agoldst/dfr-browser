@@ -377,11 +377,11 @@ ul#vocab_list li a:visited {
 }
 
 /* for hovering on panel headings, using mouseover events */
-div.panel div.panel-heading.panel_heading_hover {
+div.section h2 {
     background-color: rgb(221, 221, 221);
 }
 
-.bib_section a {
+#bib_view .section a {
     display: block;
     line-height: 1.33em;
     text-indent: -3em;

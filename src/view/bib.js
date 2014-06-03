@@ -7,7 +7,9 @@ view.bib = function (p) {
             o.key = o.heading + "_" + p.minor; // Used in the data bind
             return result;
         }),
-        panels, divs, as;
+        cmp = p.descend ? d3.descending : d3.ascending,
+        pagination, pp = 1,
+        lis;
 
     // set up sort order menu
     d3.selectAll("select#select_bib_sort option")
@@ -25,15 +27,11 @@ view.bib = function (p) {
             set_view("/bib/" + sorting.replace(/_/, "/"));
         });
 
-    // set up rest of toolbar
-    d3.select("button#bib_collapse_all")
-        .on("click", function () {
-            $(".panel-collapse").collapse("hide");
-        });
-    d3.select("button#bib_expand_all")
-        .on("click", function () {
-            $(".panel-collapse").collapse("show");
-        });
+    // set up spy
+    view.bib.spy = $("div#bib_main");
+    view.bib.spy.scrollspy({ target: "#bib_view .nav.headings" });
+
+    // TODO reverse support, use cmp
     d3.select("button#bib_sort_dir")
         .on("click", (function () {
             var descend = true;
@@ -53,70 +51,134 @@ view.bib = function (p) {
             };
         }())); // up/down state is preserved in the closure
 
-    panels = d3.select("div#bib_main")
-        .selectAll("div.panel")
+    // pagination
+    pagination = view.bib.paginate(ordering, VIS.bib_view.window_lines);
+
+    lis = d3.select("#bib_view ul.nav.headings")
+        .selectAll("li")
+        .data(ordering.map(function (o) { return o.heading; }));
+
+    lis.enter().append("li")
+        .append("a");
+    lis.exit().remove();
+    lis.selectAll("a")
+        .attr("href", function (o) {
+            return "#" + view.bib.id(o);
+        })
+        .on("click", function (o) {
+            if (cmp(o, pagination.pp[pp - 1].heading === 1)) {
+                view.bib.render(pagination.pp.slice(0, pagination.head.get(o)));
+            }
+        })
+        .text(function (o) {
+            return o;
+        });
+
+    pp = pagination.pp.length;
+    view.bib.render(pagination.pp.slice(0, pp), p.citations);
+    view.bib.spy.waypoint(function () {
+        pp += 1;
+        console.log("waypoint trigger: pp: " + pp);
+        if (pp >= pagination.pp.length) {
+            view.bib.spy.waypoint("destroy");
+        }
+        view.bib.render(pagination.pp.slice(0, pp), p.citations);
+    },
+    {
+        offset: "bottom-in-view"
+    });
+
+
+    // TODO smooth sliding-in / -out appearance of navbar would be nicer
+
+    return true;
+};
+
+view.bib.paginate = function (ordering, ll_max) {
+    var i, page, pages, ll, d, remain, head = d3.map();
+
+    for (i = 0, ll = 0, page = [], pages = []; i < ordering.length; i += 1) {
+        head.set(ordering[i].heading, pages.length);
+        if (ll + ordering[i].docs.length <= ll_max) {
+            page.push(ordering[i]);
+            ll += ordering[i].docs.length;
+        } else {
+            // current heading overflows page line limit. Fill the page:
+            d = ll_max - ll;
+            page.push({
+                heading: ordering[i].heading,
+                key: ordering[i].key,
+                docs: ordering[i].docs.slice(0, d)
+            });
+            pages.push(page);
+            // And allocate as many pages as needed to this heading
+            for (remain = ordering[i].docs.length - d; remain > 0;
+                    remain -= ll_max, d += ll_max) {
+                page = [{
+                    heading: ordering[i].heading,
+                    key: ordering[i].key,
+                    docs: ordering[i].docs.slice(d, Math.min(remain, ll_max)),
+                    cont: true
+                }];
+                if (remain > ll_max) {
+                    pages.push(page);
+                } else {
+                    ll = remain;
+                    // and loop will terminate, with page to be filled out by
+                    // next heading
+                }
+            }
+        }
+    }
+    return {
+        pp: pages,
+        head: head
+    };
+};
+
+view.bib.render = function (pages, citations) {
+    var ordering = pages.reduce(function (acc, x) {
+            return acc.concat(x);
+        }).reduce(function (acc, x) {
+            var result = acc.length ? acc : [acc];
+            if (result[result.length - 1].heading === x.heading) {
+                result[result.length - 1].docs.push(x.docs);
+            } else {
+                result.push(x);
+            }
+            return result;
+        }),
+        sections, as;
+
+    view.loading(true);
+    sections = d3.select(view.bib.spy.selector)
+        .selectAll("div.section")
         .data(ordering, function (o) {
             // Ensure that we'll update even if only the minor key has changed
             // (in which case headings stay the same)
             return o.key;
         });
 
-    // The structure is:
-    // <div class="panel">
-    //   <div class="panel-heading">...</div>
-    //   <div class="panel-collapse">
-    //     <div class="panel-body bib_section">...</div>
-    //   </div>
-    // </div>
-
-    divs = panels.enter().append("div")
-        .classed("panel", true)
-        .classed("panel-default", true);
-
-    divs.append("div")
-        .classed("panel-heading", true)
-        .on("click", function (o) {
-            $("#panel_" + o.heading).collapse("toggle");
-        })
-        .on("mouseover", function () {
-            d3.select(this).classed("panel_heading_hover", true);
-        })
-        .on("mouseout", function () {
-            d3.select(this).classed("panel_heading_hover", false);
+    sections.enter().append("div")
+        .classed("section", true)
+        .attr("id", function (o) {
+            return view.bib.id(o.heading);
         })
         .append("h2")
-            .classed("panel-title", true)
-            .append("a")
-                .classed("accordion-toggle", true)
-                .attr("data-toggle", "collapse")
-                .attr("href", function (o) {
-                    return "#panel_" + o.heading;
-                })
-                .text(function (o) {
-                    return o.heading;
-                });
-
-    divs.append("div")
-        .classed("panel-collapse", true)
-        .classed("collapse", true)
-        .classed("in", true)
-        .attr("id", function (o) { return "panel_" + o.heading; })
-        .append("div")
-            .classed("panel-body", true)
-            .classed("bib_section", true);
-
-    panels.exit().remove();
+            .text(function (o) {
+                return o.heading;
+            });
+    sections.exit().remove();
 
     // Cheating here. We are not going to update the headings in the
     // update selection, since we know that if something is in update
     // but not enter, its heading isn't changing (because the data is
     // keyed by headings).
 
-    as = panels.selectAll(".bib_section")
-        .selectAll("a")
-            .data(function (o) {
-                return o.docs;
-            });
+    as = sections.selectAll("a")
+        .data(function (o) {
+            return o.docs;
+        });
 
     as.enter().append("a");
     as.exit().remove();
@@ -125,11 +187,13 @@ view.bib = function (p) {
             return "#/doc/" + d;
         })
         .html(function (d) {
-            return p.citations[d];
+            return citations[d];
         });
 
-    // TODO smooth sliding-in / -out appearance of navbar would be nicer
+    view.loading("false");
+    view.bib.spy.scrollspy("refresh");
+};
 
-    return true;
-
+view.bib.id = function (heading) {
+    return "bib_" + heading;
 };
