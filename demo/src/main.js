@@ -4,7 +4,9 @@
 /* declaration of global object (initialized in setup_vis) */
 var VIS = {
     ready: { }, // which viz already generated?
-    last: { }, // which subviews last shown?
+    last: { // which subviews last shown?
+        bib: { }
+    },
     view_updating: false, // do we need to redraw the whole view?
     files: { // what data files to request
         info: "data/info.json",
@@ -129,10 +131,7 @@ var bib_sort,   // bibliography sorting
 
 // bibliography sorting
 bib_sort = function (m, major, minor) {
-    var result = {
-            headings: [],
-            docs: []
-        },
+    var result = [],
         docs,
         major_key,
         minor_key,
@@ -155,7 +154,7 @@ bib_sort = function (m, major, minor) {
         major_key = function (i) {
             return m.meta(i).journaltitle;
         };
-    } else {
+    } else { // expected: major === "alpha"
         // default to alphabetical by author
         major_key = function (i) {
             return doc_author_string(m.meta(i)).replace(/^\W*/, "")[0]
@@ -173,7 +172,7 @@ bib_sort = function (m, major, minor) {
                 result_m = doc.journaltitle;
 
             result_m += d3.format("05d")(doc.volume);
-            result_m += d3.format("05d")(doc.issue ? 0
+            result_m += d3.format("05d")((doc.issue === "") ? 0
                     : doc.issue.replace(/\/.*$/, ""));
             if (doc.pagerange.search(/^\d/) !== -1) {
                 result_m += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
@@ -182,7 +181,7 @@ bib_sort = function (m, major, minor) {
             }
             return result_m;
         };
-    } else {
+    } else { // expected: minor === "alpha"
         // default to alphabetical by author then title
         minor_key = function (i) {
             return doc_author_string(m.meta(i)) + m.meta(i).title;
@@ -206,7 +205,9 @@ bib_sort = function (m, major, minor) {
     for (i = 0, cur_major = ""; i < docs.length; i += 1) {
         if (docs[i].major !== cur_major) {
             partition.push(i);
-            result.headings.push(docs[i].major);
+            result.push({
+                heading: docs[i].major
+            });
             cur_major = docs[i].major;
         }
     }
@@ -214,14 +215,31 @@ bib_sort = function (m, major, minor) {
     partition.push(docs.length); // make sure we get the tail 
 
     for (i = 0, last = 0; i < partition.length; i += 1) {
-        result.docs.push(docs.slice(last, partition[i]).map(get_id));
+        result[i].docs = docs.slice(last, partition[i]).map(get_id);
         last = partition[i];
     }
 
     return result;
 };
 
+// validate major/minor sort terms. The output is the same as the input,
+// except an invalid term is replaced with undefined.
+bib_sort.validate = function (p) {
+    var result = p;
+    if (p.major !== "decade"
+            && p.major !== "year"
+            && p.major !== "journal"
+            && p.major !== "alpha") {
+        result.major = undefined;
+    }
+    if (p.minor !== "date"
+            && p.minor !== "journal"
+            && p.minor !== "alpha") {
+        result.minor = undefined;
+    }
 
+    return result;
+};
 
 // -- stringifiers
 //    ------------
@@ -504,34 +522,34 @@ doc_view = function (m, d) {
 };
 
 bib_view = function (m, maj, min) {
-    var major = maj,
-        minor = min,
+    var sorting = {
+            major: maj,
+            minor: min
+    },
         ordering;
-
-    if (major === undefined) {
-        major = VIS.bib_sort.major;
-    }
-    if (minor === undefined) {
-        minor = VIS.bib_sort.minor;
-    }
-
-    if (VIS.last.bib) {
-        if (VIS.last.bib.major === major && VIS.last.bib.minor === minor) {
-            return true;
-        }
-    }
 
     if (!m.meta()) {
         view.loading(true);
         return true;
     }
 
-    VIS.last.bib = {
-        major: major,
-        minor: minor
-    };
+    sorting = bib_sort.validate(sorting);
+    // it's not really clear how to respond to a URL like #/bib/year,
+    // but we'll use the default minor sort in that case
+    if (sorting.minor === undefined) {
+        if (sorting.major === undefined) {
+            sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
+        } else  {
+            sorting.minor = VIS.bib_sort.minor;
+        }
+    }
+    if (sorting.major === undefined) {
+        sorting.major = VIS.last.bib.major || VIS.bib_sort.major;
+    }
 
-    ordering = bib_sort(m, major, minor);
+    VIS.last.bib = sorting;
+
+    ordering = bib_sort(m, sorting.major, sorting.minor);
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
@@ -542,8 +560,8 @@ bib_view = function (m, maj, min) {
 
     view.bib({
         ordering: ordering,
-        major: major,
-        minor: minor,
+        major: sorting.major,
+        minor: sorting.minor,
         citations: VIS.bib_citations
     });
 

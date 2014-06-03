@@ -25,9 +25,10 @@ view.model.plot = function (param) {
 
     svg = view.plot_svg("#model_view_plot", spec);
 
-    // rough attempt to fill total circle area in plot window 
-    // 2.25 rather than 2 is pure fudge factor
-    circle_radius = Math.floor(spec.w /
+    // if no user-supplied circle radius, attempt to fill total circle
+    // area in plot window; 2.25 rather than 2 is pure fudge factor
+
+    circle_radius = VIS.model_view.radius || Math.floor(spec.w /
             (2.25 * Math.sqrt(VIS.model_view.aspect * n)));
     // Allow the cloud to spill outside circle a little
     cloud_size = Math.floor(circle_radius * 2.1);
@@ -52,7 +53,8 @@ view.model.plot = function (param) {
         });
     } else {
         // default to grid
-        coords = view.model.grid_coords(n)
+        coords = view.model.grid_coords(n, VIS.model_view.cols
+                || Math.floor(Math.sqrt(VIS.model_view.aspect * n)))
             .map(function (p, j) {
                 return {
                     x: p.x,
@@ -223,12 +225,12 @@ view.model.plot = function (param) {
     }
 };
 
-view.model.grid_coords = function (n) {
-    var n_col = Math.floor(Math.sqrt(VIS.model_view.aspect * n)),
-        n_row = Math.floor(n / n_col),
+view.model.grid_coords = function (n, cols) {
+    var n_col = cols || Math.floor(Math.sqrt(n)),
+        n_row = Math.round(n / n_col),
         remain = n - n_row * n_col,
-        remain_odd = Math.max(remain - Math.floor(n_row / 2), 0),
-        cols,
+        sgn = d3.ascending(remain, 0),
+        rows = [],
         vskip,
         i, j,
         result = [];
@@ -239,28 +241,42 @@ view.model.grid_coords = function (n) {
     vskip = Math.sqrt(3.0) / 2.0;
 
     // if n is not exactly n_row * n_col, we'll do our best sticking
-    // things on the right-side margin
+    // things on the right-side margin. Since we indent odd rows, we
+    // stick extra entries on even rows first before going to odd rows,
+    // but we stick extra holes on odd rows first.
 
-    for (i = 0; i < n_row; i += 1) {
-        cols = n_col;
-        if (remain > 0) {
-            remain -= 1;
-            if (i % 2 === 0) {
-                cols = n_col + 1;
-            } else {
-                if (remain_odd > 0) {
-                    remain_odd -= 1;
-                    cols = n_col + 1;
-                }
-            }
+    for (i = (sgn === 1) ? 0 : 1; i < n_row; i += 2) {
+        rows[i] = n_col;
+        if (Math.abs(remain) > 0) {
+            rows[i] += sgn;
+            remain -= sgn;
         }
+    }
+    for (i = (sgn === 1) ? 1 : 0; i < n_row; i += 2) {
+        rows[i] = n_col;
+        if (Math.abs(remain) > 0) {
+            rows[i] += sgn;
+            remain -= sgn;
+        }
+    }
 
-        for (j = 0; j < cols; j += 1) {
+    // if we've doing holes, we want the longer rows on top, not on bottom
+    if (sgn === -1) {
+        rows.reverse();
+    }
+
+    // "validation"
+    if (d3.sum(rows) !== n) {
+        view.error("The topic grid has gone wrong. This is a bug.");
+    }
+
+    // generate coordinates
+    for (i = 0; i < n_row; i += 1) {
+        for (j = 0; j < rows[i]; j += 1) {
             result.push({
                 x: j + 0.5 + ((i % 2 === 0) ? 0 : 0.5),
                 y: (n_row - i) * vskip + 0.5 });
         }
     }
-
     return result;
 };

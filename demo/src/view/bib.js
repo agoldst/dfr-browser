@@ -2,18 +2,17 @@
 "use strict";
 
 view.bib = function (p) {
-    var div = d3.select("div#bib_view"),
-        major = p.major,
-        minor = p.minor,
-        ordering = p.ordering,
-        sections,
-        panels,
-        as;
+    var ordering = p.ordering.map(function (o) {
+            var result = o;
+            o.key = o.heading + "_" + p.minor; // Used in the data bind
+            return result;
+        }),
+        panels, divs, as;
 
     // set up sort order menu
-    d3.select("select#select_bib_sort option")
+    d3.selectAll("select#select_bib_sort option")
         .each(function () {
-            this.selected = (this.value === major + "_" + minor);
+            this.selected = (this.value === p.major + "_" + p.minor);
         });
     d3.select("select#select_bib_sort")
         .on("change", function () {
@@ -39,28 +38,45 @@ view.bib = function (p) {
         .on("click", (function () {
             var descend = true;
             return function () {
-                d3.selectAll("div#bib_main div.panel-default")
-                    .sort(descend ? d3.descending : d3.ascending)
-                    .order(); // stable because bound data is just indices
+                var sel = d3.selectAll("div#bib_main div.panel-default");
+                if (descend) {
+                    sel.sort(function (a, b) {
+                        return d3.descending(a.heading, b.heading);
+                    }).order();
+                } else {
+                    sel.sort(function (a, b) {
+                        return d3.ascending(a.heading, b.heading);
+                    }).order();
+                }
+                // better be stable since headings are distinct by construction
                 descend = !descend;
             };
         }())); // up/down state is preserved in the closure
 
-    // clear listings
-    div.selectAll("div#bib_main > div.panel").remove();
+    panels = d3.select("div#bib_main")
+        .selectAll("div.panel")
+        .data(ordering, function (o) {
+            // Ensure that we'll update even if only the minor key has changed
+            // (in which case headings stay the same)
+            return o.key;
+        });
 
-    sections = div.select("div#bib_main")
-        .selectAll("div")
-        .data(d3.range(ordering.headings.length));
+    // The structure is:
+    // <div class="panel">
+    //   <div class="panel-heading">...</div>
+    //   <div class="panel-collapse">
+    //     <div class="panel-body bib_section">...</div>
+    //   </div>
+    // </div>
 
-    panels = sections.enter().append("div")
+    divs = panels.enter().append("div")
         .classed("panel", true)
         .classed("panel-default", true);
 
-    panels.append("div")
+    divs.append("div")
         .classed("panel-heading", true)
-        .on("click", function (i) {
-            $("#" + ordering.headings[i]).collapse("toggle");
+        .on("click", function (o) {
+            $("#panel_" + o.heading).collapse("toggle");
         })
         .on("mouseover", function () {
             d3.select(this).classed("panel_heading_hover", true);
@@ -70,39 +86,47 @@ view.bib = function (p) {
         })
         .append("h2")
             .classed("panel-title", true)
-            .html(function (i) {
-                var a = '<a class="accordion-toggle"';
-                a += ' data-toggle="collapse"';
-                a += ' href="#' + ordering.headings[i] + '">';
-                a += ordering.headings[i];
-                a += '</a>';
-                return a;
-            });
+            .append("a")
+                .classed("accordion-toggle", true)
+                .attr("data-toggle", "collapse")
+                .attr("href", function (o) {
+                    return "#panel_" + o.heading;
+                })
+                .text(function (o) {
+                    return o.heading;
+                });
 
-    as = panels.append("div")
+    divs.append("div")
         .classed("panel-collapse", true)
         .classed("collapse", true)
         .classed("in", true)
-        .attr("id", function (i) { return ordering.headings[i]; }) 
+        .attr("id", function (o) { return "panel_" + o.heading; })
         .append("div")
             .classed("panel-body", true)
-            .classed("bib_section", true)
-            .selectAll("a")
-                .data(function (i) {
-                    return ordering.docs[i];
-                });
+            .classed("bib_section", true);
+
+    panels.exit().remove();
+
+    // Cheating here. We are not going to update the headings in the
+    // update selection, since we know that if something is in update
+    // but not enter, its heading isn't changing (because the data is
+    // keyed by headings).
+
+    as = panels.selectAll(".bib_section")
+        .selectAll("a")
+            .data(function (o) {
+                return o.docs;
+            });
 
     as.enter().append("a");
     as.exit().remove();
 
-    as
-        .attr("href", function (d) {
+    as.attr("href", function (d) {
             return "#/doc/" + d;
         })
         .html(function (d) {
             return p.citations[d];
         });
-
 
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
