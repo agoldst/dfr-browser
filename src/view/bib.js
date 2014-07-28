@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, d3, $ */
+/*global view, VIS, set_view, d3, $, window */
 "use strict";
 
 view.bib = function (p) {
@@ -25,13 +25,11 @@ view.bib = function (p) {
             set_view("/bib/" + sorting.replace(/_/, "/"));
         });
 
-    // set up spy
-    view.bib.spy = $("div#bib_main");
-    view.bib.spy.scrollspy({ target: "#bib_view #bib_headings" });
-    // TODO BUG doesn't work
-    view.bib.spy.on("activate.bs.scrollspy", function () {
-        console.log("Scrollspied");
-    });
+    d3.select("#bib_headings a.top_link")
+        .on("click", function () {
+            d3.event.preventDefault();
+            window.scrollTo(0, 0);
+        });
 
     // TODO reverse support, use URL
     d3.select("button#bib_sort_dir")
@@ -53,7 +51,7 @@ view.bib = function (p) {
             };
         }())); // up/down state is preserved in the closure
 
-    lis = d3.select("#bib_view ul#bib_headings")
+    lis = d3.select("#bib_view #bib_headings ul")
         .selectAll("li")
         .data(ordering, function (o) { return o.key; });
 
@@ -82,7 +80,7 @@ view.bib.render = function (ordering, citations) {
     var sections, as;
 
     view.loading(true);
-    sections = d3.select(view.bib.spy.selector)
+    sections = d3.select("#bib_main")
         .selectAll("div.section")
         .data(ordering, function (o) {
             // Ensure that we'll update even if only the minor key has changed
@@ -122,7 +120,6 @@ view.bib.render = function (ordering, citations) {
         });
 
     view.loading("false");
-    view.bib.spy.scrollspy("refresh");
 };
 
 view.bib.id = function (heading) {
