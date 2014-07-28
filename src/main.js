@@ -81,7 +81,8 @@ var VIS = {
     bib_view: {
         window_lines: 100,
         major: "year",
-        minor: "alpha"
+        minor: "alpha",
+        dir: "up"
     },
     float_format: function (x) {
         return d3.round(x, 3);
@@ -131,7 +132,7 @@ var bib_sort,   // bibliography sorting
 // -----------------
 
 // bibliography sorting
-bib_sort = function (m, major, minor) {
+bib_sort = function (m, major, minor, asc) {
     var result = [],
         docs,
         major_key,
@@ -220,6 +221,10 @@ bib_sort = function (m, major, minor) {
         last = partition[i];
     }
 
+    if (!asc) {
+        result.reverse();
+    }
+
     return result;
 };
 
@@ -237,6 +242,9 @@ bib_sort.validate = function (p) {
             && p.minor !== "journal"
             && p.minor !== "alpha") {
         result.minor = undefined;
+    }
+    if (p.dir !== "up" && p.dir !== "down") {
+        result.dir = undefined;
     }
 
     return result;
@@ -522,10 +530,11 @@ doc_view = function (m, d) {
     // TODO nearby documents list
 };
 
-bib_view = function (m, maj, min) {
+bib_view = function (m, maj, min, dir) {
     var sorting = {
             major: maj,
-            minor: min
+            minor: min,
+            dir: dir
     },
         ordering;
 
@@ -547,10 +556,13 @@ bib_view = function (m, maj, min) {
     if (sorting.major === undefined) {
         sorting.major = VIS.last.bib.major || VIS.bib_view.major;
     }
+    if (sorting.dir === undefined) {
+        sorting.dir = VIS.last.bib.dir || VIS.bib_view.dir;
+    }
 
     VIS.last.bib = sorting;
 
-    ordering = bib_sort(m, sorting.major, sorting.minor);
+    ordering = bib_sort(m, sorting.major, sorting.minor, sorting.dir === "up");
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
