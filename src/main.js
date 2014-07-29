@@ -145,8 +145,6 @@ bib_sort = function (m, major, minor, asc_maj, asc_min) {
         get_id = function (d) { return d.id; },
         partition = [];
 
-    console.log("bib_sort: " + [major, minor, asc_maj, asc_min].join(","));
-
     if (major === "decade") {
         major_key = function (i) {
             return Math.floor(m.meta(i).date.getFullYear() / 10).toString() +
