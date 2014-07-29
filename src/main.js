@@ -132,16 +132,20 @@ var bib_sort,   // bibliography sorting
 // -----------------
 
 // bibliography sorting
-bib_sort = function (m, major, minor, asc) {
+bib_sort = function (m, major, minor, asc_maj, asc_min) {
     var result = [],
         docs,
         major_key,
         minor_key,
+        cmp_maj,
+        cmp_min,
         cur_major,
         i,
         last,
         get_id = function (d) { return d.id; },
         partition = [];
+
+    console.log("bib_sort: " + [major, minor, asc_maj, asc_min].join(","));
 
     if (major === "decade") {
         major_key = function (i) {
@@ -190,6 +194,9 @@ bib_sort = function (m, major, minor, asc) {
         };
     }
 
+    cmp_maj = asc_maj ? d3.ascending : d3.descending;
+    cmp_min = asc_min ? d3.ascending : d3.descending;
+
     docs = d3.range(m.n_docs())
         .map(function (d) {
             return {
@@ -199,8 +206,8 @@ bib_sort = function (m, major, minor, asc) {
             };
         })
         .sort(function (a, b) {
-            return d3.ascending(a.major, b.major) ||
-                d3.ascending(a.minor, b.minor) ||
+            return cmp_maj(a.major, b.major) ||
+                cmp_min(a.minor, b.minor) ||
                 d3.ascending(a.id, b.id); // stabilize sort
         });
 
@@ -221,9 +228,6 @@ bib_sort = function (m, major, minor, asc) {
         last = partition[i];
     }
 
-    if (!asc) {
-        result.reverse();
-    }
 
     return result;
 };
@@ -247,6 +251,35 @@ bib_sort.validate = function (p) {
         result.dir = undefined;
     }
 
+    return result;
+};
+
+// Semantics of ascending/descending
+// minor dir == major dir iff minor & major are semantically similar
+// with ascending as the default otherwise
+bib_sort.dir = function (p) {
+    var result = {
+        major: true,
+        minor: true
+    };
+
+    if (p.dir === "up") {
+        return result;
+    }
+
+    if (p.dir === "down") {
+        result.major = false;
+        if (p.major === "decade" || p.major === "year") {
+            result.minor = p.minor !== "date" && p.minor !== "journal";
+        } else if (p.major === "alpha" || p.major === "journal") {
+            // journal title descending --> journal contents ascending
+            // Right, I think, but not wholly obvious
+            result.minor = p.minor !== "alpha";
+        } else {
+            // shouldn't ever get here, but...
+            result.minor = true;
+        }
+    }
     return result;
 };
 
@@ -536,6 +569,7 @@ bib_view = function (m, maj, min, dir) {
             minor: min,
             dir: dir
     },
+        asc,
         ordering;
 
     if (!m.meta()) {
@@ -562,7 +596,9 @@ bib_view = function (m, maj, min, dir) {
 
     VIS.last.bib = sorting;
 
-    ordering = bib_sort(m, sorting.major, sorting.minor, sorting.dir === "up");
+    asc = bib_sort.dir(sorting);
+    ordering = bib_sort(m, sorting.major, sorting.minor,
+            asc.major, asc.minor);
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
