@@ -405,8 +405,10 @@ ul#vocab_list li a:visited {
 }
 
 div.section h2 {
-    background-color: rgb(221, 221, 221);
-    padding: 0.25em;
+    border-top: 1px solid rgb(221, 221, 221);
+    border-bottom: 1px solid rgb(221, 221, 221);
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
 }
 
 #bib_view .section a {

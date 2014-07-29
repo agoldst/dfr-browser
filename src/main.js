@@ -575,6 +575,7 @@ bib_view = function (m, maj, min, dir) {
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
+        dir: sorting.dir,
         citations: VIS.bib_citations
     });
 
@@ -765,7 +766,7 @@ view_refresh = function (m, v) {
             success = settings_view(m);
             break;
         case "bib":
-            success = bib_view(m, param, view_parsed[3]);
+            success = bib_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "topic":
             param = +param - 1;

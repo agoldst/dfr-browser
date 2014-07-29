@@ -4,15 +4,20 @@
 view.bib = function (p) {
     var ordering = p.ordering.map(function (o) {
             var result = o;
-            o.key = o.heading + "_" + p.minor; // Used in the data bind
+            // Used in the data bind
+            o.key = o.heading + "_" + p.minor + "_" + p.dir;
             return result;
         }),
         lis;
 
-    // set up sort order menu
+    // set up sort order menus
     d3.selectAll("select#select_bib_sort option")
         .each(function () {
             this.selected = (this.value === p.major + "_" + p.minor);
+        });
+    d3.selectAll("select#select_bib_dir option")
+        .each(function () {
+            this.selected = (this.value === p.dir);
         });
     d3.select("select#select_bib_sort")
         .on("change", function () {
@@ -24,6 +29,20 @@ view.bib = function (p) {
             });
             set_view("/bib/" + sorting.replace(/_/, "/"));
         });
+    d3.select("select#select_bib_dir")
+        .on("change", function () {
+            var dir;
+            d3.selectAll("#select_bib_dir option").each(function () {
+                if (this.selected) {
+                    dir = this.value;
+                }
+            });
+            set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
+        });
+
+    d3.select("a#bib_sort_dir")
+        .attr("href", "#/bib/" + p.major + "/" + p.minor + "/"
+                + ((p.dir === "up") ? "down" : "up"));
 
     d3.select("#bib_headings a.top_link")
         .on("click", function () {
@@ -31,25 +50,6 @@ view.bib = function (p) {
             window.scrollTo(0, 0);
         });
 
-    // TODO reverse support, use URL
-    d3.select("button#bib_sort_dir")
-        .on("click", (function () {
-            var descend = true;
-            return function () {
-                var sel = d3.selectAll("div#bib_main div.panel-default");
-                if (descend) {
-                    sel.sort(function (a, b) {
-                        return d3.descending(a.heading, b.heading);
-                    }).order();
-                } else {
-                    sel.sort(function (a, b) {
-                        return d3.ascending(a.heading, b.heading);
-                    }).order();
-                }
-                // better be stable since headings are distinct by construction
-                descend = !descend;
-            };
-        }())); // up/down state is preserved in the closure
 
     lis = d3.select("#bib_view #bib_headings ul")
         .selectAll("li")
