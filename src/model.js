@@ -435,8 +435,8 @@ model = function (spec) {
 
         my.meta = d3.csv.parseRows(s, function (d, j) {
         // no header, but this is the column order:
-        // 0  1     2      3            4      5     6       7      
-        // id,title,author,journaltitle,volume,issue,pubdate,pagerange
+        // 0  1     2      3            4      5     6       7         8
+        // id,title,author,journaltitle,volume,issue,pubdate,pagerange,special
             var a_str = d[2].trim(), // author
                 date = new Date(d[6].trim()); // pubdate (UTC)
 
@@ -455,7 +455,8 @@ model = function (spec) {
                 date: date, // pubdate
                 pagerange: d[7].trim()
                     .replace(/^p?p\. /, "")
-                    .replace(/-/g, "–")
+                    .replace(/-/g, "–"),
+                special: d[8].trim()
             };
         });
 
