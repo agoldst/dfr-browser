@@ -60,8 +60,8 @@ view.doc = function (p) {
 };
 
 view.doc.uri = function (meta) {
-    return "http://dx.doi.org"
+    return "http://www.jstor.org"
         + VIS.uri_proxy
-        + "/"
+        + "/stable/"
         + meta.doi;
 };

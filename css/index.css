@@ -398,12 +398,42 @@ ul#vocab_list li a:visited {
 #bib_nav {
 }
 
-/* for hovering on panel headings, using mouseover events */
-div.panel div.panel-heading.panel_heading_hover {
-    background-color: rgb(221, 221, 221);
+#bib_headings {
+    padding-top: 5px;
+    max-width: 260px; /* TODO hard-codes 3 grid cols. not responsive */
 }
 
-.bib_section a {
+#bib_headings ul {
+    list-style-type: none;
+}
+
+#bib_headings li {
+    width: 3.25em; /* TODO better not be wider than the widest label */
+}
+
+#bib_headings a {
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+    text-decoration: none;
+    color: black;
+}
+
+#bib_headings a:hover {
+    background-color: #f5f5f5;
+}
+
+#bib_headings a:active {
+    background-color: #f5f5f5;
+}
+
+div.section h2 {
+    border-top: 1px solid rgb(221, 221, 221);
+    border-bottom: 1px solid rgb(221, 221, 221);
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+}
+
+#bib_view .section a {
     display: block;
     line-height: 1.33em;
     text-indent: -3em;
