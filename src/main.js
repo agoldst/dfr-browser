@@ -16,10 +16,6 @@ var VIS = {
         topic_scaled: "data/topic_scaled.csv"
     },
     default_view: "/model", // specify the part after the #
-    bib_sort: {
-        major: "year",
-        minor: "alpha"
-    },
     overview_words: 15,     // may need adjustment
     model_view: {
         w: 1140,            // px: the bootstrap container width
@@ -82,6 +78,12 @@ var VIS = {
             bottom: 0
         }
     },
+    bib_view: {
+        window_lines: 100,
+        major: "year",
+        minor: "alpha",
+        dir: "up"
+    },
     float_format: function (x) {
         return d3.round(x, 3);
     },
@@ -130,11 +132,13 @@ var bib_sort,   // bibliography sorting
 // -----------------
 
 // bibliography sorting
-bib_sort = function (m, major, minor) {
+bib_sort = function (m, major, minor, asc_maj, asc_min) {
     var result = [],
         docs,
         major_key,
         minor_key,
+        cmp_maj,
+        cmp_min,
         cur_major,
         i,
         last,
@@ -188,6 +192,9 @@ bib_sort = function (m, major, minor) {
         };
     }
 
+    cmp_maj = asc_maj ? d3.ascending : d3.descending;
+    cmp_min = asc_min ? d3.ascending : d3.descending;
+
     docs = d3.range(m.n_docs())
         .map(function (d) {
             return {
@@ -197,8 +204,8 @@ bib_sort = function (m, major, minor) {
             };
         })
         .sort(function (a, b) {
-            return d3.ascending(a.major, b.major) ||
-                d3.ascending(a.minor, b.minor) ||
+            return cmp_maj(a.major, b.major) ||
+                cmp_min(a.minor, b.minor) ||
                 d3.ascending(a.id, b.id); // stabilize sort
         });
 
@@ -219,6 +226,7 @@ bib_sort = function (m, major, minor) {
         last = partition[i];
     }
 
+
     return result;
 };
 
@@ -237,7 +245,39 @@ bib_sort.validate = function (p) {
             && p.minor !== "alpha") {
         result.minor = undefined;
     }
+    if (p.dir !== "up" && p.dir !== "down") {
+        result.dir = undefined;
+    }
 
+    return result;
+};
+
+// Semantics of ascending/descending
+// minor dir == major dir iff minor & major are semantically similar
+// with ascending as the default otherwise
+bib_sort.dir = function (p) {
+    var result = {
+        major: true,
+        minor: true
+    };
+
+    if (p.dir === "up") {
+        return result;
+    }
+
+    if (p.dir === "down") {
+        result.major = false;
+        if (p.major === "decade" || p.major === "year") {
+            result.minor = p.minor !== "date" && p.minor !== "journal";
+        } else if (p.major === "alpha" || p.major === "journal") {
+            // journal title descending --> journal contents ascending
+            // Right, I think, but not wholly obvious
+            result.minor = p.minor !== "alpha";
+        } else {
+            // shouldn't ever get here, but...
+            result.minor = true;
+        }
+    }
     return result;
 };
 
@@ -521,11 +561,13 @@ doc_view = function (m, d) {
     // TODO nearby documents list
 };
 
-bib_view = function (m, maj, min) {
+bib_view = function (m, maj, min, dir) {
     var sorting = {
             major: maj,
-            minor: min
+            minor: min,
+            dir: dir
     },
+        asc,
         ordering;
 
     if (!m.meta()) {
@@ -538,18 +580,23 @@ bib_view = function (m, maj, min) {
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
         if (sorting.major === undefined) {
-            sorting.minor = VIS.last.bib.minor || VIS.bib_sort.minor;
+            sorting.minor = VIS.last.bib.minor || VIS.bib_view.minor;
         } else  {
-            sorting.minor = VIS.bib_sort.minor;
+            sorting.minor = VIS.bib_view.minor;
         }
     }
     if (sorting.major === undefined) {
-        sorting.major = VIS.last.bib.major || VIS.bib_sort.major;
+        sorting.major = VIS.last.bib.major || VIS.bib_view.major;
+    }
+    if (sorting.dir === undefined) {
+        sorting.dir = VIS.last.bib.dir || VIS.bib_view.dir;
     }
 
     VIS.last.bib = sorting;
 
-    ordering = bib_sort(m, sorting.major, sorting.minor);
+    asc = bib_sort.dir(sorting);
+    ordering = bib_sort(m, sorting.major, sorting.minor,
+            asc.major, asc.minor);
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
@@ -562,6 +609,7 @@ bib_view = function (m, maj, min) {
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
+        dir: sorting.dir,
         citations: VIS.bib_citations
     });
 
@@ -752,7 +800,7 @@ view_refresh = function (m, v) {
             success = settings_view(m);
             break;
         case "bib":
-            success = bib_view(m, param, view_parsed[3]);
+            success = bib_view(m, param, view_parsed[3], view_parsed[4]);
             break;
         case "topic":
             param = +param - 1;
