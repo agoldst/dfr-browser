@@ -51,3 +51,58 @@ Tasks:
 3. indication of journal special issues 
 	-Signs editorial intern Tatiana working on a list
 4. hand label topics individually, compare to decide on labels
+
+
+Per 7/28/14 email conversation:
+
+Analyzing the model:
+
+- topic labels
+	- Susana, Lindsey, Andy, and Laura (SLAL) - Aug 1
+
+- which are uninformative?
+	- SLAL - Aug 1
+	-consult with AG after early Aug Skype convo
+
+
+ Text:
+
+- editorial comments on the model?
+	- Early Sept
+
+ - other remaining writing/editing?
+	- short analysis of example topics
+		-SLA draft Aug 30
+
+Software:
+
+- topic labels
+- hiding topics
+- article/issue tagging (e.g.: virtual ToCs, indication of special issues...)
+- interface refinements, various (e.g.: how the introductory text appears/disappears, whether the site detects incompatible browsers)
+- links or other display of editorial comments?
+- more appropriate bibliography page sorting options...
+- fixing links to articles?
+- retooling dates?
+
+ Design:
+
+- where and how to display editorial comments
+- match Signs's style more closely? Nothing about the typography, color scheme, etc. of the browser is fixed. I think it would be good to think about distinguishing this a little from the bland default look of bootstrap (and, in fact, from the other model browser site I've made public, www.rci.rutgers.edu/~ag978/quiet).
+	-Andy plus others' input
+		-initial attempts ~Aug 15
+
+ Other tasks?
+- overall site design
+	-AM and Susana, Lindsey and Laura
+		-sample page mockups and overall structure before Aug 30
+- contact Jonathan Goodwin re: republishing his cocitation graph (http://jgoodwin.net/signs/test.html)
+	-Andy, 7/29
+
+
+Agenda for SLAL early Aug Skype meeting
+- compare topic labels
+- brainstorm overall site design
+- ideas for styling model browser
+- finalize 10 ToCs
+
