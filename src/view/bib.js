@@ -1,19 +1,23 @@
-/*global view, VIS, set_view, d3, $ */
+/*global view, VIS, set_view, d3, $, window */
 "use strict";
 
 view.bib = function (p) {
-    var div = d3.select("div#bib_view"),
-        major = p.major,
-        minor = p.minor,
-        ordering = p.ordering,
-        sections,
-        panels,
-        as;
+    var ordering = p.ordering.map(function (o) {
+            var result = o;
+            // Used in the data bind
+            o.key = o.heading + "_" + p.minor + "_" + p.dir;
+            return result;
+        }),
+        lis;
 
-    // set up sort order menu
-    d3.select("select#select_bib_sort option")
+    // set up sort order menus
+    d3.selectAll("select#select_bib_sort option")
         .each(function () {
-            this.selected = (this.value === major + "_" + minor);
+            this.selected = (this.value === p.major + "_" + p.minor);
+        });
+    d3.selectAll("select#select_bib_dir option")
+        .each(function () {
+            this.selected = (this.value === p.dir);
         });
     d3.select("select#select_bib_sort")
         .on("change", function () {
@@ -25,87 +29,99 @@ view.bib = function (p) {
             });
             set_view("/bib/" + sorting.replace(/_/, "/"));
         });
-
-    // set up rest of toolbar
-    d3.select("button#bib_collapse_all")
-        .on("click", function () {
-            $(".panel-collapse").collapse("hide");
+    d3.select("select#select_bib_dir")
+        .on("change", function () {
+            var dir;
+            d3.selectAll("#select_bib_dir option").each(function () {
+                if (this.selected) {
+                    dir = this.value;
+                }
+            });
+            set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
         });
-    d3.select("button#bib_expand_all")
+
+    d3.select("a#bib_sort_dir")
+        .attr("href", "#/bib/" + p.major + "/" + p.minor + "/"
+                + ((p.dir === "up") ? "down" : "up"));
+
+    d3.select("#bib_headings a.top_link")
         .on("click", function () {
-            $(".panel-collapse").collapse("show");
+            d3.event.preventDefault();
+            window.scrollTo(0, 0);
         });
-    d3.select("button#bib_sort_dir")
-        .on("click", (function () {
-            var descend = true;
-            return function () {
-                d3.selectAll("div#bib_main div.panel-default")
-                    .sort(descend ? d3.descending : d3.ascending)
-                    .order(); // stable because bound data is just indices
-                descend = !descend;
-            };
-        }())); // up/down state is preserved in the closure
 
-    // clear listings
-    div.selectAll("div#bib_main > div.panel").remove();
 
-    sections = div.select("div#bib_main")
-        .selectAll("div")
-        .data(d3.range(ordering.headings.length));
+    lis = d3.select("#bib_view #bib_headings ul")
+        .selectAll("li")
+        .data(ordering, function (o) { return o.key; });
 
-    panels = sections.enter().append("div")
-        .classed("panel", true)
-        .classed("panel-default", true);
-
-    panels.append("div")
-        .classed("panel-heading", true)
-        .on("click", function (i) {
-            $("#" + ordering.headings[i]).collapse("toggle");
+    lis.enter().append("li")
+        .append("a");
+    lis.exit().remove();
+    lis.selectAll("a")
+        .attr("href", function (o) {
+            return "#" + view.bib.id(o.heading);
         })
-        .on("mouseover", function () {
-            d3.select(this).classed("panel_heading_hover", true);
+        .on("click", function (o) {
+            d3.event.preventDefault();
+            d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
-        .on("mouseout", function () {
-            d3.select(this).classed("panel_heading_hover", false);
+        .text(function (o) {
+            return o.heading;
+        });
+
+    view.bib.render(ordering, p.citations);
+    // TODO smooth sliding-in / -out appearance of navbar would be nicer
+
+    return true;
+};
+
+view.bib.render = function (ordering, citations) {
+    var sections, as;
+
+    view.loading(true);
+    sections = d3.select("#bib_main")
+        .selectAll("div.section")
+        .data(ordering, function (o) {
+            // Ensure that we'll update even if only the minor key has changed
+            // (in which case headings stay the same)
+            return o.key;
+        });
+
+    sections.enter().append("div")
+        .classed("section", true)
+        .attr("id", function (o) {
+            return view.bib.id(o.heading);
         })
         .append("h2")
-            .classed("panel-title", true)
-            .html(function (i) {
-                var a = '<a class="accordion-toggle"';
-                a += ' data-toggle="collapse"';
-                a += ' href="#' + ordering.headings[i] + '">';
-                a += ordering.headings[i];
-                a += '</a>';
-                return a;
+            .text(function (o) {
+                return o.heading;
             });
+    sections.exit().remove();
 
-    as = panels.append("div")
-        .classed("panel-collapse", true)
-        .classed("collapse", true)
-        .classed("in", true)
-        .attr("id", function (i) { return ordering.headings[i]; }) 
-        .append("div")
-            .classed("panel-body", true)
-            .classed("bib_section", true)
-            .selectAll("a")
-                .data(function (i) {
-                    return ordering.docs[i];
-                });
+    // Cheating here. We are not going to update the headings in the
+    // update selection, since we know that if something is in update
+    // but not enter, its heading isn't changing (because the data is
+    // keyed by headings).
+
+    as = sections.selectAll("a")
+        .data(function (o) {
+            return o.docs;
+        });
 
     as.enter().append("a");
     as.exit().remove();
 
-    as
-        .attr("href", function (d) {
+    as.attr("href", function (d) {
             return "#/doc/" + d;
         })
         .html(function (d) {
-            return p.citations[d];
+            return citations[d];
         });
 
+    view.loading("false");
+};
 
-    // TODO smooth sliding-in / -out appearance of navbar would be nicer
-
-    return true;
-
+view.bib.id = function (heading) {
+    return "bib_" + heading;
 };
