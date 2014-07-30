@@ -81,9 +81,9 @@
 
 <h3>The document view</h3>
 
-<p>The document view (see <a href="demo/#/doc/494">an example from the demo, Stallybrass&rsquo;s &ldquo;Against Thinking&rdquo;</a>) simply represents the estimated proportions of the various topics in a given document. It also offers a link which should normally lead to the document on JSTOR itself. These links are via <a href="http://dx.doi.org">dx.doi.org</a>; I use the doi&rsquo;s supplied by DfR in its metadata.</p>
+<p>The document view (see <a href="demo/#/doc/494">an example from the demo, Stallybrass&rsquo;s &ldquo;Against Thinking&rdquo;</a>) simply represents the estimated proportions of the various topics in a given document. It also offers a link which should normally lead to the document on JSTOR itself.</p>
 
-<p><em>Known issue:</em> These links do not always resolve correctly, and I don&rsquo;t understand why. (That example, for instance: the link should lead to <a href="http://www.jstor.org/stable/25501804">this page</a> but doesn&rsquo;t.) Also, if you connect to JSTOR through a web-based proxy, make sure the DOI resolver is not landing you at an unproxied JSTOR page (I use <a href="http://zotero.org">Zotero</a> to automatically redirect links to databases through proxies).</p>
+<p><em>Known issue:</em> Though at present links of the form <code>jstor.org/stable/<em>DOI</em>/</code> appear to work, I don't think this is guaranteed. Unfortunately, though DfR supplies DOI's, the <code>dx.doi.org</code> links for those DOI's do <em>not</em> resolve correctly.</p>
 
 
 <h3>The word view</h3>
@@ -98,9 +98,9 @@
 
 <h3>The bibliography view</h3>
 
-<p>This view focuses on documents (<a href="demo/#/bib">demo</a>). It lists all citations for all the documents included in the model. Because this is typically a lot of documents, I provide rudimentary "faceting": documents are sorted under headings (either letters of the alphabet or decades or years or journals), and you can collapse and expand the panel of document listings under each panel. Use the &ldquo;collapse all&rdquo; button to produce a more tractable display if you know what heading you&rsquo;re interested in; or, if you&rsquo;d like to search on the page, be sure to &ldquo;expand all&rdquo; the panels first so that the browser can see all the citations in the text. The menu gives a few sorting options, of which <a href="demo/#/bib/year/author">year/author</a> and <a href="demo/#/bib/year/journal">year/journal contents</a> are probably most useful.</p>
+<p>This view focuses on documents (<a href="demo/#/bib">demo</a>). It lists all citations for all the documents included in the model. Because this is typically a lot of documents, documents are sorted under headings (either letters of the alphabet or decades or years or journals), and you can jump around the headings using the floating block of links on the left side of the page. If you&rsquo;d like to search on the page, use the browser's own Find function. The menu gives a few sorting options, of which <a href="demo/#/bib/year/author">year/author</a> and <a href="demo/#/bib/year/journal">year/journal contents</a> are probably most useful.</p>
 
-<p><em>Known issues:</em> the sorting seems to be glitchy for metadata about nineteenth-century articles; the generated citations are imperfectly formatted. Also, this view can take a couple of seconds to load. If I ever work further on this <em>alpha release</em>, I will look for ways to either speed it up or load it incrementally as you scroll.</p>
+<p><em>Known issues:</em> the sorting seems to be glitchy for metadata about nineteenth-century articles; the generated citations are imperfectly formatted. Also, this view can take a couple of seconds to load.</p>
 
 <p><em>Possible future additions:</em> Eventually, I hope to add some ways to explore the abstract space of documents created by the topic breakdowns, on the model of the scaled topic-space visualization.</p>
 
@@ -146,7 +146,7 @@
 <p><a href="http://code.google.com/p/topic-modeling-tool/">The Topic Modeling Tool</a> provides a GUI to make MALLET use easier.</p>
 
 <h2>Version history</h2>
-
+<p>June 30, 2014. v0.5. A redesigned bibliography view. Time-zone-related bug in dates corrected. Working JSTOR article links.</p>
 <p>June 3, 2014. v0.4.2. Bug fixes and a few extra configuration settings (<code>model_view.cols</code> and <code>default_view</code>).</p>
 <p>May 28, 2014. v0.4.1. Bi-threading.</p>
 <p>April 15, 2014. Second alpha release, with additional data views.</p>
