@@ -56,7 +56,7 @@ view.model.yearly = function (p) {
         };
     }());
 
-    scale_x = d3.time.scale()
+    scale_x = d3.time.scale.utc()
         .domain(to_plot.domain_x)
         .range([0, spec.w]);
 
@@ -240,7 +240,7 @@ view.model.yearly.stacked_series = function (p) {
 
         year_keys = p.yearly_totals.keys().sort();
         years = year_keys.map(function (y) {
-            return new Date(+y, 0, 1);
+            return new Date(Date.UTC(+y, 0, 1));
         });
 
         // save x range

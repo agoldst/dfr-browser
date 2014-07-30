@@ -159,20 +159,20 @@ view.topic.yearly_barplot = function (param) {
         spec = param.spec;
 
     series = param.yearly.keys().sort().map(function (y) {
-        return [new Date(+y, 0, 1), param.yearly.get(y)];
+        return [new Date(Date.UTC(+y, 0, 1)), param.yearly.get(y)];
     });
 
-    scale_x = d3.time.scale()
+    scale_x = d3.time.scale.utc()
         .domain([series[0][0],
-                d3.time.day.offset(series[series.length - 1][0],
+                d3.time.day.utc.offset(series[series.length - 1][0],
                     spec.bar_width)])
         .range([0, spec.w]);
         //.nice();
 
-    w = scale_x(d3.time.day.offset(series[0][0], spec.bar_width)) -
+    w = scale_x(d3.time.day.utc.offset(series[0][0], spec.bar_width)) -
         scale_x(series[0][0]);
 
-    w_click = scale_x(d3.time.year.offset(series[0][0], 1)) -
+    w_click = scale_x(d3.time.year.utc.offset(series[0][0], 1)) -
         scale_x(series[0][0]);
 
     scale_y = d3.scale.linear()
@@ -197,7 +197,7 @@ view.topic.yearly_barplot = function (param) {
             .call(d3.svg.axis()
                 .scale(scale_x)
                 .orient("bottom")
-                .ticks(d3.time.years, spec.ticks));
+                .ticks(d3.time.years.utc, spec.ticks));
 
         // y axis
         svg.append("g")
@@ -237,7 +237,7 @@ view.topic.yearly_barplot = function (param) {
 
     // set a selected year if any
     bars.classed("selected_year", function (d) {
-        return String(d[0].getFullYear()) === param.year;
+        return String(d[0].getUTCFullYear()) === param.year;
     });
 
     if (param.clickable) {
@@ -278,7 +278,7 @@ view.topic.yearly_barplot = function (param) {
         // interactivity for the bars
 
         // tooltip text
-        tip_text = function (d) { return d[0].getFullYear(); };
+        tip_text = function (d) { return d[0].getUTCFullYear(); };
 
         // now set mouse event handlers
 
@@ -311,7 +311,7 @@ view.topic.yearly_barplot = function (param) {
                     d3.select(this.parentNode).classed("selected_year", true);
                     view.tooltip().text(tip_text(d));
                     view.updating(true);
-                    set_view(topic_hash(param.t) + "/" + d[0].getFullYear());
+                    set_view(topic_hash(param.t) + "/" + d[0].getUTCFullYear());
                 }
             });
     }

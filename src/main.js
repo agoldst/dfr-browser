@@ -94,7 +94,7 @@ var VIS = {
         }
     },
     percent_format: d3.format(".1%"),
-    cite_date_format: d3.time.format("%B %Y"),
+    cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: ""
 };
 
@@ -147,12 +147,12 @@ bib_sort = function (m, major, minor, asc_maj, asc_min) {
 
     if (major === "decade") {
         major_key = function (i) {
-            return Math.floor(m.meta(i).date.getFullYear() / 10).toString() +
+            return Math.floor(m.meta(i).date.getUTCFullYear() / 10).toString() +
                 "0s";
         };
     } else if (major === "year") {
         major_key = function (i) {
-            return m.meta(i).date.getFullYear();
+            return m.meta(i).date.getUTCFullYear();
         };
     } else if (major === "journal") {
         major_key = function (i) {
