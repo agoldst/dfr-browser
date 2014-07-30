@@ -107,7 +107,7 @@
     <div id="model_view_list" class="hidden">
       <table class="table table-condensed">
         <thead>
-          <tr class="info">
+          <tr>
             <th id="model_view_list_topic" class="sort">
               <a href="#/model/list/topic" title="click to sort">
                 topic
@@ -305,21 +305,32 @@
                 </option>
               </select>
             </div>
+            <div class="form-group">
+              <select class="form-control" id="select_bib_dir">
+                <option id="sort_bib_up" value="up">
+                  in ascending order
+                </option>
+                <option id="sort_bib_down" value="down">
+                  in descending order
+                </option>
+              </select>
+            </div>
           </form>
-          <button id="bib_sort_dir"
-            class="btn btn-default navbar-btn"
-            type="button">
-            Reverse order
-          </button>
-          <div class="navbar-right">
-            <p class="navbar-text help">Click headings to expand/collapse document lists</p>
-            <button id="bib_collapse_all" type="button" class="btn btn-default navbar-btn">Collapse all</button>
-            <button id="bib_expand_all" type="button" class="btn btn-default navbar-btn">Expand all</button>
-          </div>
         </div>
       </div>
     </nav>
-    <div id="bib_main">
+    <div class="row">
+      <div class="col-md-3">
+        <div id="bib_headings" data-spy="affix">
+          <p class="help">jump to:</p>
+          <ul class="list-inline">
+          </ul>
+          <p><a class="top_link" href="#">top</a></p>
+        </div>
+      </div>
+      <div class="col-md-9">
+        <div id="bib_main"></div>
+      </div>
     </div>
   </div>
 

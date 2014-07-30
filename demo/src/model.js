@@ -261,7 +261,7 @@ model = function (spec) {
             n_req = this.n_docs();
             f = function (docs) {
                 var year_docs = docs.filter(function (d) {
-                    return that.meta(d.doc).date.getFullYear() === +year;
+                    return that.meta(d.doc).date.getUTCFullYear() === +year;
                 });
                 return callback(utils.shorten(year_docs, n));
             };
@@ -429,7 +429,8 @@ model = function (spec) {
         s = meta_s.replace(/^\n*/, "")
             .replace(/\n*$/, "\n");
 
-        my.start_date = new Date(1000, 0, 1); // nothing pre-Gutenberg in JSTOR
+        // -infinity: nothing pre-Gutenberg in JSTOR
+        my.start_date = new Date(1000, 0, 1);
         my.end_date = new Date(); // today
 
         my.meta = d3.csv.parseRows(s, function (d, j) {
@@ -437,9 +438,9 @@ model = function (spec) {
         // 0  1     2      3            4      5     6       7      
         // id,title,author,journaltitle,volume,issue,pubdate,pagerange
             var a_str = d[2].trim(), // author
-                date = new Date(d[6].trim()); // pubdate
+                date = new Date(d[6].trim()); // pubdate (UTC)
 
-            doc_years.push(date.getFullYear()); // store to pass into worker
+            doc_years.push(date.getUTCFullYear()); // store to pass into worker
             // set min and max date range
             my.start_date = date < my.start_date ? date : my.start_date;
             my.end_date = date > my.end_date ? date : my.end_date;
