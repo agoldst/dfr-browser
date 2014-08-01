@@ -94,8 +94,9 @@ var VIS = {
         }
     },
     percent_format: d3.format(".1%"),
-    cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
-    uri_proxy: ""
+    uri_proxy: "",
+    special_issue_class: "special_issue"    // swap to dummy value to disable
+                                            // special-issue coloring
 };
 
 /* declaration of functions */
@@ -333,34 +334,61 @@ doc_author_string = function (doc) {
     return result;
 };
 
-cite_doc = function (m, d) {
-    return citation(m.meta(d));
-};
-
 cite_docs = function (m, ds) {
-    return (ds && ds.length) ? m.meta(ds).map(citation) : undefined;
-};
+    var result;
 
-citation = function (doc) {
-    var result = doc_author_string(doc);
-
-    // don't duplicate trailing period on middle initial etc.
-    result = result.replace(/\.?$/, ". ");
-    result += '"' + doc.title + '."';
-    result += " <em>" + doc.journaltitle + "</em> ";
-    result += doc.volume;
-    if (doc.issue) {
-        result += ", no. " + doc.issue;
+    if (ds && ds.length) {
+        result = ds.map(function (d) {
+            return cite_doc(m, d);
+        });
     }
 
-    result += " (" + VIS.cite_date_format(doc.date) + "): ";
-    result += doc.pagerange + ".";
-
-    result = result.replace(/\.\./g, ".");
-    result = result.replace(/_/g, ",");
-    result = result.replace(/\t/g, "");
-
     return result;
+};
+
+cite_doc = function (m, d) {
+    var doc, s, mo;
+
+    if (!VIS.citations) {
+        VIS.citations = [];
+    }
+    if (!VIS.citations[d]) {
+        doc = m.meta(d);
+        s = doc_author_string(doc);
+
+        // don't duplicate trailing period on middle initial etc.
+        s = s.replace(/\.?$/, ". ");
+        s += '"' + doc.title.replace('"',"'") + '."';
+        s += " <em>" + doc.journaltitle + "</em> ";
+        s += doc.volume;
+        if (doc.issue) {
+            s += ", no. " + doc.issue;
+        }
+
+        s += " (";
+        mo = doc.date.getUTCMonth(); // 0 to 11
+        if (mo === 0 || mo === 11) {
+            s += "Winter ";
+        } else if (mo === 2 || mo === 3) {
+            s += "Spring ";
+        } else if (mo === 5 || mo === 6) {
+            s += "Summer ";
+        } else if (mo === 8 || mo == 9) {
+            s += "Autumn ";
+        }
+
+        s += doc.date.getUTCFullYear() + "): ";
+
+        s += doc.pagerange + ".";
+
+        s = s.replace(/\.\./g, ".");
+        s = s.replace(/_/g, ",");
+        s = s.replace(/\t/g, "");
+
+        VIS.citations[d] = s;
+    }
+
+    return VIS.citations[d];
 };
 
 // Principal view-generating functions
@@ -429,11 +457,13 @@ topic_view = function (m, t, y) {
     // topic top documents subview
     view.calculating("#topic_docs", true); 
     m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
+        var ds = docs.map(function (d) { return d.doc; });
         view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
             docs: docs,
-            citations: cite_docs(m, docs.map(function (d) { return d.doc; })),
+            citations: cite_docs(m, ds),
+            specials: m.special_issue(ds),
             year: year
         });
     });
@@ -548,7 +578,9 @@ doc_view = function (m, d) {
         view.calculating("#doc_view", false);
         view.doc({
             topics: topics,
-            meta: m.meta(doc),
+            citation: cite_doc(m, doc),
+            special: m.special_issue(doc),
+            doi: m.meta(doc).doi,
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
@@ -598,27 +630,22 @@ bib_view = function (m, maj, min, dir) {
     ordering = bib_sort(m, sorting.major, sorting.minor,
             asc.major, asc.minor);
 
-    if (!VIS.ready.bib) {
-        // Cache the list of citations
-        // TODO better to do this on the model (in a thread?)
-        VIS.bib_citations = m.meta().map(citation);
-        VIS.ready.bib = true;
-    }
-
     view.bib({
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
         dir: sorting.dir,
-        citations: VIS.bib_citations
+        citations: cite_docs(m, d3.range(m.n_docs())),
+        specials: m.special_issue()
     });
 
     view.loading(false);
 
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
-    return true;
+    VIS.ready.bib = true;
 
+    return true;
 };
 
 about_view = function (m, section) {

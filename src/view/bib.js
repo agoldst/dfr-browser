@@ -70,14 +70,14 @@ view.bib = function (p) {
             return o.heading;
         });
 
-    view.bib.render(ordering, p.citations);
+    view.bib.render(ordering, p.citations, p.specials);
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
     return true;
 };
 
-view.bib.render = function (ordering, citations) {
-    var sections, as;
+view.bib.render = function (ordering, citations, specials) {
+    var sections, sec_enter, items;
 
     view.loading(true);
     sections = d3.select("#bib_main")
@@ -88,15 +88,17 @@ view.bib.render = function (ordering, citations) {
             return o.key;
         });
 
-    sections.enter().append("div")
+    sec_enter = sections.enter().append("div")
         .classed("section", true)
         .attr("id", function (o) {
             return view.bib.id(o.heading);
-        })
-        .append("h2")
+        });
+    sec_enter.append("h2")
             .text(function (o) {
                 return o.heading;
             });
+    sec_enter.append("ul");
+
     sections.exit().remove();
 
     // Cheating here. We are not going to update the headings in the
@@ -104,19 +106,30 @@ view.bib.render = function (ordering, citations) {
     // but not enter, its heading isn't changing (because the data is
     // keyed by headings).
 
-    as = sections.selectAll("a")
+    items = sections.select("ul").selectAll("li")
         .data(function (o) {
             return o.docs;
         });
 
-    as.enter().append("a");
-    as.exit().remove();
+    items.enter().append("li");
+    items.exit().remove();
 
-    as.attr("href", function (d) {
-            return "#/doc/" + d;
+    // Not elegant, but avoids some messy fiddling to make sure we don't
+    // double-append the inner <a> elements
+    items.html(function (d) {
+            var s = '<a href="#/doc/' + d + '">';
+            s += citations[d];
+            s += '</a>';
+
+            if (specials[d]) {
+                s += ' <a href="' + specials[d].url + '">';
+                s += specials[d].title;
+                s += '</a>';
+            }
+            return s;
         })
-        .html(function (d) {
-            return citations[d];
+        .classed(VIS.special_issue_class, function (d) {
+            return !!specials[d];
         });
 
     view.loading("false");

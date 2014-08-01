@@ -3,17 +3,22 @@
     display: none;
 }
 
-p a,td a {
+a {
     text-decoration: none;
     color: black;
 }
 
-p a:hover,td a:hover {
+a:hover {
     text-decoration: underline;
 }
 
-p a:visited,td a:visited {
+a:visited {
     color: black;
+}
+
+a:active {
+    color:black;
+    text-decoration: underline;
 }
 
 a.external {
@@ -22,6 +27,18 @@ a.external {
 
 a.external:visited {
     color: purple;
+}
+
+.special_issue a {
+    color: #000066;
+}
+
+.special_issue a:visited {
+    color: #000066;
+}
+
+.special_issue a:hover {
+    color: #000066;
 }
 
 /* long subclass for headers */
@@ -415,7 +432,6 @@ ul#vocab_list li a:visited {
     padding-left: 0.25em;
     padding-right: 0.25em;
     text-decoration: none;
-    color: black;
 }
 
 #bib_headings a:hover {
@@ -433,11 +449,19 @@ div.section h2 {
     padding-bottom: 0.25em;
 }
 
-#bib_view .section a {
-    display: block;
+#bib_view .section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#bib_view .section li {
     line-height: 1.33em;
     text-indent: -3em;
     margin-left: 3em;
+    color: black;
+}
+
+#bib_view li a:hover {
     color: black;
 }
 

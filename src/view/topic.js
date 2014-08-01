@@ -105,10 +105,12 @@ view.topic.docs = function (p) {
     trs_d.selectAll("td").remove();
 
     trs_d
-        .append("td").append("a")
-        .attr("href", function (d) {
-            return "#/doc/" + d.doc;
+        .append("td")
+        .classed("special_issue", function (d, j) {
+            console.log(j + "," + p.specials[j]);
+            return !!p.specials[j];
         })
+        .append("a")
         .html(function (d, j) {
             return p.citations[j];
         });

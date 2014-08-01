@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, citation, topic_link, topic_hash, utils, d3 */
+/*global view, VIS, set_view, topic_link, topic_hash, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -10,15 +10,21 @@ view.doc = function (p) {
     d3.select("#doc_view_main").classed("hidden", false);
 
     div.select("h2#doc_header")
-        .html(citation(p.meta));
+        .html(p.citation);
 
-    div.select("#doc_remark")
-        .html(p.total_tokens + " tokens. "
-                + '<a class ="external" href="'
-                + view.doc.uri(p.meta)
-                + '">View '
-                + p.meta.doi
-                + " on JSTOR</a>");
+    if (p.special) {
+        div.select("#doc_remark .special_issue a")
+            .attr("href", p.special.url)
+            .text(p.special.title);
+    }
+    div.select("#doc_remark .special_issue")
+        .classed("hidden", !p.special);
+
+    div.select("#doc_remark .token_count")
+        .text(p.total_tokens);
+
+    div.select("#doc_remark a.jstor")
+        .attr("href", view.doc.uri(p.doi));
 
     trs = div.select("table#doc_topics tbody")
         .selectAll("tr")
@@ -59,9 +65,8 @@ view.doc = function (p) {
         });
 };
 
-view.doc.uri = function (meta) {
+view.doc.uri = function (doi) {
     return "http://www.jstor.org"
-        + VIS.uri_proxy
         + "/stable/"
-        + meta.doi;
+        + doi;
 };
