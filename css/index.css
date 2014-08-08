@@ -386,8 +386,15 @@ ul#vocab_list li a:visited {
 }
 
 #bib_headings li {
-    width: 3.25em; /* TODO better not be wider than the widest label */
+    min-width: 3.25em; /* TODO hard-codes width, degrades uglily */
 }
+
+/* sad special case */
+#bib_headings li.journal {
+    min-width: 260px;
+    font-style: italic;
+}
+
 
 #bib_headings a {
     padding-left: 0.25em;

@@ -58,6 +58,10 @@ view.bib = function (p) {
     lis.enter().append("li")
         .append("a");
     lis.exit().remove();
+
+    // kludge for styling journal title jump links
+    lis.classed("journal", p.major === "journal");
+
     lis.selectAll("a")
         .attr("href", function (o) {
             return "#" + view.bib.id(o.heading);
@@ -123,5 +127,6 @@ view.bib.render = function (ordering, citations) {
 };
 
 view.bib.id = function (heading) {
-    return "bib_" + heading;
+    // Ensure element id doesn't have non-word characters
+    return "bib_" + String(heading).replace(/\W/g,"_");
 };
