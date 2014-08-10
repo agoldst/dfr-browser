@@ -107,7 +107,6 @@ view.topic.docs = function (p) {
     trs_d
         .append("td")
         .classed("special_issue", function (d, j) {
-            console.log(j + "," + p.specials[j]);
             return !!p.specials[j];
         })
         .append("a")
