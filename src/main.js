@@ -158,6 +158,16 @@ bib_sort = function (m, major, minor, asc_maj, asc_min) {
         major_key = function (i) {
             return m.meta(i).journaltitle;
         };
+    } else if (major === "issue") {
+        major_key = function (i) {
+            var doc = m.meta(i),
+                k;
+            k = doc.journaltitle;
+            k += "_" + d3.format("05d")(doc.volume);
+            k += "_" + d3.format("05d")((doc.issue === "") ? 0
+                    : doc.issue.replace(/\/.*$/, ""));
+            return k;
+        };
     } else { // expected: major === "alpha"
         // default to alphabetical by author
         major_key = function (i) {
@@ -237,6 +247,7 @@ bib_sort.validate = function (p) {
     if (p.major !== "decade"
             && p.major !== "year"
             && p.major !== "journal"
+            && p.major !== "issue"
             && p.major !== "alpha") {
         result.major = undefined;
     }
@@ -267,7 +278,8 @@ bib_sort.dir = function (p) {
 
     if (p.dir === "down") {
         result.major = false;
-        if (p.major === "decade" || p.major === "year") {
+        if (p.major === "decade" || p.major === "year"
+                || p.major === "issue") {
             result.minor = p.minor !== "date" && p.minor !== "journal";
         } else if (p.major === "alpha" || p.major === "journal") {
             // journal title descending --> journal contents ascending
