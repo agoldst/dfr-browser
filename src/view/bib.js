@@ -77,6 +77,12 @@ view.bib = function (p) {
                 : o.heading;
         });
 
+    if (p.major === "issue") {
+        lis.classed(VIS.special_issue_class, function (o) {
+            return !!p.specials[o.docs[0]];
+        });
+    }
+
     view.bib.render({
         ordering: ordering,
         citations: p.citations,
