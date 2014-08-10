@@ -383,11 +383,27 @@ ul#vocab_list li a:visited {
 
 #bib_headings ul {
     list-style-type: none;
+    height: auto;
+    max-height: 600px; /* TODO hard-coding height again not great */
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid rgb(221, 221, 221);
 }
 
 #bib_headings li {
-    width: 3.25em; /* TODO better not be wider than the widest label */
+    min-width: 3.25em; /* TODO hard-codes width, degrades uglily */
 }
+
+/* sad special cases for bib heading types */
+#bib_headings li.journal {
+    min-width: 260px;
+    font-style: italic;
+}
+
+#bib_headings li.issue {
+    min-width: 260px;
+}
+
 
 #bib_headings a {
     padding-left: 0.25em;

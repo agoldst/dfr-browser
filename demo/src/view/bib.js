@@ -58,6 +58,11 @@ view.bib = function (p) {
     lis.enter().append("li")
         .append("a");
     lis.exit().remove();
+
+    VIS.bib_keys.major.forEach(function (k) {
+        lis.classed(k, p.major === k);
+    });
+
     lis.selectAll("a")
         .attr("href", function (o) {
             return "#" + view.bib.id(o.heading);
@@ -67,16 +72,18 @@ view.bib = function (p) {
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return o.heading;
+            return (p.major === "issue") ?
+                view.bib.decode_issue(o.heading, false)
+                : o.heading;
         });
 
-    view.bib.render(ordering, p.citations);
+    view.bib.render(ordering, p.citations, p.major);
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
     return true;
 };
 
-view.bib.render = function (ordering, citations) {
+view.bib.render = function (ordering, citations, major) {
     var sections, as;
 
     view.loading(true);
@@ -95,7 +102,9 @@ view.bib.render = function (ordering, citations) {
         })
         .append("h2")
             .text(function (o) {
-                return o.heading;
+                return (major === "issue") ?
+                    view.bib.decode_issue(o.heading, true)
+                    : o.heading;
             });
     sections.exit().remove();
 
@@ -123,5 +132,28 @@ view.bib.render = function (ordering, citations) {
 };
 
 view.bib.id = function (heading) {
-    return "bib_" + heading;
+    // Ensure element id doesn't have non-word characters
+    return "bib_" + String(heading).replace(/\W/g,"_");
+};
+
+view.bib.decode_issue = function (code, chicago) {
+    var vol, no, splits, result;
+
+    splits = code.split("_");
+    result = splits[0];
+    vol = +splits[1];
+    no = +splits[2];
+
+    if (chicago) {
+        result += " " + vol;
+        if (no !== 0) {
+            result += ", no. " + no;
+        }
+    } else {
+        result += " " + vol;
+        if (no !== 0) {
+            result += "." + no;
+        }
+    }
+    return result;
 };
