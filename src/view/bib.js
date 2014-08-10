@@ -111,12 +111,28 @@ view.bib.render = function (p) {
         .attr("id", function (o) {
             return view.bib.id(o.heading);
         });
-    sec_enter.append("h2")
+
+    if (p.major === "issue") {
+        sec_enter.append("h2")
+            .classed(VIS.special_issue_class, function (o) {
+                return !!p.specials[o.docs[0]];
+            })
             .html(function (o) {
-                return (p.major === "issue") ?
-                    view.bib.decode_issue(o.heading, true)
-                    : o.heading;
+                var s = view.bib.decode_issue(o.heading, true),
+                    d = o.docs[0];
+                if (p.specials[d]) {
+                    s += '. <a href="' + p.specials[d].url + '">';
+                    s += p.specials[d].title;
+                    s += '</a>';
+                }
+                return s;
             });
+    } else {
+        sec_enter.append("h2")
+            .html(function (o) {
+                return o.heading;
+            });
+    }
     sec_enter.append("ul");
 
     sections.exit().remove();
@@ -141,11 +157,6 @@ view.bib.render = function (p) {
             s += p.citations[d];
             s += '</a>';
 
-            if (p.specials[d]) {
-                s += ' <a href="' + p.specials[d].url + '">';
-                s += p.specials[d].title;
-                s += '</a>';
-            }
             return s;
         })
         .classed(VIS.special_issue_class, function (d) {

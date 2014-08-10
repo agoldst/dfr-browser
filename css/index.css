@@ -453,7 +453,7 @@ ul#vocab_list li a:visited {
     background-color: #f5f5f5;
 }
 
-div.section h2 {
+#bib_view div.section h2 {
     border-top: 1px solid rgb(221, 221, 221);
     border-bottom: 1px solid rgb(221, 221, 221);
     padding-top: 0.25em;
@@ -472,7 +472,7 @@ div.section h2 {
     color: black;
 }
 
-#bib_view li a:hover {
+#bib_view li:not(.special_issue) a:hover {
     color: black;
 }
 
