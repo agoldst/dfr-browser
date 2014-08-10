@@ -78,6 +78,20 @@ var VIS = {
             bottom: 0
         }
     },
+    bib_keys: {
+        major: [
+            "decade",
+            "year",
+            "journal",
+            "issue",
+            "alpha"
+        ],
+        minor: [
+            "date",
+            "journal",
+            "alpha"
+        ]
+    },
     bib_view: {
         window_lines: 100,
         major: "year",
@@ -244,18 +258,13 @@ bib_sort = function (m, major, minor, asc_maj, asc_min) {
 // except an invalid term is replaced with undefined.
 bib_sort.validate = function (p) {
     var result = p;
-    if (p.major !== "decade"
-            && p.major !== "year"
-            && p.major !== "journal"
-            && p.major !== "issue"
-            && p.major !== "alpha") {
+    if (VIS.bib_keys.major.indexOf(p.major) === -1) {
         result.major = undefined;
     }
-    if (p.minor !== "date"
-            && p.minor !== "journal"
-            && p.minor !== "alpha") {
+    if (VIS.bib_keys.minor.indexOf(p.minor) === -1) {
         result.minor = undefined;
     }
+
     if (p.dir !== "up" && p.dir !== "down") {
         result.dir = undefined;
     }

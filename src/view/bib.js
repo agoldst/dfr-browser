@@ -59,8 +59,9 @@ view.bib = function (p) {
         .append("a");
     lis.exit().remove();
 
-    // kludge for styling journal title jump links
-    lis.classed("journal", p.major === "journal");
+    VIS.bib_keys.major.forEach(function (k) {
+        lis.classed(k, p.major === k);
+    });
 
     lis.selectAll("a")
         .attr("href", function (o) {
