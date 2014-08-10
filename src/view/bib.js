@@ -58,6 +58,11 @@ view.bib = function (p) {
     lis.enter().append("li")
         .append("a");
     lis.exit().remove();
+
+    VIS.bib_keys.major.forEach(function (k) {
+        lis.classed(k, p.major === k);
+    });
+
     lis.selectAll("a")
         .attr("href", function (o) {
             return "#" + view.bib.id(o.heading);
@@ -67,22 +72,29 @@ view.bib = function (p) {
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return o.heading;
+            return (p.major === "issue") ?
+                view.bib.decode_issue(o.heading, false)
+                : o.heading;
         });
 
-    view.bib.render(ordering, p.citations, p.specials);
+    view.bib.render({
+        ordering: ordering,
+        citations: p.citations,
+        specials: p.specials,
+        major: p.major
+    });
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
     return true;
 };
 
-view.bib.render = function (ordering, citations, specials) {
+view.bib.render = function (p) {
     var sections, sec_enter, items;
 
     view.loading(true);
     sections = d3.select("#bib_main")
         .selectAll("div.section")
-        .data(ordering, function (o) {
+        .data(p.ordering, function (o) {
             // Ensure that we'll update even if only the minor key has changed
             // (in which case headings stay the same)
             return o.key;
@@ -95,7 +107,9 @@ view.bib.render = function (ordering, citations, specials) {
         });
     sec_enter.append("h2")
             .text(function (o) {
-                return o.heading;
+                return (p.major === "issue") ?
+                    view.bib.decode_issue(o.heading, true)
+                    : o.heading;
             });
     sec_enter.append("ul");
 
@@ -118,23 +132,46 @@ view.bib.render = function (ordering, citations, specials) {
     // double-append the inner <a> elements
     items.html(function (d) {
             var s = '<a href="#/doc/' + d + '">';
-            s += citations[d];
+            s += p.citations[d];
             s += '</a>';
 
-            if (specials[d]) {
-                s += ' <a href="' + specials[d].url + '">';
-                s += specials[d].title;
+            if (p.specials[d]) {
+                s += ' <a href="' + p.specials[d].url + '">';
+                s += p.specials[d].title;
                 s += '</a>';
             }
             return s;
         })
         .classed(VIS.special_issue_class, function (d) {
-            return !!specials[d];
+            return !!p.specials[d];
         });
 
     view.loading("false");
 };
 
 view.bib.id = function (heading) {
-    return "bib_" + heading;
+    // Ensure element id doesn't have non-word characters
+    return "bib_" + String(heading).replace(/\W/g,"_");
+};
+
+view.bib.decode_issue = function (code, chicago) {
+    var vol, no, splits, result;
+
+    splits = code.split("_");
+    result = splits[0];
+    vol = +splits[1];
+    no = +splits[2];
+
+    if (chicago) {
+        result += " " + vol;
+        if (no !== 0) {
+            result += ", no. " + no;
+        }
+    } else {
+        result += " " + vol;
+        if (no !== 0) {
+            result += "." + no;
+        }
+    }
+    return result;
 };
