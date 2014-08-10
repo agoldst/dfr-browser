@@ -439,11 +439,6 @@ ul#vocab_list li a:visited {
     font-style: italic;
 }
 
-#bib_headings li.issue {
-    min-width: 260px;
-}
-
-
 #bib_headings a {
     padding-left: 0.25em;
     padding-right: 0.25em;

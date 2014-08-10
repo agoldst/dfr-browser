@@ -106,7 +106,7 @@ view.bib.render = function (p) {
             return view.bib.id(o.heading);
         });
     sec_enter.append("h2")
-            .text(function (o) {
+            .html(function (o) {
                 return (p.major === "issue") ?
                     view.bib.decode_issue(o.heading, true)
                     : o.heading;
@@ -155,20 +155,20 @@ view.bib.id = function (heading) {
 };
 
 view.bib.decode_issue = function (code, chicago) {
-    var vol, no, splits, result;
+    var vol, no, splits,
+        result;
 
     splits = code.split("_");
-    result = splits[0];
     vol = +splits[1];
     no = +splits[2];
 
     if (chicago) {
-        result += " " + vol;
+        result = "<em>Signs</em> " + vol;
         if (no !== 0) {
             result += ", no. " + no;
         }
     } else {
-        result += " " + vol;
+        result = String(vol);
         if (no !== 0) {
             result += "." + no;
         }
