@@ -898,7 +898,7 @@ view_refresh = function (m, v) {
     VIS.cur_view.classed("hidden", false);
 
     // ensure highlighting of nav link
-    d3.selectAll("#nav_main li.active").classed("active",false);
+    d3.selectAll("#nav_toplevel li.active").classed("active",false);
     d3.select("li#nav_" + view_parsed[1]).classed("active",true);
 };
 
