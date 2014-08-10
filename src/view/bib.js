@@ -177,18 +177,19 @@ view.bib.decode_issue = function (code, chicago) {
 
     splits = code.split("_");
     vol = +splits[1];
-    no = +splits[2];
+    if (+splits[2] % 10 === 0) {
+        no = +splits[2] / 10;
+    } else {
+        no = (+splits[2] - 5) / 10;
+        no = String(no) + "S";
+    }
 
     if (chicago) {
         result = "<em>Signs</em> " + vol;
-        if (no !== 0) {
-            result += ", no. " + no;
-        }
+        result += ", no. " + no;
     } else {
         result = String(vol);
-        if (no !== 0) {
-            result += "." + no;
-        }
+        result += "." + no;
     }
     return result;
 };
