@@ -368,7 +368,7 @@ cite_docs = function (m, ds) {
 };
 
 cite_doc = function (m, d) {
-    var doc, s, mo;
+    var doc, s, title, mo;
 
     if (!VIS.citations) {
         VIS.citations = [];
@@ -379,7 +379,17 @@ cite_doc = function (m, d) {
 
         // don't duplicate trailing period on middle initial etc.
         s = s.replace(/\.?$/, ". ");
-        s += '"' + doc.title.replace('"',"'") + '."';
+        // double quotation marks in title to single
+        // based on https://gist.github.com/drdrang/705071
+        title = doc.title.replace(/“/g,'‘')
+            .replace(/”/g,'’')
+            .replace(/(^|[-\u2014/(\[{\u2018\s])"/g, "$1‘") // opening "
+            .replace(/"/g,'’') // which leaves closing "
+            .replace(/'/g,'’')
+            .replace(/ <br><\/br>/g,'. ');
+        s += '“' + title + '.”';
+        s = s.replace(/’\./g,".’"); // fix up ’.” situations
+
         s += " <em>" + doc.journaltitle + "</em> ";
         s += doc.volume;
         if (doc.issue) {
@@ -394,7 +404,7 @@ cite_doc = function (m, d) {
             s += "Spring ";
         } else if (mo === 5 || mo === 6) {
             s += "Summer ";
-        } else if (mo === 8 || mo == 9) {
+        } else if (mo === 8 || mo === 9) {
             s += "Autumn ";
         }
 
