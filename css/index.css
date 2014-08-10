@@ -423,10 +423,16 @@ ul#vocab_list li a:visited {
 #bib_headings ul {
     list-style-type: none;
     height: auto;
-    max-height: 600px; /* TODO hard-coding height again not great */
+    max-height: 700px;
     overflow-y: auto;
     overflow-x: hidden;
-    border: 1px solid rgb(221, 221, 221);
+}
+
+@media only screen and (max-height: 750px) {
+    #bib_headings ul {
+        max-height: 200px;
+        border: 1px solid rgb(221, 221, 211);
+    }
 }
 
 #bib_headings li {
