@@ -23,7 +23,7 @@
       </button>
       <a class="navbar-brand model_title" href="#"></a>
     </div>
-    <div class="collapse navbar-collapse">
+    <div id="nav_toplevel" class="collapse navbar-collapse">
       <ul id="nav_main" class="nav navbar-nav">
         <li id="nav_model"><a href="#/model">Overview</a></li>
         <li id="nav_topic" class="dropdown">
@@ -263,6 +263,12 @@
     <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
     <form role="form">
       <div>
+        <label class="special_issue">
+          Highlight special-issue articles with color
+        </label>
+        <input id="highlight_special" type="checkbox">
+      </div>
+      <div>
         <label>Number of top words to display in lists</label>
         <input id="n_words_list" type="number">
       </div>
@@ -343,7 +349,11 @@
     </div>
     <div id="doc_view_main" class="calc-done">
       <h2 class="h-small" id="doc_header"></h2>
-      <p id="doc_remark"></p>
+      <p id="doc_remark">
+        <span class="special_issue">Special issue: <a></a>.</span>
+        <span class="token_count"></span> tokens.
+        (<a class="jstor external">view on JSTOR</a>)
+      </p>
       <table class="table table-condensed" id="doc_topics">
         <thead>
           <tr>
@@ -394,18 +404,19 @@
     <nav id="bib_nav" class="nav navbar-default" role="navigation">
       <div class="container">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
+          <p class="navbar-text">Sort:</p>
           <form id="bib_sort_form" class="navbar-form navbar-left">
             <div class="form-group">
               <select class="form-control" id="select_bib_sort">
-                <option id="sort_year_journal" value="year_journal">
-                  chronologically
+                <option id="sort_issue_journal" value="issue_journal">
+                  by journal issue
+                </option>
+                <option id="sort_alpha_alpha" value="alpha_alpha">
+                  alphabetically by author
                 </option>
                 <option id="sort_year_alpha" value="year_alpha">
                   by year, then by author
                 </option> 
-                <option id="sort_alpha_alpha" value="alpha_alpha">
-                  alphabetically by author
-                </option>
               </select>
             </div>
             <div class="form-group">

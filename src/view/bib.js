@@ -58,6 +58,11 @@ view.bib = function (p) {
     lis.enter().append("li")
         .append("a");
     lis.exit().remove();
+
+    VIS.bib_keys.major.forEach(function (k) {
+        lis.classed(k, p.major === k);
+    });
+
     lis.selectAll("a")
         .attr("href", function (o) {
             return "#" + view.bib.id(o.heading);
@@ -67,36 +72,69 @@ view.bib = function (p) {
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return o.heading;
+            return (p.major === "issue") ?
+                view.bib.decode_issue(o.heading, false)
+                : o.heading;
         });
 
-    view.bib.render(ordering, p.citations);
+    if (p.major === "issue") {
+        lis.classed(VIS.special_issue_class, function (o) {
+            return !!p.specials[o.docs[0]];
+        });
+    }
+
+    view.bib.render({
+        ordering: ordering,
+        citations: p.citations,
+        specials: p.specials,
+        major: p.major
+    });
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
     return true;
 };
 
-view.bib.render = function (ordering, citations) {
-    var sections, as;
+view.bib.render = function (p) {
+    var sections, sec_enter, items;
 
     view.loading(true);
     sections = d3.select("#bib_main")
         .selectAll("div.section")
-        .data(ordering, function (o) {
+        .data(p.ordering, function (o) {
             // Ensure that we'll update even if only the minor key has changed
             // (in which case headings stay the same)
             return o.key;
         });
 
-    sections.enter().append("div")
+    sec_enter = sections.enter().append("div")
         .classed("section", true)
         .attr("id", function (o) {
             return view.bib.id(o.heading);
-        })
-        .append("h2")
-            .text(function (o) {
+        });
+
+    if (p.major === "issue") {
+        sec_enter.append("h2")
+            .classed(VIS.special_issue_class, function (o) {
+                return !!p.specials[o.docs[0]];
+            })
+            .html(function (o) {
+                var s = view.bib.decode_issue(o.heading, true),
+                    d = o.docs[0];
+                if (p.specials[d]) {
+                    s += '. <a href="' + p.specials[d].url + '">';
+                    s += p.specials[d].title;
+                    s += '</a>';
+                }
+                return s;
+            });
+    } else {
+        sec_enter.append("h2")
+            .html(function (o) {
                 return o.heading;
             });
+    }
+    sec_enter.append("ul");
+
     sections.exit().remove();
 
     // Cheating here. We are not going to update the headings in the
@@ -104,24 +142,54 @@ view.bib.render = function (ordering, citations) {
     // but not enter, its heading isn't changing (because the data is
     // keyed by headings).
 
-    as = sections.selectAll("a")
+    items = sections.select("ul").selectAll("li")
         .data(function (o) {
             return o.docs;
         });
 
-    as.enter().append("a");
-    as.exit().remove();
+    items.enter().append("li");
+    items.exit().remove();
 
-    as.attr("href", function (d) {
-            return "#/doc/" + d;
+    // Not elegant, but avoids some messy fiddling to make sure we don't
+    // double-append the inner <a> elements
+    items.html(function (d) {
+            var s = '<a href="#/doc/' + d + '">';
+            s += p.citations[d];
+            s += '</a>';
+
+            return s;
         })
-        .html(function (d) {
-            return citations[d];
+        .classed(VIS.special_issue_class, function (d) {
+            return !!p.specials[d];
         });
 
     view.loading("false");
 };
 
 view.bib.id = function (heading) {
-    return "bib_" + heading;
+    // Ensure element id doesn't have non-word characters
+    return "bib_" + String(heading).replace(/\W/g,"_");
+};
+
+view.bib.decode_issue = function (code, chicago) {
+    var vol, no, splits,
+        result;
+
+    splits = code.split("_");
+    vol = +splits[1];
+    if (+splits[2] % 10 === 0) {
+        no = +splits[2] / 10;
+    } else {
+        no = (+splits[2] - 5) / 10;
+        no = String(no) + "S";
+    }
+
+    if (chicago) {
+        result = "<em>Signs</em> " + vol;
+        result += ", no. " + no;
+    } else {
+        result = String(vol);
+        result += "." + no;
+    }
+    return result;
 };

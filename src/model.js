@@ -22,6 +22,7 @@ model = function (spec) {
         topic_total,
         alpha,
         meta,
+        special_issue,
         vocab,
         topic_scaled,
         topic_yearly, // time-slicing
@@ -53,6 +54,13 @@ model = function (spec) {
     info = function (model_meta) {
         if (model_meta) {
             my.info = model_meta;
+            my.issues = d3.map();
+            my.info.issues.forEach(function (iss) {
+                my.issues.set(iss[0], {
+                    title: iss[1],
+                    url: iss[2]
+                });
+            });
         }
         return my.info;
     };
@@ -166,6 +174,30 @@ model = function (spec) {
         return d.map(function (j) { return my.meta[j]; });
     };
     that.meta = meta;
+
+    special_issue = function (d) {
+        var ds = d, s;
+
+        if (!my.meta || !my.issues) {
+            return undefined;
+        }
+
+        if (typeof d === 'number') {
+            s = my.meta[d].special;
+            return (s === "") ? undefined : my.issues.get(s);
+        }
+
+        if (d === undefined) {
+            ds = d3.range(that.n_docs());
+        }
+
+        // otherwise, assume ds is an array
+        return ds.map(function (d) {
+            var sp = my.meta[d].special;
+            return (sp === "") ? undefined : my.issues.get(sp);
+        });
+    };
+    that.special_issue = special_issue;
 
     // validate dates
     valid_year = function (y) {
@@ -435,8 +467,8 @@ model = function (spec) {
 
         my.meta = d3.csv.parseRows(s, function (d, j) {
         // no header, but this is the column order:
-        // 0  1     2      3            4      5     6       7      
-        // id,title,author,journaltitle,volume,issue,pubdate,pagerange
+        // 0  1     2      3            4      5     6       7         8
+        // id,title,author,journaltitle,volume,issue,pubdate,pagerange,special
             var a_str = d[2].trim(), // author
                 date = new Date(d[6].trim()); // pubdate (UTC)
 
@@ -455,7 +487,8 @@ model = function (spec) {
                 date: date, // pubdate
                 pagerange: d[7].trim()
                     .replace(/^p?p\. /, "")
-                    .replace(/-/g, "–")
+                    .replace(/-/g, "–"),
+                special: d[8].trim()
             };
         });
 

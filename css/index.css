@@ -3,17 +3,22 @@
     display: none;
 }
 
-p a,td a {
+a {
     text-decoration: none;
     color: black;
 }
 
-p a:hover,td a:hover {
+a:hover {
     text-decoration: underline;
 }
 
-p a:visited,td a:visited {
+a:visited {
     color: black;
+}
+
+a:active {
+    color:black;
+    text-decoration: underline;
 }
 
 a.external {
@@ -22,6 +27,18 @@ a.external {
 
 a.external:visited {
     color: purple;
+}
+
+.special_issue a {
+    color: #000066;
+}
+
+.special_issue a:visited {
+    color: #000066;
+}
+
+.special_issue a:hover {
+    color: #000066;
 }
 
 /* long subclass for headers */
@@ -405,17 +422,33 @@ ul#vocab_list li a:visited {
 
 #bib_headings ul {
     list-style-type: none;
+    height: auto;
+    max-height: 700px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+@media only screen and (max-height: 750px) {
+    #bib_headings ul {
+        max-height: 200px;
+        border: 1px solid rgb(221, 221, 211);
+    }
 }
 
 #bib_headings li {
-    width: 3.25em; /* TODO better not be wider than the widest label */
+    min-width: 3.25em; /* TODO hard-codes width, degrades uglily */
+}
+
+/* sad special cases for bib heading types */
+#bib_headings li.journal {
+    min-width: 260px;
+    font-style: italic;
 }
 
 #bib_headings a {
     padding-left: 0.25em;
     padding-right: 0.25em;
     text-decoration: none;
-    color: black;
 }
 
 #bib_headings a:hover {
@@ -426,18 +459,26 @@ ul#vocab_list li a:visited {
     background-color: #f5f5f5;
 }
 
-div.section h2 {
+#bib_view div.section h2 {
     border-top: 1px solid rgb(221, 221, 221);
     border-bottom: 1px solid rgb(221, 221, 221);
     padding-top: 0.25em;
     padding-bottom: 0.25em;
 }
 
-#bib_view .section a {
-    display: block;
+#bib_view .section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#bib_view .section li {
     line-height: 1.33em;
     text-indent: -3em;
     margin-left: 3em;
+    color: black;
+}
+
+#bib_view li:not(.special_issue) a:hover {
     color: black;
 }
 
