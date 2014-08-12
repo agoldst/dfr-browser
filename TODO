@@ -7,13 +7,13 @@ sidebar with topic model vocabulary:
 
 example narratives
 
-speed up loading (mod_zip rather than jszip?)
+speed up loading (mod_zip rather than jszip?) [DONE]
 
-fix linking into jstor.
+fix linking into jstor. [DONE]
 
-words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note)
+words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note) [CAN'T BE DONE]
 
-uglifyjs into a single versioned file linked in index.html
+uglifyjs into a single versioned file linked in index.html [DONE]
 
 AM 5/2 questions: 
 - get rid of "by journal, then by journal contents" option in bibliography view?
@@ -23,32 +23,32 @@ AM 5/2 questions:
 
 5/2 Ideas discussed
 - Titles or popovers for key terms
-- Enhanced word view
+- Enhanced word view [DONE]
 - Default view as list?
 
 
 BUGS
 
-- 65 topics - does not show up on grid
-- jstor id resolution for older items: write JSTOR
+- 65 topics - does not show up on grid [DONE]
+- jstor id resolution for older items: write JSTOR [DONE: link fixed]
 - apparent problems with d3 (?) on firefox 30 under MacOS 10.8, unable to replicate on ffx 30 on 10.7.5
 
 FIXED BUGS
 
-- chrome vs firefox vs ... sorting not the same (not stable sort??)
+- chrome vs firefox vs ... sorting not the same (not stable sort??) [DONE]
 
 TEXT TO WRITE
 
-1. Introductory text
-2. Explanation of the technique
-3. How to read (vocabulary)
+1. Introductory text [DONE]
+2. Explanation of the technique [DONE]
+3. How to read (vocabulary [DONE]
 4. Interpretive narratives (later) and cautions
 
 Tasks:
 
 1. ask others to comment
 2. RUCore or other permanent storage
-3. indication of journal special issues 
+3. indication of journal special issues  [DONE]
 	-Signs editorial intern Tatiana working on a list
 4. hand label topics individually, compare to decide on labels
 
@@ -79,11 +79,12 @@ Software:
 - topic labels
 - hiding topics
 - article/issue tagging (e.g.: virtual ToCs, indication of special issues...)
+    [DONE]
 - interface refinements, various (e.g.: how the introductory text appears/disappears, whether the site detects incompatible browsers)
 - links or other display of editorial comments?
-- more appropriate bibliography page sorting options...
-- fixing links to articles?
-- retooling dates?
+- more appropriate bibliography page sorting options... [DONE]
+- fixing links to articles? [DONE]
+- retooling dates? [DONE]
 
  Design:
 
