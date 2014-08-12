@@ -81,6 +81,8 @@ Software:
 - article/issue tagging (e.g.: virtual ToCs, indication of special issues...)
     [DONE]
 - interface refinements, various (e.g.: how the introductory text appears/disappears, whether the site detects incompatible browsers)
+    + scroll to top when click into new view
+    + topic view needs less obtrusive special-issue flagging
 - links or other display of editorial comments?
 - more appropriate bibliography page sorting options... [DONE]
 - fixing links to articles? [DONE]
@@ -106,4 +108,5 @@ Agenda for SLAL early Aug Skype meeting
 - brainstorm overall site design
 - ideas for styling model browser
 - finalize 10 ToCs
+
 
