@@ -9,6 +9,7 @@ a {
 }
 
 a:hover {
+    color: black;
     text-decoration: underline;
 }
 
@@ -251,6 +252,10 @@ tr:hover {
 
 tr:hover a {
     text-decoration: underline;
+}
+
+a:hover {
+    color: black;
 }
 
 /* topic_plot */
