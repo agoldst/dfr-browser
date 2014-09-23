@@ -1,4 +1,4 @@
-/*global d3, utils, Worker */
+/*global d3, utils, bib, Worker */
 "use strict";
 var model;
 
@@ -434,29 +434,14 @@ model = function (spec) {
         my.end_date = new Date(); // today
 
         my.meta = d3.csv.parseRows(s, function (d, j) {
-        // no header, but this is the column order:
-        // 0  1     2      3            4      5     6       7      
-        // id,title,author,journaltitle,volume,issue,pubdate,pagerange
-            var a_str = d[2].trim(), // author
-                date = new Date(d[6].trim()); // pubdate (UTC)
+            var doc = bib.parse(d);
 
-            doc_years.push(date.getUTCFullYear()); // store to pass into worker
+            doc_years.push(doc.date.getUTCFullYear()); // store to pass into worker
             // set min and max date range
-            my.start_date = date < my.start_date ? date : my.start_date;
-            my.end_date = date > my.end_date ? date : my.end_date;
+            my.start_date = doc.date < my.start_date ? doc.date : my.start_date;
+            my.end_date = doc.date > my.end_date ? doc.date : my.end_date;
 
-            return {
-                doi: d[0].trim(), // id
-                title: d[1].trim(),
-                authors: a_str === "" ? [] : a_str.split("\t"),
-                journaltitle: d[3].trim(),
-                volume: d[4].trim(),
-                issue: d[5].trim(),
-                date: date, // pubdate
-                pagerange: d[7].trim()
-                    .replace(/^p?p\. /, "")
-                    .replace(/-/g, "–")
-            };
+            return doc;
         });
 
         my.worker.callback("set_doc_years", function (result) {
