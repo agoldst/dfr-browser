@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, citation, topic_link, topic_hash, utils, d3 */
+/*global view, VIS, set_view, bib, topic_link, topic_hash, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -10,7 +10,7 @@ view.doc = function (p) {
     d3.select("#doc_view_main").classed("hidden", false);
 
     div.select("h2#doc_header")
-        .html(citation(p.meta));
+        .html(bib.citation(p.meta));
 
     div.select("#doc_remark")
         .html(p.total_tokens + " tokens. "
