@@ -114,6 +114,14 @@
 
 <p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>view_refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/src/main.js">controller source, main.js</a>. This function is set as the <code>hashchange</code> handler.</p>
 
+<h2>About the <a href="demo">demo</a></h2>
+
+<p>The <a href="demo">working example</a> explores a topic model of articles from the journal <em>PMLA</em>. More specifically, what it shows is the results of allowing <a href="http://mallet.cs.umass.edu">MALLET</a>'s Latent Dirichlet Allocation algorithm to categorize those articles into 64 "topics" or patterns of co-occurring words. The resulting model simultaneously gives some information about words that occur together in this corpus, about documents that are related by their shared patterns of language use, and about (approximately) the thematic make-up of the documents. It also visualizes trends in the proportions of a topic in all the documents in a given year.</p>
+
+<p>I am working on fuller documentation for constructing a model, making use of my <a href="http://github.com/agoldst/dfrtopics">dfrtopics R package</a>, which offers a convenience interface for mallet with JSTOR data. Here, the data consists of all <em>PMLA</em> items from JSTOR's <a href="http://dfr.jstor.org">Data for Research</a> service, restricted to items categorized as "full-length articles" with more than 2000 words (this leaves 5605 articles out of the 9200 items from the years 1889–2007). All but the most ten thousand frequent words and a fairly large set of <a href="https://github.com/agoldst/dfr-analysis/blob/master/demo/stoplist.txt">stop words</a> are also removed. The model has 64 topics; having experimented with more and fewer topics, this seemed to produce a reasonable, though far from perfect, broad thematic classification.</p>
+
+<p>For more on interpreting topic models of literary scholarship, see my forthcoming <em>NLH</em> essay with Ted Underwood (<a href="http://www.rci.rutgers.edu/~ag978/quiet/preprint.pdf">preprint</a>); dfr-browser is used for our <a href="http://www.rci.rutgers.edu/~ag978/quiet/">accompanying interactive site</a>. </p>
+
 <h2>Browsing your own models</h2>
 
 <p>To build your own browser using this code, grab the source on <a href="https://github.com/agoldst/dfr-browser">github</a>, drop the necessary data files in the <code>data</code> subdirectory, and launch a local webserver. The <a href="https://github.com/agoldst/dfr-browser">github project page</a> (which is the same as the repository README file) includes more details on how to create those data files and run dfr-browser, as well as some pointers on how to tune the visualization parameters and a couple of notes on adapting the source doe to other uses. I plan to write a more comprehensive tutorial on using my <a href="http://github.com/agoldst/dfrtopics">dfrtopics</a> R package to produce a topic model and visualize it with this browser sometime in 2014.</p>
@@ -145,7 +153,12 @@
 
 <p><a href="http://code.google.com/p/topic-modeling-tool/">The Topic Modeling Tool</a> provides a GUI to make MALLET use easier.</p>
 
+
+
+
+
 <h2>Version history</h2>
+<p>September 23, 2014. v0.5.1. Some refactoring of bibliography code.</p>
 <p>June 30, 2014. v0.5. A redesigned bibliography view. Time-zone-related bug in dates corrected. Working JSTOR article links.</p>
 <p>June 3, 2014. v0.4.2. Bug fixes and a few extra configuration settings (<code>model_view.cols</code> and <code>default_view</code>).</p>
 <p>May 28, 2014. v0.4.1. Bi-threading.</p>
