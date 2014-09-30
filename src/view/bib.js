@@ -59,7 +59,7 @@ view.bib = function (p) {
         .append("a");
     lis.exit().remove();
 
-    VIS.bib_keys.major.forEach(function (k) {
+    VIS.bib.keys.major.forEach(function (k) {
         lis.classed(k, p.major === k);
     });
 

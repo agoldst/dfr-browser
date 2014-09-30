@@ -1,4 +1,4 @@
-/*global d3, $, JSZip, model, utils, view, window, document */
+/*global d3, $, JSZip, model, utils, view, window, bib, document */
 "use strict";
 
 /* declaration of global object (initialized in setup_vis) */
@@ -78,19 +78,22 @@ var VIS = {
             bottom: 0
         }
     },
-    bib_keys: {
-        major: [
-            "decade",
-            "year",
-            "journal",
-            "issue",
-            "alpha"
-        ],
-        minor: [
-            "date",
-            "journal",
-            "alpha"
-        ]
+    bib: {
+        keys: {
+            major: [
+                "decade",
+                "year",
+                "journal",
+                "issue",
+                "alpha"
+            ],
+            minor: [
+                "date",
+                "journal",
+                "alpha"
+            ]
+        },
+        author_delimiter: "\t"  // 2014 JSTOR metadata format uses ", " instead
     },
     bib_view: {
         window_lines: 100,
@@ -108,6 +111,7 @@ var VIS = {
         }
     },
     percent_format: d3.format(".1%"),
+    cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: "",
     special_issue_class: "special_issue"    // swap to dummy value to disable
                                             // special-issue coloring
@@ -115,13 +119,8 @@ var VIS = {
 
 /* declaration of functions */
 
-var bib_sort,   // bibliography sorting
-    topic_link, // stringifiers
+var topic_link, // stringifiers
     topic_hash,
-    doc_author_string,
-    cite_doc,
-    cite_docs,
-    citation,
     topic_view, // view generation
     topic_view_words,
     topic_view_docs,
@@ -146,168 +145,6 @@ var bib_sort,   // bibliography sorting
 // utility functions
 // -----------------
 
-// bibliography sorting
-bib_sort = function (m, major, minor, asc_maj, asc_min) {
-    var result = [],
-        docs,
-        major_key,
-        minor_key,
-        cmp_maj,
-        cmp_min,
-        cur_major,
-        i,
-        last,
-        get_id = function (d) { return d.id; },
-        partition = [];
-
-    if (major === "decade") {
-        major_key = function (i) {
-            return Math.floor(m.meta(i).date.getUTCFullYear() / 10).toString() +
-                "0s";
-        };
-    } else if (major === "year") {
-        major_key = function (i) {
-            return m.meta(i).date.getUTCFullYear();
-        };
-    } else if (major === "journal") {
-        major_key = function (i) {
-            return m.meta(i).journaltitle;
-        };
-    } else if (major === "issue") {
-        major_key = function (i) {
-            var doc = m.meta(i),
-                k, iss;
-            k = doc.journaltitle;
-            k += "_" + d3.format("05d")(doc.volume);
-            // Signs-specific issue logic: issue := [1234]S?
-            if (String(doc.issue).search("S") !== -1) {
-                // encode nS as an integer, n * 10 + 5. 5 = S. Funny.
-                iss = +doc.issue.replace("S", "") * 10 + 5;
-            } else {
-                iss = +doc.issue * 10;
-            }
-            k += "_" + String(iss);
-            return k;
-        };
-    } else { // expected: major === "alpha"
-        // default to alphabetical by author
-        major_key = function (i) {
-            return doc_author_string(m.meta(i)).replace(/^\W*/, "")[0]
-                .toUpperCase();
-        };
-    }
-
-    if (minor === "date") {
-        minor_key = function (i) {
-            return +m.meta(i).date;
-        };
-    } else if (minor === "journal") {
-        minor_key = function (i) {
-            var doc = m.meta(i),
-                result_m = doc.journaltitle;
-
-            result_m += d3.format("05d")(doc.volume);
-            result_m += d3.format("05d")((doc.issue === "") ? 0
-                    : doc.issue.replace(/\/.*$/, ""));
-            if (doc.pagerange.search(/^\d/) !== -1) {
-                result_m += d3.format("05d")(doc.pagerange.match(/^(\d+)/)[1]);
-            } else {
-                result_m += doc.pagerange;
-            }
-            return result_m;
-        };
-    } else { // expected: minor === "alpha"
-        // default to alphabetical by author then title
-        minor_key = function (i) {
-            return doc_author_string(m.meta(i)) + m.meta(i).title;
-        };
-    }
-
-    cmp_maj = asc_maj ? d3.ascending : d3.descending;
-    cmp_min = asc_min ? d3.ascending : d3.descending;
-
-    docs = d3.range(m.n_docs())
-        .map(function (d) {
-            return {
-                id: d,
-                major: major_key(d),
-                minor: minor_key(d)
-            };
-        })
-        .sort(function (a, b) {
-            return cmp_maj(a.major, b.major) ||
-                cmp_min(a.minor, b.minor) ||
-                d3.ascending(a.id, b.id); // stabilize sort
-        });
-
-    for (i = 0, cur_major = ""; i < docs.length; i += 1) {
-        if (docs[i].major !== cur_major) {
-            partition.push(i);
-            result.push({
-                heading: docs[i].major
-            });
-            cur_major = docs[i].major;
-        }
-    }
-    partition.shift(); // correct for "0" always getting added at the start
-    partition.push(docs.length); // make sure we get the tail 
-
-    for (i = 0, last = 0; i < partition.length; i += 1) {
-        result[i].docs = docs.slice(last, partition[i]).map(get_id);
-        last = partition[i];
-    }
-
-
-    return result;
-};
-
-// validate major/minor sort terms. The output is the same as the input,
-// except an invalid term is replaced with undefined.
-bib_sort.validate = function (p) {
-    var result = p;
-    if (VIS.bib_keys.major.indexOf(p.major) === -1) {
-        result.major = undefined;
-    }
-    if (VIS.bib_keys.minor.indexOf(p.minor) === -1) {
-        result.minor = undefined;
-    }
-
-    if (p.dir !== "up" && p.dir !== "down") {
-        result.dir = undefined;
-    }
-
-    return result;
-};
-
-// Semantics of ascending/descending
-// minor dir == major dir iff minor & major are semantically similar
-// with ascending as the default otherwise
-bib_sort.dir = function (p) {
-    var result = {
-        major: true,
-        minor: true
-    };
-
-    if (p.dir === "up") {
-        return result;
-    }
-
-    if (p.dir === "down") {
-        result.major = false;
-        if (p.major === "decade" || p.major === "year"
-                || p.major === "issue") {
-            result.minor = p.minor !== "date" && p.minor !== "journal";
-        } else if (p.major === "alpha" || p.major === "journal") {
-            // journal title descending --> journal contents ascending
-            // Right, I think, but not wholly obvious
-            result.minor = p.minor !== "alpha";
-        } else {
-            // shouldn't ever get here, but...
-            result.minor = true;
-        }
-    }
-    return result;
-};
 
 // -- stringifiers
 //    ------------
@@ -320,113 +157,6 @@ topic_hash = function (t) {
     return "/topic/" + String(t + 1);
 };
 
-doc_author_string = function (doc) {
-    var lead,
-        lead_trail,
-        result;
-
-    if (doc.authors.length > 0) {
-        lead = doc.authors[0].replace(/,/g, "").split(" ");
-        // check for Jr., Sr., 2nd, etc.
-        // Can mess up if last name is actually the letter I, X, or V.
-        lead_trail = lead.pop();
-        if (lead.length >= 2
-                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
-            result = lead.pop().replace(/_$/, "");
-            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-        } else {
-            result = lead_trail;
-            lead_trail = "";
-        }
-        result += ", " + lead.join(" ") + lead_trail;
-        if (doc.authors.length > 1) {
-            // "et al" is better for real bibliography, but it's
-            // actually worth being able to search all the multiple authors
-            /*if (doc.authors.length > 3) {
-                result += ", " + doc.authors.slice(1, 3).join(", ");
-                result += "et al.";
-            } else {*/
-            if (doc.authors.length > 2) {
-                result += ", ";
-                result += doc.authors
-                    .slice(1, doc.authors.length - 1)
-                    .join(", ");
-            }
-            result += ", and " + doc.authors[doc.authors.length - 1];
-        }
-    } else {
-        result = "[Anon]";
-    }
-
-    return result;
-};
-
-cite_docs = function (m, ds) {
-    var result;
-
-    if (ds && ds.length) {
-        result = ds.map(function (d) {
-            return cite_doc(m, d);
-        });
-    }
-
-    return result;
-};
-
-cite_doc = function (m, d) {
-    var doc, s, title, mo;
-
-    if (!VIS.citations) {
-        VIS.citations = [];
-    }
-    if (!VIS.citations[d]) {
-        doc = m.meta(d);
-        s = doc_author_string(doc);
-
-        // don't duplicate trailing period on middle initial etc.
-        s = s.replace(/\.?$/, ". ");
-        // double quotation marks in title to single
-        // based on https://gist.github.com/drdrang/705071
-        title = doc.title.replace(/“/g,'‘')
-            .replace(/”/g,'’')
-            .replace(/(^|[-\u2014/(\[{\u2018\s])"/g, "$1‘") // opening "
-            .replace(/"/g,'’') // which leaves closing "
-            .replace(/'/g,'’')
-            .replace(/ <br><\/br>/g,'. ');
-        s += '“' + title + '.”';
-        s = s.replace(/’\./g,".’"); // fix up ’.” situations
-
-        s += " <em>" + doc.journaltitle + "</em> ";
-        s += doc.volume;
-        if (doc.issue) {
-            s += ", no. " + doc.issue;
-        }
-
-        s += " (";
-        mo = doc.date.getUTCMonth(); // 0 to 11
-        if (mo === 0 || mo === 11) {
-            s += "Winter ";
-        } else if (mo === 2 || mo === 3) {
-            s += "Spring ";
-        } else if (mo === 5 || mo === 6) {
-            s += "Summer ";
-        } else if (mo === 8 || mo === 9) {
-            s += "Autumn ";
-        }
-
-        s += doc.date.getUTCFullYear() + "): ";
-
-        s += doc.pagerange + ".";
-
-        s = s.replace(/\.\./g, ".");
-        s = s.replace(/_/g, ",");
-        s = s.replace(/\t/g, "");
-
-        VIS.citations[d] = s;
-    }
-
-    return VIS.citations[d];
-};
 
 // Principal view-generating functions
 // -----------------------------------
@@ -499,8 +229,10 @@ topic_view = function (m, t, y) {
         view.topic.docs({
             t: t,
             docs: docs,
-            citations: cite_docs(m, ds),
             specials: m.special_issue(ds),
+            citations: docs.map(function (d) {
+                return bib.citation(m.meta(d.doc));
+            }),
             year: year
         });
     });
@@ -615,9 +347,8 @@ doc_view = function (m, d) {
         view.calculating("#doc_view", false);
         view.doc({
             topics: topics,
-            citation: cite_doc(m, doc),
+            meta: m.meta(doc),
             special: m.special_issue(doc),
-            doi: m.meta(doc).doi,
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
@@ -644,7 +375,7 @@ bib_view = function (m, maj, min, dir) {
         return true;
     }
 
-    sorting = bib_sort.validate(sorting);
+    sorting = bib.sort.validate(sorting);
     // it's not really clear how to respond to a URL like #/bib/year,
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
@@ -663,16 +394,23 @@ bib_view = function (m, maj, min, dir) {
 
     VIS.last.bib = sorting;
 
-    asc = bib_sort.dir(sorting);
-    ordering = bib_sort(m, sorting.major, sorting.minor,
+    asc = bib.sort.dir(sorting);
+    ordering = bib.sort(m, sorting.major, sorting.minor,
             asc.major, asc.minor);
+
+    if (!VIS.ready.bib) {
+        // Cache the list of citations
+        // TODO better to do this on the model (in a thread?)
+        VIS.bib_citations = m.meta().map(bib.citation);
+        VIS.ready.bib = true;
+    }
 
     view.bib({
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
         dir: sorting.dir,
-        citations: cite_docs(m, d3.range(m.n_docs())),
+        citations: VIS.bib_citations,
         specials: m.special_issue()
     });
 
