@@ -200,48 +200,6 @@ bib.sort.dir = function (p) {
     return result;
 };
 
-
-bib.author = function (doc) {
-    var lead,
-        lead_trail,
-        result;
-
-    if (doc.authors.length > 0) {
-        lead = doc.authors[0].replace(/,/g, "").split(" ");
-        // check for Jr., Sr., 2nd, etc.
-        // Can mess up if last name is actually the letter I, X, or V.
-        lead_trail = lead.pop();
-        if (lead.length >= 2
-                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
-            result = lead.pop().replace(/_$/, "");
-            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-        } else {
-            result = lead_trail;
-            lead_trail = "";
-        }
-        result += ", " + lead.join(" ") + lead_trail;
-        if (doc.authors.length > 1) {
-            // "et al" is better for real bibliography, but it's
-            // actually worth being able to search all the multiple authors
-            /*if (doc.authors.length > 3) {
-                result += ", " + doc.authors.slice(1, 3).join(", ");
-                result += "et al.";
-            } else {*/
-            if (doc.authors.length > 2) {
-                result += ", ";
-                result += doc.authors
-                    .slice(1, doc.authors.length - 1)
-                    .join(", ");
-            }
-            result += ", and " + doc.authors[doc.authors.length - 1];
-        }
-    } else {
-        result = "[Anon]";
-    }
-
-    return result;
-};
-
 bib.citation = function (doc) {
     var result = bib.doc_author(doc);
 
