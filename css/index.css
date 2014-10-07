@@ -420,25 +420,46 @@ ul#vocab_list li a:visited {
 #bib_nav {
 }
 
+/* TODO Less ugly responsive affix dimensions? */
+
 #bib_headings {
     padding-top: 5px;
-    max-width: 260px; /* TODO hard-codes 3 grid cols. not responsive */
+    max-width: 260px; /* Wide affix for wide screens */
+}
+
+/* slimmer affix on all but the widest screens */
+@media only screen and (max-width: 1200px) {
+    #bib_headings {
+        max-width: 200px;
+    }
+}
+
+/* hide the affix on narrow screens */
+
+@media only screen and (max-width: 1000px) {
+    #bib_headings {
+        display: none;
+    }
 }
 
 #bib_headings ul {
     list-style-type: none;
     height: auto;
-    max-height: 700px;
+    max-height: 200px; /* short affix on small screens */
     overflow-y: auto;
     overflow-x: hidden;
+    border: 1px solid rgb(221, 221, 211);
 }
 
-@media only screen and (max-height: 750px) {
+/* tall affix on tall screens only */
+
+@media only screen and (min-height: 850px) {
     #bib_headings ul {
-        max-height: 200px;
-        border: 1px solid rgb(221, 221, 211);
+        max-height: 700px;
+        border: none;
     }
 }
+
 
 #bib_headings li {
     min-width: 3.25em; /* TODO hard-codes width, degrades uglily */
