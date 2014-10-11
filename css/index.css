@@ -261,7 +261,7 @@ a:hover {
 /* topic_plot */
 
 div#topic_yearly {
-    height: 410px;
+    height: 300px;
 }
 
 .axis path, .axis line {
