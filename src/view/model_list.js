@@ -59,15 +59,12 @@ view.model.list = function (p) {
     // since the number of topic words can be changed, we need to
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
-        .attr("href", topic_link);
-    trs.selectAll("td a.topic_words span.words")
+        .attr("href", topic_link)
         .text(function (t) {
-            return p.words[t].map(function (w) { return w.word; })
-                .join(" ");
-        });
-    trs.selectAll("td a.topic_words span.name")
-        .text(function (t) {
-            return p.names[t] ? p.names[t] + ": " : "";
+            return view.topic.label(t,
+                p.words[t],
+                p.names[t],
+                true);
         });
 
     // sorting

@@ -320,18 +320,22 @@ view.topic.yearly_barplot = function (param) {
 
 };
 
-view.topic.label = function (t, words, name) {
+view.topic.label = function (t, words, name, verbose) {
     var i,
         result;
     
     if (typeof name === "string") {
-        return name;
+        result = name;
+    } else { 
+        // for numerical label, user-facing index is 1-based
+        result = "Topic " + String(t + 1); 
     }
 
-    result = String(t + 1); // for numerical label, user-facing index is 1-based
-
-    for (i = 0; i < words.length; i += 1) {
-        result += " " + words[i].word;
+    if (verbose && words && words.length > 0) {
+        result += ": ";
+        for (i = 0; i < words.length; i += 1) {
+            result += " " + words[i].word;
+        }
     }
     return result;
 };
