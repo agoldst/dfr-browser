@@ -6,8 +6,6 @@ view.settings = function (p) {
         return;
     }
 
-    //d3.select("#reveal_hidden"); // TODO hide/reveal selected topics
-
     d3.select("#n_words_list")
         .property("min", 1)
         .property("max", p.max_words)
@@ -49,4 +47,14 @@ view.settings = function (p) {
             }
         });
 
+    d3.select("#reveal_hidden")
+        .property("checked", VIS.show_hidden_topics === true)
+        .on("change", function () {
+            VIS.show_hidden_topics = !VIS.show_hidden_topics;
+            // mark yearly series for recalculation
+            VIS.model_view.yearly.data = undefined;
+            VIS.ready.model_yearly = false;
+        });
+
+    VIS.ready.settings = true;
 };

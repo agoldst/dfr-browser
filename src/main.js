@@ -22,6 +22,7 @@ var VIS = {
         aspect: 1.3333,     // for calculating height
         words: 4,           // may need adjustment
         size_range: [7, 18], // points. may need adjustment
+        name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness
         yearly: {
             w: 1090,
@@ -113,8 +114,8 @@ var VIS = {
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: "",
-    special_issue_class: "special_issue"    // swap to dummy value to disable
-                                            // special-issue coloring
+    hidden_topics: [],      // list of 1-based topic numbers to suppress
+    show_hidden_topics: false
 };
 
 /* declaration of functions */
@@ -122,8 +123,6 @@ var VIS = {
 var topic_link, // stringifiers
     topic_hash,
     topic_view, // view generation
-    topic_view_words,
-    topic_view_docs,
     word_view,
     words_view,
     doc_view,
@@ -156,7 +155,6 @@ topic_link = function (t) {
 topic_hash = function (t) {
     return "/topic/" + String(t + 1);
 };
-
 
 // Principal view-generating functions
 // -----------------------------------
@@ -274,7 +272,10 @@ word_view = function (m, w) {
 
     VIS.last.word = word;
 
-    topics = m.word_topics(word);
+    topics = m.word_topics(word).filter(function (t) {
+        return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+    });
+
     if (topics.length > 0) {
         n = 1 + d3.max(topics, function (t) {
             return t.rank; // 0-based, so we rank + 1
@@ -347,8 +348,13 @@ doc_view = function (m, d) {
     d3.select("#doc_view_main").classed("hidden", false);
 
     view.calculating("#doc_view", true);
-    m.doc_topics(doc, m.n(), function (topics) {
+    m.doc_topics(doc, m.n(), function (ts) {
+        var topics = ts.filter(function (t) {
+            return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+        });
+
         view.calculating("#doc_view", false);
+        
         view.doc({
             topics: topics,
             meta: m.meta(doc),
@@ -533,7 +539,8 @@ model_view_list = function (m, sort, dir) {
                 words: m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
                 dir: dir,
-                names: d3.range(m.n()).map(m.topic_name)
+                names: d3.range(m.n()).map(m.topic_name),
+                topic_hidden: VIS.topic_hidden
             });
         });
     });
@@ -543,12 +550,22 @@ model_view_list = function (m, sort, dir) {
 
 model_view_plot = function (m, type) {
     m.topic_total(undefined, function (totals) {
+        var topics = d3.range(m.n());
+        if (!VIS.show_hidden_topics) {
+            topics = topics.filter(function (t) { return !VIS.topic_hidden[t]; });
+        }
+
         view.model.plot({
             type: type,
-            words: m.topic_words(undefined, VIS.model_view.words),
-            scaled: m.topic_scaled(),
-            topic_totals: totals,
-            names: d3.range(m.n()).map(m.topic_name)
+            topics: topics.map(function (t) {
+                return {
+                    t: t,
+                    words: m.topic_words(t, VIS.model_view.words),
+                    scaled: m.topic_scaled(t),
+                    total: totals[t],
+                    name: m.topic_name(t)
+                };
+            })
         });
     });
 
@@ -557,9 +574,7 @@ model_view_plot = function (m, type) {
 
 model_view_yearly = function (m, type) {
     var p = {
-        type: type,
-        words: m.topic_words(undefined, VIS.model_view.yearly.words),
-        names: d3.range(m.n()).map(m.topic_name)
+        type: type
     };
 
 
@@ -572,11 +587,21 @@ model_view_yearly = function (m, type) {
     view.calculating("#model_view_yearly", true);
     m.yearly_total(undefined, function (totals) {
         m.topic_yearly(undefined, function (yearly) {
-            view.calculating("#model_view_yearly", false);
             p.yearly_totals = totals;
-            p.yearly = yearly;
+            p.topics = yearly.map(function (wts, t) {
+                return { 
+                    t: t,
+                    wts: wts,
+                    words: m.topic_words(t, VIS.model_view.yearly.words),
+                    name: m.topic_name(t)
+                };
+            })
+                .filter(function (topic) {
+                    return VIS.show_hidden_topics || !VIS.topic_hidden[topic.t];
+                });
 
             view.model.yearly(p);
+            view.calculating("#model_view_yearly", false);
         });
     });
 
@@ -647,6 +672,12 @@ view_refresh = function (m, v) {
         } 
     }
 
+    // ensure hidden topics are shown/hidden
+    d3.selectAll(".hidden_topic")
+        .classed("hidden", function () {
+            return !VIS.show_hidden_topics;
+        });
+
     view.updating(false);
 
     VIS.cur_view.classed("hidden", false);
@@ -686,19 +717,10 @@ setup_vis = function (m) {
             d3.select("#nav_help").classed("active", hidden);
         });
 
-    d3.select("#help_box")
-        .selectAll(".close_button")
-        .on("click", function () {
-            d3.select("#help_box")
-                .classed("hidden", true);
-            d3.select("#nav_help").classed("active", false);
-        });
+    $("#settings_modal").on("hide.bs.modal", function () {
+        view_refresh(m, window.location.hash);
+    });
 
-    if (!window.location.hash.match(/\/no_intro$/)) {
-        d3.select("#help_box").classed("hidden", false);
-        d3.select("#nav_help").classed("active", true);
-    }
-    // TODO settings controls
 };
 
 load_data = function (target, callback) {
@@ -789,18 +811,19 @@ main = function () {
             if (typeof tw_s === 'string') {
                 m.set_tw(tw_s);
 
-                // Set up topic menu: remove loading message
-                d3.select("ul#topic_dropdown").selectAll("li").remove();
-                // Add menu items
-                d3.select("ul#topic_dropdown").selectAll("li")
-                    .data(d3.range(m.n()))
-                    .enter().append("li").append("a")
-                    .text(function (t) {
-                        return view.topic.label(t,
-                            m.topic_words(t, VIS.model_view.words),
-                            m.topic_name(t));
-                    })
-                    .attr("href", topic_link);
+                // set up list of visible topics
+                VIS.topic_hidden = d3.range(m.n()).map(function (t) {
+                    return VIS.hidden_topics.indexOf(t + 1) !== -1;
+                });
+
+                view.topic.dropdown(d3.range(m.n()).map(function (t) {
+                    return {
+                        topic: t,
+                        words: m.topic_words(t, VIS.model_view.words),
+                        name: m.topic_name(t),
+                        hidden: VIS.topic_hidden[t]
+                    };
+                }));
 
                 view_refresh(m, window.location.hash);
             } else {

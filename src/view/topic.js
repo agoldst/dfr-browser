@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, utils, d3 */
+/*global view, VIS, set_view, topic_hash, topic_link, utils, d3 */
 "use strict";
 
 view.topic = function (p) {
@@ -339,3 +339,29 @@ view.topic.label = function (t, words, name, verbose) {
     }
     return result;
 };
+
+view.topic.sort_name = function (name) {
+    return name.replace(/^(the|a|an) /i,"").toLowerCase();
+};
+
+view.topic.dropdown = function (topics) {
+    var lis;
+    // Set up topic menu: remove loading message
+    d3.select("ul#topic_dropdown").selectAll("li.loading_message").remove();
+
+    // Add menu items 
+    lis = d3.select("ul#topic_dropdown").selectAll("li")
+        .data(topics, function (t) { return t.topic; });
+    lis.enter().append("li").append("a")
+        .text(function (t) {
+            return view.topic.label(t.topic, t.words, t.name);
+        })
+        .attr("href", function (t) {
+            return topic_link(t.topic);
+        });
+
+    lis.classed("hidden_topic", function (t) {
+        return t.hidden;
+    });
+};
+

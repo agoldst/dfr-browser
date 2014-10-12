@@ -8,8 +8,7 @@ view.model.yearly = function (p) {
         raw,
         to_plot,
         paths, labels, render_labels,
-        areas, zoom,
-        n = p.words.length;
+        areas, zoom;
 
     svg = view.plot_svg("#model_view_yearly", spec);
 
@@ -17,8 +16,8 @@ view.model.yearly = function (p) {
     VIS.last.model_yearly = raw;
 
     to_plot = view.model.yearly.stacked_series({
-        yearly: p.yearly,
         yearly_totals: p.yearly_totals,
+        topics: p.topics,
         raw: raw
     });
 
@@ -35,6 +34,10 @@ view.model.yearly = function (p) {
             .attr("width", spec.w)
             .attr("height", spec.h);
 
+        // clear old elements TODO proper update
+
+        svg.selectAll("path.topic_area").remove();
+        svg.selectAll("text.layer_label").remove();
         VIS.ready.model_yearly = true;
     } // if (!VIS.ready.model_yearly)
 
@@ -91,7 +94,7 @@ view.model.yearly = function (p) {
         })
         .on("mouseover", function (d) {
             d3.select(this).style("fill", scale_color(d.t, true));
-            view.tooltip().text(view.topic.label(d.t, p.words[d.t], p.names[d.t]));
+            view.tooltip().text(view.topic.label(d.t, d.words, d.name));
             view.tooltip().update_pos();
             view.tooltip().show();
         })
@@ -122,7 +125,7 @@ view.model.yearly = function (p) {
             y0 = scale_y.domain()[0],
             y1 = scale_y.domain()[1],
             b = scale_y(0); // area heights are b - scale_y(y)
-        for (t = 0; t < n; t += 1) {
+        for (t = 0; t < to_plot.data.length; t += 1) {
             show[t] = false;
             xs = to_plot.data[t].values;
             for (i = 0, cur = 0; i < xs.length; i += 1) {
@@ -153,9 +156,8 @@ view.model.yearly = function (p) {
                     d.values[max[d.t]].y / 2);
             })
             .text(function (d) {
-                var words = p.words[d.t].slice(0,
-                    VIS.model_view.yearly.label_words);
-                return view.topic.label(d.t, words, p.names[d.t]);
+                var words = d.words.slice(0, VIS.model_view.yearly.label_words);
+                return view.topic.label(d.t, words, d.name);
             });
     };
 
@@ -246,13 +248,17 @@ view.model.yearly.stacked_series = function (p) {
         // save x range
         VIS.model_view.yearly.domain_years = d3.extent(years);
 
-        all_series = p.yearly.map(function (wts, t) {
-            var series = { t: t };
+        all_series = p.topics.map(function (topic) {
+            var series = {
+                t: topic.t,
+                words: topic.words,
+                name: topic.name
+            };
             series.values = year_keys.map(function (yr, j) {
                 var result = {
                     yr: yr,
                     x: years[j],
-                    y: wts.get(yr) || 0
+                    y: topic.wts.get(yr) || 0
                 };
                 return result;
             });
@@ -281,6 +287,8 @@ view.model.yearly.stacked_series = function (p) {
         data_raw = stack(all_series.map(function (s) {
             return {
                 t: s.t,
+                words: s.words,
+                name: s.name,
                 values: s.values.map(function (d) {
                     return {
                         x: d.x,
@@ -307,7 +315,7 @@ view.model.yearly.stacked_series = function (p) {
 
         VIS.model_view.yearly.data.frac = data_frac;
         VIS.model_view.yearly.data.raw = data_raw;
-    } // if (!VIS.model_view.yearly.data)
+    } // if (!VIS.model_view.yearly.data) -- can get cleared by topic-hiding switch
 
     return {
         data: VIS.model_view.yearly.data[p.raw ? "raw" : "frac"],

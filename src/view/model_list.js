@@ -21,9 +21,9 @@ view.model.list = function (p) {
             set_view(topic_hash(t));
         });
 
-        trs.append("td").append("a")
-            .text(function (t) { return t + 1; }) // sigh
-            .attr("href", topic_link);
+        trs.classed("hidden_topic", function (t) {
+            return p.topic_hidden[t];
+        });
 
         divs = trs.append("td").append("div").classed("spark", true);
         view.append_svg(divs, VIS.model_view.list.spark)
@@ -66,6 +66,8 @@ view.model.list = function (p) {
                 p.names[t],
                 true);
         });
+
+    // TODO filter out hidden topics here
 
     // sorting
 

@@ -3,11 +3,11 @@
 
 view.model.plot = function (param) {
     var spec, svg, cloud_size, circle_radius, range_padding,
-        coords,
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, gs_enter, translation, zoom,
-        n = param.words.length;
+        topics = param.topics,
+        n = param.topics.length;
 
     // TODO need visual indication of stroke ~ alpha mapping
 
@@ -43,30 +43,24 @@ view.model.plot = function (param) {
             .classed("bg", true);
 
     if (param.type === "scaled") {
-        coords = param.scaled.map(function (p, j) {
-            return {
-                x: p[0],
-                y: p[1],
-                t: j,
-                r: circle_radius
-            };
+        topics.forEach(function (p, j) {
+            topics[j].x = p.scaled[0];
+            topics[j].y = p.scaled[1];
+            topics[j].r = circle_radius;
         });
     } else {
         // default to grid
-        coords = view.model.grid_coords(n, VIS.model_view.cols
+        view.model.grid_coords(n, VIS.model_view.cols
                 || Math.floor(Math.sqrt(VIS.model_view.aspect * n)))
-            .map(function (p, j) {
-                return {
-                    x: p.x,
-                    y: p.y,
-                    t: j,
-                    r: circle_radius
-                };
-        });
+            .forEach(function (p, j) {
+                topics[j].x = p.x;
+                topics[j].y = p.y;
+                topics[j].r = circle_radius;
+            });
     }
 
-    domain_x = d3.extent(coords, function (d) { return d.x; });
-    domain_y = d3.extent(coords, function (d) { return d.y; });
+    domain_x = d3.extent(topics, function (d) { return d.x; });
+    domain_y = d3.extent(topics, function (d) { return d.y; });
 
     scale_x = d3.scale.linear()
         .domain(domain_x)
@@ -81,13 +75,14 @@ view.model.plot = function (param) {
         .range(VIS.model_view.size_range);
 
     scale_stroke = d3.scale.linear()
-        .domain([0,d3.max(param.topic_totals)])
+        .domain([0,d3.max(topics, function (p) { return p.total; })])
         .range([0,VIS.model_view.stroke_range]);
 
     gs = svg.selectAll("g")
-        .data(coords, function (p) { return p.t; });
+        .data(topics, function (p) { return p.t; });
 
     gs_enter = gs.enter().append("g");
+    gs.exit().remove();
 
     gs_enter.append("circle")
             .attr("cx", 0)
@@ -97,7 +92,7 @@ view.model.plot = function (param) {
             })
             .classed("topic_cloud", true)
             .attr("stroke-width", function (p) {
-                return scale_stroke(param.topic_totals[p.t]);
+                return scale_stroke(p.total);
             })
             .on("click", function (p) {
                 if (!d3.event.shiftKey) {
@@ -145,8 +140,8 @@ view.model.plot = function (param) {
     // making the word clouds grow and shrink on zoom.
     gs_enter.selectAll("text.topic_label")
         .data(function (p) {
-            var max_wt = param.words[p.t][0].weight,
-                wds = param.words[p.t].map(function (w) {
+            var max_wt = p.words[0].weight,
+                wds = p.words.map(function (w) {
                     return {
                         text: w.word,
                         size: Math.floor(scale_size(w.weight / max_wt))
@@ -184,11 +179,11 @@ view.model.plot = function (param) {
 
     gs_enter.append("text").classed("topic_name", true)
         .text(function (p) {
-            return param.names[p.t];
+            return p.name;
         })
         .attr("x", 0)
         .attr("y", 0)
-        .style("font-size", scale_size(1) + "px");
+        .style("font-size", VIS.model_view.name_size + "px");
 
     translation = function (p) {
         var result = "translate(" + scale_x(p.x);
@@ -196,14 +191,13 @@ view.model.plot = function (param) {
         return result;
     };
 
-    if (gs_enter.empty()) {
-        gs.transition()
-            .duration(1000)
-            .attr("transform", translation);
-    } else {
-        // on first setup, no gratuitous translation
-        gs.attr("transform", translation);
-    }
+    gs.transition()
+        .duration(1000)
+        .attr("transform", translation);
+    // new nodes just appear, no gratuitous translation: interrupt the other
+    gs_enter.transition()
+        .duration(0)
+        .attr("transform", translation);
 
     // TODO zoom circle sizes and add words in, but this makes some
     // complications for the scaled view where the main use of zoom is to
