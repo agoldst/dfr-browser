@@ -39,6 +39,10 @@ view.model.list = function (p) {
             });
 
         trs.append("td").append("a").classed("topic_words", true);
+        trs.selectAll("a.topic_words")
+            .append("span").classed("name", true);
+        trs.selectAll("a.topic_words")
+            .append("span").classed("words", true);
 
         token_max = d3.max(p.sums);
         view.append_weight_tds(trs, function (t) {
@@ -55,11 +59,16 @@ view.model.list = function (p) {
     // since the number of topic words can be changed, we need to
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
+        .attr("href", topic_link);
+    trs.selectAll("td a.topic_words span.words")
         .text(function (t) {
             return p.words[t].map(function (w) { return w.word; })
                 .join(" ");
-        })
-        .attr("href", topic_link);
+        });
+    trs.selectAll("td a.topic_words span.name")
+        .text(function (t) {
+            return p.names[t] ? p.names[t] + ": " : "";
+        });
 
     // sorting
 
@@ -75,6 +84,9 @@ view.model.list = function (p) {
     keys = d3.range(p.yearly.length);
     if (sort_choice === "words") {
         keys = keys.map(function (t) {
+            if (p.names[t]) {
+                return p.names[t];
+            }
             return p.words[t].reduce(function (acc, w) {
                 return acc + " " + w.word;
             }, "");

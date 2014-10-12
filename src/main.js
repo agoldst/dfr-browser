@@ -188,7 +188,8 @@ topic_view = function (m, t, y) {
 
     view.topic({
         t: t,
-        words: words
+        words: words,
+        name: m.topic_name(t)
     });
 
     // reveal the view div
@@ -294,6 +295,9 @@ word_view = function (m, w) {
         }),
         n: n,
         n_topics: m.n(),
+        names: topics.map(function (t) {
+            return m.topic_name(t.topic);
+        })
     });
 
     return true;
@@ -352,6 +356,9 @@ doc_view = function (m, d) {
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
+            }),
+            names: topics.map(function (t) {
+                return m.topic_name(t.topic);
             })
         });
     });
@@ -525,7 +532,8 @@ model_view_list = function (m, sort, dir) {
                 sums: sums,
                 words: m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
-                dir: dir
+                dir: dir,
+                names: d3.range(m.n()).map(m.topic_name)
             });
         });
     });
@@ -539,7 +547,8 @@ model_view_plot = function (m, type) {
             type: type,
             words: m.topic_words(undefined, VIS.model_view.words),
             scaled: m.topic_scaled(),
-            topic_totals: totals
+            topic_totals: totals,
+            names: d3.range(m.n()).map(m.topic_name)
         });
     });
 
@@ -549,7 +558,8 @@ model_view_plot = function (m, type) {
 model_view_yearly = function (m, type) {
     var p = {
         type: type,
-        words: m.topic_words(undefined, VIS.model_view.yearly.words)
+        words: m.topic_words(undefined, VIS.model_view.yearly.words),
+        names: d3.range(m.n()).map(m.topic_name)
     };
 
 
@@ -787,7 +797,8 @@ main = function () {
                     .enter().append("li").append("a")
                     .text(function (t) {
                         return view.topic.label(t,
-                            m.topic_words(t, VIS.model_view.words));
+                            m.topic_words(t, VIS.model_view.words),
+                            m.topic_name(t));
                     })
                     .attr("href", topic_link);
 

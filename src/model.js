@@ -33,6 +33,7 @@ model = function (spec) {
         doc_topics,
         word_topics,
         year_topics,
+        topic_name,
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
@@ -407,6 +408,15 @@ model = function (spec) {
         return utils.shorten(result, n);
     };
     that.year_topics = year_topics;
+
+    topic_name = function (t) {
+        if (my.info.names) {
+            return my.info.names[t + 1]; // access by 1-index
+        }
+
+        return undefined;
+    };
+    that.topic_name = topic_name;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {

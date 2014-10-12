@@ -42,7 +42,7 @@ view.doc = function (p) {
                 return topic_link(t.topic);
             })
             .text(function (t, j) {
-                return view.topic.label(t.topic, p.words[j]);
+                return view.topic.label(t.topic, p.words[j], p.names[j]);
             });
 
     trs.on("click", function (t) {

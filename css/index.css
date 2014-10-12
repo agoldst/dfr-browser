@@ -149,6 +149,12 @@ text.topic_label {
     font: sans-serif;
 }
 
+text.topic_name {
+    text-anchor: middle;
+    fill: rgba(0,0,0,0.6);
+    pointer-events: none;
+}
+
 .topic_cloud {
     fill: rgba(240,240,240,0.6);
     stroke: rgba(200,200,200,0.6); 

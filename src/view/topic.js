@@ -9,7 +9,8 @@ view.topic = function (p) {
 
     div.select("h2#topic_header")
         .text(view.topic.label(p.t,
-                    utils.shorten(p.words, VIS.overview_words)));
+                    utils.shorten(p.words, VIS.overview_words),
+                    p.name));
 
     // (later: nearby topics by J-S div or cor on log probs)
 };
@@ -319,9 +320,16 @@ view.topic.yearly_barplot = function (param) {
 
 };
 
-view.topic.label = function (t, words) {
+view.topic.label = function (t, words, name) {
     var i,
-        result = String(t + 1); // user-facing index is 1-based
+        result;
+    
+    if (typeof name === "string") {
+        return name;
+    }
+
+    result = String(t + 1); // for numerical label, user-facing index is 1-based
+
     for (i = 0; i < words.length; i += 1) {
         result += " " + words[i].word;
     }

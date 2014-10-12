@@ -6,7 +6,7 @@ view.model.plot = function (param) {
         coords,
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
-        gs, translation, zoom,
+        gs, gs_enter, translation, zoom,
         n = param.words.length;
 
     // TODO need visual indication of stroke ~ alpha mapping
@@ -87,8 +87,9 @@ view.model.plot = function (param) {
     gs = svg.selectAll("g")
         .data(coords, function (p) { return p.t; });
 
-    gs.enter().append("g")
-        .append("circle")
+    gs_enter = gs.enter().append("g");
+
+    gs_enter.append("circle")
             .attr("cx", 0)
             .attr("cy", 0)
             .attr("r", function (p) {
@@ -123,18 +124,26 @@ view.model.plot = function (param) {
                     return d3.ascending(a.t, b.t);
                 })
                     .order();
+                d3.select(this.parentElement).selectAll("text.topic_label")
+                    .classed("hidden", false);
+                d3.select(this.parentElement).select("text.topic_name")
+                    .classed("hidden", true);
             })
             .on("mouseout",function() {
                 gs.sort(function (a, b) {
                         return d3.ascending(a.t, b.t);
                     })
                     .order();
+                d3.select(this.parentElement).selectAll("text.topic_label")
+                    .classed("hidden", true);
+                d3.select(this.parentElement).select("text.topic_name")
+                    .classed("hidden", false);
             });
 
     // TODO though it's silly to regenerate the word "cloud" on each view redraw
     // as we do here, actually let's keep this in place in anticipation of
     // making the word clouds grow and shrink on zoom.
-    gs.selectAll("text")
+    gs_enter.selectAll("text.topic_label")
         .data(function (p) {
             var max_wt = param.words[p.t][0].weight,
                 wds = param.words[p.t].map(function (w) {
@@ -160,7 +169,7 @@ view.model.plot = function (param) {
             }
             return wds.slice(0, i);
         })
-        .enter().append("text")
+        .enter().append("text").classed("topic_label", true)
             .text(function (wd) {
                 return wd.text;
             })
@@ -171,8 +180,15 @@ view.model.plot = function (param) {
             .attr("y", function (wd) {
                 return wd.y;
             })
-            .classed("topic_label", true);
-            // TODO coloring
+            .classed("hidden", true);
+
+    gs_enter.append("text").classed("topic_name", true)
+        .text(function (p) {
+            return param.names[p.t];
+        })
+        .attr("x", 0)
+        .attr("y", 0)
+        .style("font-size", scale_size(1) + "px");
 
     translation = function (p) {
         var result = "translate(" + scale_x(p.x);
@@ -180,7 +196,7 @@ view.model.plot = function (param) {
         return result;
     };
 
-    if (gs.enter().empty()) {
+    if (gs_enter.empty()) {
         gs.transition()
             .duration(1000)
             .attr("transform", translation);

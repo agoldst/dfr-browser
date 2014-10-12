@@ -127,8 +127,8 @@ view.word = function (p) {
             x: -VIS.word_view.topic_label_padding,
             y: -(row_height - VIS.word_view.topic_label_size) / 2
         })
-        .text(function (t) {
-            return "Topic " + (t.topic + 1);
+        .text(function (t, j) {
+            return p.names[j] || "Topic " + (t.topic + 1);
         })
         .style("font-size", VIS.word_view.topic_label_size + "pt");
 
