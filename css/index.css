@@ -42,6 +42,10 @@ a.external:visited {
     color: #000066;
 }
 
+label span.special_issue_example {
+    color: #000066;
+}
+
 /* long subclass for headers */
 
 h2.h-small {
