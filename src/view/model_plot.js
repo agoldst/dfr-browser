@@ -50,6 +50,14 @@ view.model.plot = function (param) {
         });
     } else {
         // default to grid
+        // arrange alphabetically by name, or top words if name missing
+        topics.forEach(function (p, j) {
+            topics[j].sort_key = p.name ? view.topic.sort_name(p.name)
+                : p.words.join(" ");
+        });
+        topics = topics.sort(function (a, b) {
+            return d3.ascending(a.sort_key, b.sort_key);
+        });
         view.model.grid_coords(n, VIS.model_view.cols
                 || Math.floor(Math.sqrt(VIS.model_view.aspect * n)))
             .forEach(function (p, j) {
@@ -177,6 +185,7 @@ view.model.plot = function (param) {
             })
             .classed("hidden", true);
 
+    // TODO name text should flow within circle
     gs_enter.append("text").classed("topic_name", true)
         .text(function (p) {
             return p.name;
