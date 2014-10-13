@@ -129,7 +129,7 @@ td.td-right {
     text-align: left;
 }
 
-p.help {
+.help {
     font-style: italic;
 }
 
@@ -248,8 +248,13 @@ path.topic_area {
 
 /* topic_view */
 
+/*
 #topic_view_header {
     height: 4em;
+}
+*/
+#topic_view_header {
+    text-align: center;
 }
 
 #topic_words a {
