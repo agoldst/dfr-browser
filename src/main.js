@@ -690,7 +690,7 @@ view_refresh = function (m, v) {
 };
 
 hide_topics = function (flg) {
-    var flag = (flg === "undefined") ? !VIS.show_hidden_topics : flg;
+    var flag = (flg === undefined) ? !VIS.show_hidden_topics : flg;
     d3.selectAll(".hidden_topic")
         .classed("hidden", function () {
             return flag;
