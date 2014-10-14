@@ -135,6 +135,7 @@ var topic_link, // stringifiers
     model_view_yearly,
     set_view,
     view_refresh,
+    hide_topics,
     view_loading,
     setup_vis,          // initialization
     load_data,
@@ -367,6 +368,8 @@ doc_view = function (m, d) {
                 return m.topic_name(t.topic);
             })
         });
+
+        hide_topics();
     });
 
     return true;
@@ -542,6 +545,8 @@ model_view_list = function (m, sort, dir) {
                 names: d3.range(m.n()).map(m.topic_name),
                 topic_hidden: VIS.topic_hidden
             });
+
+            hide_topics();
         });
     });
 
@@ -672,19 +677,24 @@ view_refresh = function (m, v) {
         } 
     }
 
-    // ensure hidden topics are shown/hidden
-    d3.selectAll(".hidden_topic")
-        .classed("hidden", function () {
-            return !VIS.show_hidden_topics;
-        });
-
     view.updating(false);
+    // ensure hidden topics are shown/hidden (actually, with
+    // asynchronous rendering this isn't perfect)
+    hide_topics();
 
     VIS.cur_view.classed("hidden", false);
 
     // ensure highlighting of nav link
     d3.selectAll("#nav_toplevel li.active").classed("active",false);
     d3.select("li#nav_" + view_parsed[1]).classed("active",true);
+};
+
+hide_topics = function (flg) {
+    var flag = (flg === "undefined") ? !VIS.show_hidden_topics : flg;
+    d3.selectAll(".hidden_topic")
+        .classed("hidden", function () {
+            return flag;
+        });
 };
 
 
