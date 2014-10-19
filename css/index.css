@@ -254,7 +254,10 @@ path.topic_area {
 }
 */
 #topic_view_header {
-    text-align: center;
+}
+
+#topic_view_annotation {
+    text-align: right;
 }
 
 #topic_words a {
