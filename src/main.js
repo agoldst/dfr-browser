@@ -115,7 +115,8 @@ var VIS = {
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: "",
     hidden_topics: [],      // list of 1-based topic numbers to suppress
-    show_hidden_topics: false
+    show_hidden_topics: false,
+    annotes: []             // list of CSS classes annotating the current view
 };
 
 /* declaration of functions */
@@ -160,8 +161,9 @@ topic_hash = function (t) {
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (m, t, y) {
-    var words, year;
+topic_view = function (m, t_user, y) {
+    var words, year,
+        t = +t_user - 1; // t_user is 1-based topic index, t is 0-based
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         // not ready yet; show loading message
@@ -318,7 +320,7 @@ words_view = function (m) {
 
 doc_view = function (m, d) {
     var div = d3.select("div#doc_view"),
-        doc = d;
+        doc = +d;
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         view.loading(true);
@@ -618,7 +620,7 @@ set_view = function (hash) {
 };
 
 view_refresh = function (m, v) {
-    var view_parsed, param, success;
+    var view_parsed, v_chosen, param, success, j;
 
     view_parsed = v.split("/");
     if (view_parsed[view_parsed.length - 1] === "no_intro") {
@@ -629,37 +631,39 @@ view_refresh = function (m, v) {
         VIS.cur_view.classed("hidden", true);
     }
 
-    if (view_parsed[1] === undefined || view_parsed[1] === "") {
+    // well-formed view must begin #/
+    if (view_parsed[0] !== "#") {
         view_parsed = VIS.default_view.split("/");
     }
 
-    param = view_parsed[2];
-    switch (view_parsed[1]) {
+    v_chosen = view_parsed[1];
+
+    param = view_parsed.slice(2, view_parsed.length);
+    param.unshift(m);
+    switch (v_chosen) {
         case "model":
-            success = model_view(m, param, view_parsed[3], view_parsed[4]);
+            success = model_view.apply(undefined, param);
             break;
         case "about":
-            success = about_view(m, param);
+            success = about_view.apply(undefined, param);
             break;
         case "settings":
             success = settings_view(m);
             break;
         case "bib":
-            success = bib_view(m, param, view_parsed[3], view_parsed[4]);
+            success = bib_view.apply(undefined, param);
             break;
         case "topic":
-            param = +param - 1;
-            success = topic_view(m, param, view_parsed[3]);
+            success = topic_view.apply(undefined, param);
             break;
         case "word":
-            success = word_view(m, param);
+            success = word_view.apply(undefined, param);
             break;
         case "doc":
-            param = +param;
-            success = doc_view(m, param);
+            success = doc_view.apply(undefined, param);
             break;
         case "words":
-            success = words_view(m);
+            success = words_view.apply(undefined, param);
             break;
         default:
             success = false;
@@ -667,7 +671,18 @@ view_refresh = function (m, v) {
     }
 
     if (success) {
-        VIS.cur_view = d3.select("div#" + view_parsed[1] + "_view");
+        VIS.cur_view = d3.select("div#" + v_chosen + "_view");
+
+        VIS.annotes.forEach(function (c) {
+            d3.selectAll(c).classed("hidden", true);
+        });
+        VIS.annotes = [".view_" + v_chosen];
+        for (j = 1; j < param.length; j += 1) {
+            VIS.annotes[j] = VIS.annotes[j - 1] + "_" + param[j];
+        }
+        VIS.annotes.forEach(function (c) {
+            d3.selectAll(c).classed("hidden", false);
+        });
     } else {
         if (VIS.cur_view === undefined) {
             // fall back on model_view
@@ -681,6 +696,7 @@ view_refresh = function (m, v) {
     // ensure hidden topics are shown/hidden (actually, with
     // asynchronous rendering this isn't perfect)
     hide_topics();
+
 
     VIS.cur_view.classed("hidden", false);
 
