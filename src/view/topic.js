@@ -10,7 +10,9 @@ view.topic = function (p) {
     div.select("h2#topic_header")
         .text(view.topic.label(p.t,
                     utils.shorten(p.words, VIS.overview_words),
-                    p.name));
+                    p.name,
+                    false,
+                    true));
 
     // (later: nearby topics by J-S div or cor on log probs)
 };
@@ -318,22 +320,28 @@ view.topic.yearly_barplot = function (param) {
 
 };
 
-view.topic.label = function (t, words, name, verbose) {
+view.topic.label = function (t, words, name, verbose, subtitle) {
     var i,
-        result;
+        result,
+        sub;
     
     if (typeof name === "string") {
-        result = name;
+        sub = name.match(/:.*$/);
+        sub = sub ? sub[0] : "";
+        result = name.replace(/:.*$/, "");
     } else { 
         // for numerical label, user-facing index is 1-based
         result = "Topic " + String(t + 1); 
     }
 
     if (verbose && words && words.length > 0) {
+        result += sub;
         result += ": ";
         for (i = 0; i < words.length; i += 1) {
             result += " " + words[i].word;
         }
+    } else if (subtitle) {
+        result += sub;
     }
     return result;
 };
