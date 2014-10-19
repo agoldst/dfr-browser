@@ -357,6 +357,11 @@ view.topic.dropdown = function (topics) {
         .attr("href", function (t) {
             return topic_link(t.topic);
         });
+    lis.sort(function (a, b) {
+        return d3.ascending(view.topic.sort_name(a.name),
+            view.topic.sort_name(b.name));
+    })
+        .order();
 
     lis.classed("hidden_topic", function (t) {
         return t.hidden;
