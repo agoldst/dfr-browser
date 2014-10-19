@@ -129,7 +129,7 @@ view.model.plot = function (param) {
                     .order();
                 d3.select(this.parentElement).selectAll("text.topic_label")
                     .classed("hidden", false);
-                d3.select(this.parentElement).select("text.topic_name")
+                d3.select(this.parentElement).selectAll("text.topic_name")
                     .classed("hidden", true);
             })
             .on("mouseout",function() {
@@ -139,7 +139,7 @@ view.model.plot = function (param) {
                     .order();
                 d3.select(this.parentElement).selectAll("text.topic_label")
                     .classed("hidden", true);
-                d3.select(this.parentElement).select("text.topic_name")
+                d3.select(this.parentElement).selectAll("text.topic_name")
                     .classed("hidden", false);
             });
 
@@ -185,13 +185,21 @@ view.model.plot = function (param) {
             })
             .classed("hidden", true);
 
-    // TODO name text should flow within circle
-    gs_enter.append("text").classed("topic_name", true)
-        .text(function (p) {
-            return p.name;
+    gs_enter.selectAll("text.topic_name")
+        .data(function (p) {
+            var ws = view.topic.label(p.t, p.words, p.name).split(/[\s ]+/);
+            // TODO 1 label word on each "line" is a problem for "of" and "the" etc.
+            return ws.map(function (w, j) {
+                return {
+                    w: w,
+                    y: VIS.model_view.name_size * (j - (ws.length - 1) / 2)
+                };
+            });
         })
+        .enter().append("text").classed("topic_name", true)
         .attr("x", 0)
-        .attr("y", 0)
+        .attr("y", function (w) { return w.y; })
+        .text(function (w) { return w.w; })
         .style("font-size", VIS.model_view.name_size + "px");
 
     translation = function (p) {
