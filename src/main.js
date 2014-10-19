@@ -671,6 +671,9 @@ view_refresh = function (m, v) {
     }
 
     if (success) {
+        // TODO really need to know if the view is something other than
+        // what we asked for, e.g. if we ask for #/model/list the default sort
+        // annotation should be revealed, if any. Not important...almost certainly
         VIS.cur_view = d3.select("div#" + v_chosen + "_view");
 
         VIS.annotes.forEach(function (c) {
@@ -690,6 +693,7 @@ view_refresh = function (m, v) {
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
         } 
+        // TODO and register the correct annotations
     }
 
     view.updating(false);
