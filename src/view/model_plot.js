@@ -128,9 +128,9 @@ view.model.plot = function (param) {
                 })
                     .order();
                 d3.select(this.parentElement).selectAll("text.topic_label")
-                    .classed("hidden", false);
-                d3.select(this.parentElement).selectAll("text.topic_name")
                     .classed("hidden", true);
+                d3.select(this.parentElement).selectAll("text.topic_name")
+                    .classed("hidden", false);
             })
             .on("mouseout",function() {
                 gs.sort(function (a, b) {
@@ -138,9 +138,9 @@ view.model.plot = function (param) {
                     })
                     .order();
                 d3.select(this.parentElement).selectAll("text.topic_label")
-                    .classed("hidden", true);
-                d3.select(this.parentElement).selectAll("text.topic_name")
                     .classed("hidden", false);
+                d3.select(this.parentElement).selectAll("text.topic_name")
+                    .classed("hidden", true);
             });
 
     // TODO though it's silly to regenerate the word "cloud" on each view redraw
@@ -183,11 +183,11 @@ view.model.plot = function (param) {
             .attr("y", function (wd) {
                 return wd.y;
             })
-            .classed("hidden", true);
+            .classed("hidden", false);
 
     gs_enter.selectAll("text.topic_name")
         .data(function (p) {
-            var ws = view.topic.label(p.t, p.words, p.name).split(/[\s ]+/);
+            var ws = view.topic.label(p.t, p.words, p.name).split(/\s+/);
             // TODO 1 label word on each "line" is a problem for "of" and "the" etc.
             return ws.map(function (w, j) {
                 return {
@@ -199,8 +199,14 @@ view.model.plot = function (param) {
         .enter().append("text").classed("topic_name", true)
         .attr("x", 0)
         .attr("y", function (w) { return w.y; })
-        .text(function (w) { return w.w; })
-        .style("font-size", VIS.model_view.name_size + "px");
+        .text(function (w) {
+            return w.w === "/" ? "or" : w.w;
+        })
+        .style("font-size", VIS.model_view.name_size + "px")
+        .classed("merged_topic_sep", function (w) {
+            return w.w === "/";
+        })
+        .classed("hidden", true);
 
     translation = function (p) {
         var result = "translate(" + scale_x(p.x);

@@ -157,6 +157,11 @@ text.topic_name {
     text-anchor: middle;
     fill: rgba(0,0,0,0.6);
     pointer-events: none;
+    font-style: italic;
+}
+
+text.topic_name.merged_topic_sep {
+    font-style: normal;
 }
 
 .topic_cloud {
