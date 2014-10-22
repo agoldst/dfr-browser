@@ -284,7 +284,7 @@ path.topic_area {
 }
 
 #topic_view_annotation {
-    text-align: right;
+    font-style: italic;
 }
 
 #topic_words a {
