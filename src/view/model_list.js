@@ -59,12 +59,19 @@ view.model.list = function (p) {
     // since the number of topic words can be changed, we need to
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
-        .attr("href", topic_link)
+        .attr("href", topic_link);
+    trs.selectAll("td a.topic_words span.name")
         .text(function (t) {
             return view.topic.label(t,
                 p.words[t],
                 p.names[t],
-                true);
+                false) + ":";
+        });
+    trs.selectAll("td a.topic_words span.words")
+        .text(function (t) {
+            return p.words[t].reduce(function (acc, x) {
+                return acc + " " + x.word;
+            }, "");
         });
 
     // TODO filter out hidden topics here
