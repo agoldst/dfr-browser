@@ -132,6 +132,18 @@ th.wide {
     background-color: #eee;
 }
 
+/* dropdown tweak */ 
+/* topic dropdown can fill whole height of screen */
+
+#topic_dropdown.scroll-menu {
+    position: fixed;
+    top: 0px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100%;
+    min-width: 270px;
+}
+
 
 #help_box_content p a {
     color: blue;
