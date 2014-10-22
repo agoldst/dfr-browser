@@ -396,6 +396,7 @@ div.bar_tooltip {
 #word_view g.topic text.topic {
     text-anchor: end;
     pointer-events: none;
+    font-style: italic;
 }
 
 #word_view rect.interact {
