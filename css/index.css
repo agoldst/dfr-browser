@@ -255,6 +255,10 @@ th#model_view_list_frac {
     width: 16.66%;
 }
 
+a.topic_words span.name {
+    font-style: italic;
+}
+
 /* model_view_yearly */
 
 text.layer_label {
