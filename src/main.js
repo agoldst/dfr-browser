@@ -476,8 +476,8 @@ model_view = function (m, type, p1, p2) {
     }
 
     // ensure pill highlighting
-    d3.selectAll("#nav_model li.active").classed("active",false);
-    d3.select("#nav_model_" + type_chosen).classed("active",true);
+    d3.selectAll("#nav_model li.active").classed("active", false);
+    d3.select("#nav_model_" + type_chosen).classed("active", true);
 
     // hide all subviews and controls; we'll reveal the chosen one
     d3.select("#model_view_plot").classed("hidden", true);
@@ -671,9 +671,11 @@ view_refresh = function (m, v) {
     }
 
     if (success) {
-        // TODO really need to know if the view is something other than
-        // what we asked for, e.g. if we ask for #/model/list the default sort
-        // annotation should be revealed, if any. Not important...almost certainly
+        // TODO get all view functions to report on the chosen view with this
+        // mechanism, then make less kludgy
+        if (typeof success === "string") {
+            param = [undefined].concat(success.split("/"));
+        }
         VIS.cur_view = d3.select("div#" + v_chosen + "_view");
 
         VIS.annotes.forEach(function (c) {
@@ -705,8 +707,14 @@ view_refresh = function (m, v) {
     VIS.cur_view.classed("hidden", false);
 
     // ensure highlighting of nav link
-    d3.selectAll("#nav_toplevel li.active").classed("active",false);
-    d3.select("li#nav_" + view_parsed[1]).classed("active",true);
+    d3.selectAll("#nav_main > li.active").classed("active", false);
+    d3.select("li#nav_" + v_chosen).classed("active", true);
+
+    // hide subnavs
+    d3.selectAll("#nav_main li:not(.active) > .nav")
+        .classed("hidden", true);
+    d3.selectAll("#nav_main li.active > .nav")
+        .classed("hidden", false);
 };
 
 hide_topics = function (flg) {
