@@ -413,6 +413,7 @@ div.bar_tooltip {
     text-anchor: end;
     pointer-events: none;
     font-style: italic;
+    font-size: 14pt;
 }
 
 #word_view rect.interact {
