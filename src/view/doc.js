@@ -5,7 +5,7 @@ view.doc = function (p) {
     var div = d3.select("div#doc_view"),
         total_tokens = p.total_tokens,
         topics = p.topics,
-        trs;
+        trs, as_t;
 
     d3.select("#doc_view_main").classed("hidden", false);
 
@@ -36,14 +36,26 @@ view.doc = function (p) {
     // clear rows
     trs.selectAll("td").remove();
 
-    trs.append("td")
-        .append("a")
-            .attr("href", function (t) {
-                return topic_link(t.topic);
-            })
-            .text(function (t, j) {
-                return view.topic.label(t.topic, p.words[j], p.names[j], true);
-            });
+    as_t = trs.append("td").append("a")
+        .attr("href", function (t) {
+            return topic_link(t.topic);
+        })
+        .classed("topic_words", true);
+
+    as_t.append("span").classed("name", true)
+        .text(function (t, j) {
+            return view.topic.label({
+                t: t.topic,
+                name: p.names[j]
+            }).title + ": ";
+        });
+
+    as_t.append("span").classed("words", true)
+        .text(function (t, j) {
+            return p.words[j].reduce(function (acc, x) {
+                return acc + " " + x.word;
+            }, "");
+        });
 
     trs.on("click", function (t) {
         set_view(topic_hash(t.topic));

@@ -8,7 +8,7 @@ view.word = function (p) {
         words,
         spec, row_height,
         svg, scale_x, scale_y, scale_bar,
-        gs_t, gs_t_enter, gs_w, gs_w_enter,
+        gs_t, gs_t_enter, gs_t_label, gs_w, gs_w_enter,
         tx_w;
 
     // word form setup
@@ -121,16 +121,33 @@ view.word = function (p) {
             set_view(topic_hash(t.topic));
         });
                 
-    gs_t_enter.append("text")
-        .classed("topic", true)
-        .attr({
-            x: -VIS.word_view.topic_label_padding,
-            y: -(row_height - VIS.word_view.topic_label_size) / 2
+    gs_t_label = gs_t.selectAll("text.topic")
+        .data(function (t, j) {
+            var ws = view.topic.label.words({
+                t: t.topic,
+                name: p.names[j]
+            });
+            return ws.map(function (w, k) {
+                return {
+                    word: w,
+                    y: -row_height / 2 -
+                        (ws.length / 2 - k - 1) * VIS.word_view.topic_label_leading
+                };
+            }); 
+        }, function (w, j) { return w.word + String(j); });
+
+    gs_t_label.enter().append("text").classed("topic", true);
+    gs_t_label.exit().remove();
+
+    gs_t_label
+        .attr("x", -VIS.word_view.topic_label_padding)
+        .attr("y", function (w) {
+            return w.y;
         })
-        .text(function (t, j) {
-            return view.topic.label(t.topic, undefined, p.names[j]);
-        })
-        .style("font-size", VIS.word_view.topic_label_size + "pt");
+        .text(function (w) { return w.word; })
+        .classed("merged_topic_sep", function (w) {
+            return w.word === "or";
+        });
 
     gs_w = gs_t.selectAll("g.word")
         .data(function (t, i) { return words[i]; },

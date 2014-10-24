@@ -187,7 +187,7 @@ view.model.plot = function (param) {
 
     gs_enter.selectAll("text.topic_name")
         .data(function (p) {
-            var ws = view.topic.label(p.t, p.words, p.name).split(/\s+/);
+            var ws = view.topic.label.words(p);
             // TODO 1 label word on each "line" is a problem for "of" and "the" etc.
             return ws.map(function (w, j) {
                 return {
@@ -199,12 +199,10 @@ view.model.plot = function (param) {
         .enter().append("text").classed("topic_name", true)
         .attr("x", 0)
         .attr("y", function (w) { return w.y; })
-        .text(function (w) {
-            return w.w === "/" ? "or" : w.w;
-        })
+        .text(function (w) { return w.w; })
         .style("font-size", VIS.model_view.name_size + "px")
         .classed("merged_topic_sep", function (w) {
-            return w.w === "/";
+            return w.w === "or";
         })
         .classed("hidden", true);
 

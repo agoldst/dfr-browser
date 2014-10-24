@@ -2,17 +2,19 @@
 "use strict";
 
 view.topic = function (p) {
-    var div = d3.select("div#topic_view");
+    var div = d3.select("div#topic_view"),
+        ttl;
 
     // heading information
     // -------------------
 
-    div.select("h2#topic_header")
-        .text(view.topic.label(p.t,
-                    utils.shorten(p.words, VIS.overview_words),
-                    p.name,
-                    false,
-                    true));
+    ttl = view.topic.label(p);
+    div.select("#topic_header").text(ttl.title);
+    div.select("#topic_subheader")
+        .classed("hidden", !ttl.subtitle)
+        .select(".topic_subtitle").text(ttl.subtitle || "");
+
+    console.log(ttl);
 
     // (later: nearby topics by J-S div or cor on log probs)
 };
@@ -320,31 +322,49 @@ view.topic.yearly_barplot = function (param) {
 
 };
 
-view.topic.label = function (t, words, name, verbose, subtitle) {
-    var i,
-        result,
+view.topic.label = function (p) {
+    var result,
         sub;
     
-    if (typeof name === "string") {
-        sub = name.match(/:.*$/);
+    if (typeof p.name === "string") {
+        sub = p.name.match(/: .*$/);
         sub = sub ? sub[0] : "";
-        result = name.replace(/:.*$/, "");
+        sub = sub.replace(/^: /, "");
+        result = p.name.replace(/: .*$/, "");
     } else { 
         // for numerical label, user-facing index is 1-based
-        result = "Topic " + String(t + 1); 
+        result = "Topic " + String(p.t + 1); 
     }
 
-    if (verbose && words && words.length > 0) {
-        result += sub;
-        result += ": ";
-        for (i = 0; i < words.length; i += 1) {
-            result += " " + words[i].word;
+    return {
+        title: result,
+        subtitle: sub
+    };
+};
+
+view.topic.label.verbose = function (p) {
+    var ttl = view.topic.label(p),
+        result = ttl.title,
+        i;
+    if (p.words && p.words.length > 0) {
+        if (ttl.subtitle) { 
+            result += ": " + ttl.subtitle;
         }
-    } else if (subtitle) {
-        result += sub;
+        result += ": "; // word divider
+        for (i = 0; i < p.words.length; i += 1) {
+            result += " " + p.words[i].word;
+        }
     }
     return result;
 };
+
+view.topic.label.words = function (p) { 
+    var ws = view.topic.label(p).title.split(/\s+/);
+    return ws.map(function (w) {
+        return w === "/" ? "or" : w;
+    });
+};
+
 
 view.topic.sort_name = function (name) {
     return name.replace(/^(the|a|an) /i,"").toLowerCase();
@@ -360,7 +380,7 @@ view.topic.dropdown = function (topics) {
         .data(topics, function (t) { return t.topic; });
     lis.enter().append("li").append("a")
         .text(function (t) {
-            return view.topic.label(t.topic, t.words, t.name);
+            return view.topic.label(t).title;
         })
         .attr("href", function (t) {
             return topic_link(t.topic);

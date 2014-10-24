@@ -62,10 +62,11 @@ view.model.list = function (p) {
         .attr("href", topic_link);
     trs.selectAll("td a.topic_words span.name")
         .text(function (t) {
-            return view.topic.label(t,
-                p.words[t],
-                p.names[t],
-                false) + ":";
+            return view.topic.label({
+                t: t,
+                words: p.words[t],
+                name: p.names[t]
+            }).title + ":"; // no subtitle in this view
         });
     trs.selectAll("td a.topic_words span.words")
         .text(function (t) {

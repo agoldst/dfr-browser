@@ -94,7 +94,7 @@ view.model.yearly = function (p) {
         })
         .on("mouseover", function (d) {
             d3.select(this).style("fill", scale_color(d.t, true));
-            view.tooltip().text(view.topic.label(d.t, d.words, d.name));
+            view.tooltip().text(view.topic.label(d).title);
             view.tooltip().update_pos();
             view.tooltip().show();
         })
@@ -156,8 +156,7 @@ view.model.yearly = function (p) {
                     d.values[max[d.t]].y / 2);
             })
             .text(function (d) {
-                var words = d.words.slice(0, VIS.model_view.yearly.label_words);
-                return view.topic.label(d.t, words, d.name);
+                return view.topic.label(d).title;
             });
     };
 
