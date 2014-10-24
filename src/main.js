@@ -665,6 +665,10 @@ view_refresh = function (m, v) {
         case "words":
             success = words_view.apply(undefined, param);
             break;
+        case "settings":
+            settings_modal(m);
+            success = false;
+            break;
         default:
             success = false;
             break;
