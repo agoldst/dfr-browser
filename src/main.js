@@ -18,7 +18,7 @@ var VIS = {
     default_view: "/model", // specify the part after the #
     overview_words: 15,     // may need adjustment
     model_view: {
-        w: 1140,            // px: the bootstrap container width
+        w: 500,            // px: the minimum svg width
         aspect: 1.3333,     // for calculating height
         words: 4,           // maximum: may need adjustment
         size_range: [7, 18], // points. may need adjustment

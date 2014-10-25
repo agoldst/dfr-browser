@@ -14,6 +14,7 @@ view.model.plot = function (param) {
         spec = { };
 
     spec.w = d3.select("#model_view").node().clientWidth || VIS.model_view.w;
+    spec.w = Math.max(spec.w, VIS.model_view.w); // set a min. width
     spec.h = Math.floor(spec.w / VIS.model_view.aspect);
     spec.m = {
         left: 0,
