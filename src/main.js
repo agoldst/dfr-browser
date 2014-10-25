@@ -114,6 +114,7 @@ var VIS = {
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: "",
+    resize_refresh_delay: 200, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
     show_hidden_topics: false,
     annotes: []             // list of CSS classes annotating the current view
@@ -749,15 +750,18 @@ setup_vis = function (m) {
         view_refresh(m, window.location.hash, false);
     };
 
-    // help box
-    d3.select("#nav_help")
-        .on("click", function () {
-            var box = d3.select("#help_box"),
-                hidden = box.classed("hidden");
+    // resizing handler
+    $(window).resize(function () {
+        if (VIS.resize_timer) {
+            window.clearTimeout(VIS.resize_timer);
+        }
+        VIS.resize_timer = window.setTimeout(function () {
+            view.updating(true);
+            view_refresh(m, window.location.hash);
+            VIS.resize_timer = undefined; // ha ha
+        }, VIS.resize_refresh_delay);
+    });
 
-            box.classed("hidden", !hidden);
-            d3.select("#nav_help").classed("active", hidden);
-        });
 
     $("#settings_modal").on("hide.bs.modal", function () {
         view_refresh(m, window.location.hash);
