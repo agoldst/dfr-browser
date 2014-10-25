@@ -111,19 +111,24 @@ var view = (function () {
     that.append_weight_tds = append_weight_tds;
 
     plot_svg = function (selector, spec) {
-        var svg;
+        var g;
 
         if (!VIS.svg) {
             VIS.svg = d3.map();
         }
         if (VIS.svg.has(selector)) {
-            return VIS.svg.get(selector);
+            g = VIS.svg.get(selector);
+            d3.select(selector + " svg")
+                .attr("width", spec.w + spec.m.left + spec.m.right)
+                .attr("height", spec.h + spec.m.top + spec.m.bottom);
+
+            g.attr("transform",
+                    "translate(" + spec.m.left + "," + spec.m.top + ")");
+        } else {
+            g = append_svg(d3.select(selector), spec);
+            VIS.svg.set(selector, g);
         }
-
-        svg = append_svg(d3.select(selector), spec);
-
-        VIS.svg.set(selector, svg);
-        return svg;
+        return g;
     };
     that.plot_svg = plot_svg;
 
