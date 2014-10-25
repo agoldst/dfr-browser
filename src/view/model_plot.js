@@ -2,51 +2,47 @@
 "use strict";
 
 view.model.plot = function (param) {
-    var spec, svg, cloud_size, circle_radius, range_padding,
+    var svg, cloud_size, circle_radius, range_padding,
+        zoom_rect,
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
-        gs, gs_enter, translation, zoom,
+        gs, gs_enter,
+        words,
+        translation, zoom,
         topics = param.topics,
-        n = param.topics.length;
+        n = param.topics.length,
+        spec = { };
 
-    // TODO need visual indication of stroke ~ alpha mapping
-
-    // TODO really the best way to size this plot?
-    spec = {
-        w: VIS.model_view.w,
-        h: Math.floor(VIS.model_view.w / VIS.model_view.aspect),
-        m: {
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0
-        }
+    spec.w = d3.select("#model_view").node().clientWidth || VIS.model_view.w;
+    spec.h = Math.floor(spec.w / VIS.model_view.aspect);
+    spec.m = {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0
     };
 
     svg = view.plot_svg("#model_view_plot", spec);
 
-    // if no user-supplied circle radius, attempt to fill total circle
-    // area in plot window; 2.25 rather than 2 is pure fudge factor
-
-    circle_radius = VIS.model_view.radius || Math.floor(spec.w /
-            (2.25 * Math.sqrt(VIS.model_view.aspect * n)));
-    // Allow the cloud to spill outside circle a little
-    cloud_size = Math.floor(circle_radius * 2.1);
+    // N.B. ignoring VIS.model_view.radius and calculating instead
+    circle_radius = Math.floor(
+        spec.w /
+        (2.1 * Math.sqrt(VIS.model_view.aspect * n))
+    );
+    cloud_size = circle_radius * 1.8; // a little less than the full diameter
     range_padding = 1.1 * circle_radius;
 
     // zoom-target rectangle
-    svg.selectAll("rect.bg")
-        .data([1])
-        .enter().append("rect")
-            .attr("width", spec.w)
-            .attr("height", spec.h)
-            .classed("bg", true);
+    zoom_rect = svg.selectAll("rect.bg")
+        .data([1]);
+    zoom_rect.enter().append("rect").classed("bg", true);
+    zoom_rect.attr("width", spec.w);
+    zoom_rect.attr("height", spec.h);
 
     if (param.type === "scaled") {
         topics.forEach(function (p, j) {
             topics[j].x = p.scaled[0];
             topics[j].y = p.scaled[1];
-            topics[j].r = circle_radius;
         });
     } else {
         // default to grid
@@ -63,7 +59,6 @@ view.model.plot = function (param) {
             .forEach(function (p, j) {
                 topics[j].x = p.x;
                 topics[j].y = p.y;
-                topics[j].r = circle_radius;
             });
     }
 
@@ -92,12 +87,17 @@ view.model.plot = function (param) {
     gs_enter = gs.enter().append("g");
     gs.exit().remove();
 
+    gs_enter.append("clipPath").attr("id", function (p) {
+        return "clip_circ" + p.t; // we'll clip the topic words to the circles
+    }).append("circle")
+        .attr({
+            cx: 0,
+            cy: 0
+        }); // radius gets set below in transitions with all the other circles
+
     gs_enter.append("circle")
             .attr("cx", 0)
             .attr("cy", 0)
-            .attr("r", function (p) {
-                return p.r;
-            })
             .classed("topic_cloud", true)
             .attr("stroke-width", function (p) {
                 return scale_stroke(p.total);
@@ -127,32 +127,22 @@ view.model.plot = function (param) {
                     return d3.ascending(a.t, b.t);
                 })
                     .order();
-                d3.select(this.parentElement).selectAll("text.topic_label")
-                    .classed("hidden", true);
-                d3.select(this.parentElement).selectAll("text.topic_name")
-                    .classed("hidden", false);
             })
             .on("mouseout",function() {
                 gs.sort(function (a, b) {
                         return d3.ascending(a.t, b.t);
                     })
                     .order();
-                d3.select(this.parentElement).selectAll("text.topic_label")
-                    .classed("hidden", false);
-                d3.select(this.parentElement).selectAll("text.topic_name")
-                    .classed("hidden", true);
             });
 
-    // TODO though it's silly to regenerate the word "cloud" on each view redraw
-    // as we do here, actually let's keep this in place in anticipation of
-    // making the word clouds grow and shrink on zoom.
-    gs_enter.selectAll("text.topic_label")
+    words = gs.selectAll("text.topic_word")
         .data(function (p) {
             var max_wt = p.words[0].weight,
                 wds = p.words.map(function (w) {
                     return {
                         text: w.word,
-                        size: Math.floor(scale_size(w.weight / max_wt))
+                        size: Math.floor(scale_size(w.weight / max_wt)),
+                        t: p.t
                     };
                 }),
                 up = 0, down = 0, toggle = false, i;
@@ -171,19 +161,21 @@ view.model.plot = function (param) {
                 }
             }
             return wds.slice(0, i);
+        });
+
+    words.enter().append("text").classed("topic_word", true)
+        .attr("clip-path", function (w) {
+            return "url(#" + "clip_circ" + w.t;
         })
-        .enter().append("text").classed("topic_label", true)
-            .text(function (wd) {
-                return wd.text;
-            })
-            .style("font-size", function (wd) {
-                return wd.size + "px";
-            })
-            .attr("x", 0)
-            .attr("y", function (wd) {
-                return wd.y;
-            })
-            .classed("hidden", false);
+        .style("font-size", "1px"); // additional words start tiny then grow
+
+    words.text(function (wd) {
+            return wd.text;
+        })
+        .attr("x", 0)
+        .attr("y", function (wd) {
+            return wd.y;
+        });
 
     gs_enter.selectAll("text.topic_name")
         .data(function (p) {
@@ -203,8 +195,7 @@ view.model.plot = function (param) {
         .style("font-size", VIS.model_view.name_size + "px")
         .classed("merged_topic_sep", function (w) {
             return w.w === "or";
-        })
-        .classed("hidden", true);
+        });
 
     translation = function (p) {
         var result = "translate(" + scale_x(p.x);
@@ -214,11 +205,35 @@ view.model.plot = function (param) {
 
     gs.transition()
         .duration(1000)
-        .attr("transform", translation);
+        .attr("transform", translation)
+        .selectAll("circle")
+        .attr("r", circle_radius);
+
     // new nodes just appear, no gratuitous translation: interrupt the other
     gs_enter.transition()
         .duration(0)
-        .attr("transform", translation);
+        .attr("transform", translation)
+        .selectAll("circle")
+        .attr("r", circle_radius);
+
+    words.transition()
+        .duration(1000)
+        .style("font-size", function (wd) {
+            return wd.size + "px";
+        });
+
+    // words on new nodes also just appear
+    gs_enter.selectAll("text.topic_word")
+        .transition()
+        .duration(0)
+        .style("font-size", function (wd) {
+            return wd.size + "px";
+        });
+
+    words.exit().transition()
+        .duration(1000)
+        .style("font-size", "1px")
+        .remove();
 
     // TODO zoom circle sizes and add words in, but this makes some
     // complications for the scaled view where the main use of zoom is to

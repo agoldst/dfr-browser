@@ -20,7 +20,7 @@ var VIS = {
     model_view: {
         w: 1140,            // px: the bootstrap container width
         aspect: 1.3333,     // for calculating height
-        words: 4,           // may need adjustment
+        words: 4,           // maximum: may need adjustment
         size_range: [7, 18], // points. may need adjustment
         name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness

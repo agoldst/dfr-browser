@@ -180,7 +180,7 @@ rect.bg {
     fill: white;
 }
 
-text.topic_label {
+text.topic_word {
     text-anchor: middle;
     fill: rgba(0,0,0,0.6);
     pointer-events: none;
@@ -189,7 +189,7 @@ text.topic_label {
 
 text.topic_name {
     text-anchor: middle;
-    fill: rgba(0,0,0,0.6);
+    fill: black;
     pointer-events: none;
     font-style: italic;
 }
@@ -206,6 +206,20 @@ text.topic_name.merged_topic_sep {
 .topic_cloud:hover {
     fill: rgba(51,153,255,0.9);
 }
+
+.topic_cloud ~ text.topic_name {
+    display: none;
+}
+
+.topic_cloud:hover ~ text.topic_name {
+    display: inherit;
+}
+
+.topic_cloud:hover ~ text.topic_word {
+    fill: rgba(0,0,0,0.05);
+    stroke: rgba(0,0,0,0.05);
+}
+
 
 /* model_view_list */
 
