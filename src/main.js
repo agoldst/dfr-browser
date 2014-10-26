@@ -171,9 +171,6 @@ topic_view = function (m, t_user, y) {
         return true;
     }
 
-    // TODO don't need anything but tw to show topic words h2 and div; so can 
-    // have div-specific loading messages instead
-
     // if the topic is missing or unspecified, show the help
     if (!isFinite(t) || t < 0 || t >= m.n()) {
         d3.select("#topic_view_help").classed("hidden", false);
@@ -210,10 +207,17 @@ topic_view = function (m, t_user, y) {
     // topic word subview
     view.topic.words(words);
 
+    // topic yearly barplot subview
+
+    // if the last view was also a topic view, we'll decree this a qualified
+    // redraw and allow a nice transition to happen
+    if (VIS.cur_view && VIS.cur_view.attr("id") === "topic_view") {
+        view.dirty("topic/yearly", true);
+    }
+
     if (!view.updating() && !view.dirty("topic/yearly")) {
         d3.select("#topic_plot").classed("invisible", true);
     }
-    // topic yearly barplot subview
     m.topic_yearly(t, function (yearly) {
         view.topic.yearly({
             t: t,
