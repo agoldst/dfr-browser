@@ -6,8 +6,9 @@ view.word = function (p) {
         word = p.word,
         n = p.n,
         words,
-        spec, row_height,
-        svg, scale_x, scale_y, scale_bar,
+        spec, row_height, width,
+        svg, clip,
+        scale_x, scale_y, scale_bar,
         gs_t, gs_t_enter, gs_t_label, gs_w, gs_w_enter,
         tx_w;
 
@@ -47,24 +48,20 @@ view.word = function (p) {
         });
     });
 
-    spec = {
-        w: VIS.word_view.w,
-        h: VIS.word_view.row_height * (p.n_topics + 1),
-        m: VIS.word_view.m
-    };
+    spec = { m: VIS.word_view.m };
+    spec.w = d3.select("#view").node().clientWidth || VIS.word_view.w;
+    spec.w -= spec.m.left + spec.m.right;
+    // adjust svg height so that scroll bar isn't too long
+    // and svg isn't so short it clips things weirdly
+    spec.h = VIS.word_view.row_height * (p.topics.length + 1);
 
     row_height = VIS.word_view.row_height;
     svg = view.plot_svg("#word_view_main", spec);
-    // adjust svg height so that scroll bar isn't too long
-    // and svg isn't so short it clips things weirdly
-    d3.select("#word_view_main svg")
-        .attr("height", VIS.word_view.row_height
-            * (Math.max(p.topics.length, VIS.word_view.svg_rows) + 1)
-            + spec.m.top + spec.m.bottom);
+    width = Math.max(spec.w, VIS.word_view.w); // set a min. width for coord sys
 
     scale_x = d3.scale.linear()
         .domain([0, n])
-        .range([0, spec.w]);
+        .range([0, width]);
     scale_y = d3.scale.linear()
         .domain([0, Math.max(1, p.topics.length - 1)])
         .range([row_height, row_height * (Math.max(p.topics.length, 1) + 1)]);
@@ -72,6 +69,23 @@ view.word = function (p) {
         .domain([0, 1])
         .range([0, row_height / 2]);
 
+    clip = svg.selectAll("clipPath")
+        .data([1]);
+
+    clip.enter().append("clipPath").attr("id", "word_view_clip")
+        .append("rect")
+        .attr("x", -spec.m.left)
+        .attr("y", -spec.m.top)
+        .attr("width", spec.w + spec.m.left + spec.m.right) // clip to spec
+        .attr("height", spec.h + spec.m.top + spec.m.bottom);
+
+    clip.select("rect").transition().duration(2000)
+        .attr("x", -spec.m.left)
+        .attr("y", -spec.m.top)
+        .attr("width", spec.w + spec.m.left + spec.m.right)
+        .attr("height", spec.h + spec.m.top + spec.m.bottom);
+
+    svg.attr("clip-path", "url(#word_view_clip)");
     gs_t = svg.selectAll("g.topic")
         .data(p.topics, function (t) { return t.topic; } );
 
@@ -89,11 +103,9 @@ view.word = function (p) {
 
     // TODO refine transition timings
 
-    if (!VIS.ready.word) {
-        // if this is the first loading, don't leave the user with a totally
-        // blank display for any time at all
+    if (!VIS.ready.word || view.updating()) {
+        // if this is the first load or a refresh, we don't want a fade-in
         d3.selectAll("g.topic").style("opacity", 1);
-        VIS.ready.word = true;
     } else {
         d3.transition().duration(1000)
             .ease("linear")
@@ -160,7 +172,11 @@ view.word = function (p) {
 
     gs_w_enter.append("rect")
         .classed("proportion", true)
-        .attr({ x: 0, y: 0 });
+        .attr({ x: 0, y: 0 })
+        .attr("width", width / (2 * n))
+        .attr("height", function (d) {
+            return scale_bar(d.weight);
+        });
 
     gs_w.selectAll("text")
         .text(function (d) { return d.word; });
@@ -183,32 +199,30 @@ view.word = function (p) {
     gs_w_enter.attr("transform", function (d, j) {
         return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
     })
-        .attr("opacity", 0);
+        .attr("opacity", (VIS.ready.word && !view.updating()) ? 0 : 1);
+    // pre-empting fade-in on first load or refresh
 
     // update g positions for word/bars
     tx_w = gs_w.transition()
-        //.delay(1000)
         .duration(2000)
         .attr("transform", function (d, j) {
             return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
         })
-        .attr("opacity", 1)
-        .each("end", function () {
-            d3.select(this).classed("update_row", false);
-        });
+        .attr("opacity", 1);
 
     // update word label positions
-    tx_w.selectAll("text").attr("x", spec.w / (4 * n));
+    tx_w.selectAll("text").attr("x", width / (4 * n));
 
     // update bar widths
     tx_w.selectAll("rect")
-        .attr("width", spec.w / (2 * n))
+        .attr("width", width / (2 * n))
         .attr("height", function (d) {
             return scale_bar(d.weight);
         });
     // and move exit words out of the way
     gs_w.exit().transition().delay(1000).remove();
 
+    VIS.ready.word = true;
     return true;
     // (later: time graph)
 };

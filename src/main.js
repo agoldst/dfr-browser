@@ -70,7 +70,7 @@ var VIS = {
         topic_label_leading: 14, // pt
         row_height: 80, // pt
         svg_rows: 10, // * row_height gives min. height for svg element
-        w: 1000,
+        w: 1000, // px: minimum width
         m: {
             left: 100,
             right: 40,
@@ -307,7 +307,6 @@ word_view = function (m, w) {
             return m.topic_name(t.topic);
         })
     });
-
     return true;
 };
 
@@ -713,7 +712,6 @@ view_refresh = function (m, v) {
     // ensure hidden topics are shown/hidden (actually, with
     // asynchronous rendering this isn't perfect)
     hide_topics();
-
 
     VIS.cur_view.classed("hidden", false);
 
