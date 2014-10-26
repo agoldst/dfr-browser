@@ -69,23 +69,22 @@ view.word = function (p) {
         .domain([0, 1])
         .range([0, row_height / 2]);
 
-    clip = svg.selectAll("clipPath")
-        .data([1]);
+    clip = d3.select("#word_view_clip");
+    if (clip.size() === 0) {
+        clip = d3.select("#word_view svg").append("clipPath")
+            .attr("id", "word_view_clip");
+        clip.append("rect");
+    }
 
-    clip.enter().append("clipPath").attr("id", "word_view_clip")
-        .append("rect")
-        .attr("x", -spec.m.left)
-        .attr("y", -spec.m.top)
-        .attr("width", spec.w + spec.m.left + spec.m.right) // clip to spec
-        .attr("height", spec.h + spec.m.top + spec.m.bottom);
-
-    clip.select("rect").transition().duration(2000)
+    // no transition, just set the clipping to spec
+    clip.select("rect")
         .attr("x", -spec.m.left)
         .attr("y", -spec.m.top)
         .attr("width", spec.w + spec.m.left + spec.m.right)
         .attr("height", spec.h + spec.m.top + spec.m.bottom);
 
     svg.attr("clip-path", "url(#word_view_clip)");
+
     gs_t = svg.selectAll("g.topic")
         .data(p.topics, function (t) { return t.topic; } );
 
