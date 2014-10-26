@@ -113,7 +113,7 @@ var VIS = {
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     uri_proxy: "",
-    resize_refresh_delay: 200, // ms
+    resize_refresh_delay: 100, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
     show_hidden_topics: false,
     annotes: []             // list of CSS classes annotating the current view
