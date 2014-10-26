@@ -7,6 +7,7 @@ var view = (function () {
             updating: false
         },
         updating,
+        dirty,
         loading,
         calculating,
         error,
@@ -14,7 +15,9 @@ var view = (function () {
         tooltip,
         append_weight_tds,
         plot_svg,
-        append_svg;
+        append_svg,
+        scroll_top,
+        scroll_origin;
 
     updating = function (flag) {
         if (typeof flag === "boolean") {
@@ -23,6 +26,25 @@ var view = (function () {
         return my.updating;
     };
     that.updating = updating;
+
+    // TODO get rid of updating(), use dirty() everywhere
+    dirty = function (key, flag) {
+        if (!my.dirty) {
+            my.dirty = d3.set();
+        }
+        if (flag === undefined) {
+            return my.dirty.has(key);
+        }
+
+        // otherwise
+        if (flag) {
+            my.dirty.add(key);
+        } else {
+            my.dirty.remove(key);
+        }
+        return flag;
+    };
+    that.dirty = dirty;
 
     loading = function (flag) {
         d3.select("#working_icon").classed("invisible", !flag);
@@ -144,6 +166,16 @@ var view = (function () {
                       "translate(" + spec.m.left + "," + spec.m.top + ")");
     };
     that.append_svg = append_svg;
+
+    scroll_top = function() {
+        window.scrollTo(window.scrollX, 0);
+    };
+    that.scroll_top = scroll_top;
+
+    scroll_origin = function() {
+        window.scrollTo(0, 0);
+    };
+    that.scroll_origin = scroll_origin;
 
     return that;
 }());

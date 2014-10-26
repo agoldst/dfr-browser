@@ -47,7 +47,7 @@ view.bib = function (p) {
     d3.select("#bib_headings a.top_link")
         .on("click", function () {
             d3.event.preventDefault();
-            window.scrollTo(0, 0);
+            view.scroll_top();
         });
 
 
