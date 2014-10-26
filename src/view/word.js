@@ -168,7 +168,6 @@ view.word = function (p) {
     gs_w.selectAll("text, rect")
         .on("click", function (d) {
             set_view("/word/" + d.word);
-            view.scroll_top();
         })
         .on("mouseover", function () {
             d3.select(this.parentNode).classed("hover", true);

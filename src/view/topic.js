@@ -28,7 +28,7 @@ view.topic.remark = function (p) {
 view.topic.words = function (words) {
     var trs_w;
 
-    if (view.updating()) {
+    if (view.updating() && !view.dirty("topic/words")) {
         return;
     }
 
@@ -56,6 +56,7 @@ view.topic.words = function (words) {
         return w.weight / words[0].weight;
     });
 
+    view.dirty("topic/words", false);
 };
 
 view.topic.docs = function (p) {

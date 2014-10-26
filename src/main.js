@@ -706,6 +706,9 @@ view_refresh = function (m, v) {
         // TODO and register the correct annotations
     }
 
+    if (!view.updating()) {
+        view.scroll_top();
+    }
     view.updating(false);
     // ensure hidden topics are shown/hidden (actually, with
     // asynchronous rendering this isn't perfect)
@@ -759,6 +762,7 @@ setup_vis = function (m) {
             window.clearTimeout(VIS.resize_timer);
         }
         VIS.resize_timer = window.setTimeout(function () {
+            view.updating(true);
             view.dirty("topic/yearly", true);
             view_refresh(m, window.location.hash);
             VIS.resize_timer = undefined; // ha ha
@@ -767,6 +771,7 @@ setup_vis = function (m) {
 
 
     $("#settings_modal").on("hide.bs.modal", function () {
+        view.updating(true);
         view_refresh(m, window.location.hash);
     });
 
