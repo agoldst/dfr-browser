@@ -315,6 +315,14 @@ path.topic_area {
     font-style: italic;
 }
 
+#topic_view_annotation a {
+    color: blue;
+}
+
+#topic_view_annotation a:visited {
+    color: purple;
+}
+
 #topic_words a {
     font-size: 1em;
 }
