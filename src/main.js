@@ -7,7 +7,6 @@ var VIS = {
     last: { // which subviews last shown?
         bib: { }
     },
-    view_updating: false, // do we need to redraw the whole view?
     files: { // what data files to request
         info: "data/info.json",
         meta: "data/meta.csv.zip",  // remove .zip to use uncompressed data
@@ -54,8 +53,8 @@ var VIS = {
     topic_view: {
         words: 50,
         docs: 20,
-        w: 800, // fixed dimensions; this will need tweaking
-        h: 300, // NB the topic_plot div has a fixed height in index.css
+        w: 400, // minimum in px
+        aspect: 3,
         m: {
             left: 40,
             right: 20,
@@ -211,17 +210,17 @@ topic_view = function (m, t_user, y) {
     // topic word subview
     view.topic.words(words);
 
-    // topic yearly barplot subview
-    if (!view.updating()) {
-        d3.select("#topic_plot").classed("hidden", true);
+    if (!view.updating() && !view.dirty("topic/yearly")) {
+        d3.select("#topic_plot").classed("invisible", true);
     }
+    // topic yearly barplot subview
     m.topic_yearly(t, function (yearly) {
         view.topic.yearly({
             t: t,
             year: year,
             yearly: yearly
         });
-        d3.select("#topic_plot").classed("hidden", false);
+        d3.select("#topic_plot").classed("invisible", false);
     });
 
     // topic top documents subview
@@ -756,7 +755,7 @@ setup_vis = function (m) {
             window.clearTimeout(VIS.resize_timer);
         }
         VIS.resize_timer = window.setTimeout(function () {
-            view.updating(true);
+            view.dirty("topic/yearly", true);
             view_refresh(m, window.location.hash);
             VIS.resize_timer = undefined; // ha ha
         }, VIS.resize_refresh_delay);

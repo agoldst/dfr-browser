@@ -335,10 +335,6 @@ a:hover {
 
 /* topic_plot */
 
-div#topic_yearly {
-    height: 300px;
-}
-
 .axis path, .axis line {
     fill: none;
     stroke: black;
