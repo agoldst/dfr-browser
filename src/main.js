@@ -24,8 +24,8 @@ var VIS = {
         name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness
         yearly: {
-            w: 1090,
-            h: 800,
+            w: 500,         // px: the minimum svg width
+            aspect: 2,
             m: {
                 left: 20,
                 right: 20,

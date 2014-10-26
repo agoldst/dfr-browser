@@ -2,14 +2,22 @@
 "use strict";
 
 view.model.yearly = function (p) {
-    var spec = VIS.model_view.yearly, svg,
-        scale_x, scale_y, axis_x, area,
+    var spec = { }, svg,
+        scale_x, scale_y, axis_x, g_axis, area,
         scale_color,
+        bg, clip,
         raw,
         to_plot,
         paths, labels, render_labels,
         areas, zoom;
 
+    spec.m = VIS.model_view.yearly.m;
+    spec.w = d3.select("#model_view_yearly").node().clientWidth
+        || VIS.model_view.yearly.w;
+    spec.w = Math.max(spec.w, VIS.model_view.yearly.w); // set a min. width
+    spec.w -= spec.m.left + spec.m.right; // inset margins
+    spec.h = Math.floor(spec.w / VIS.model_view.yearly.aspect);
+    spec.h -= spec.m.top + spec.m.bottom;
     svg = view.plot_svg("#model_view_yearly", spec);
 
     raw = p.type ? (p.type === "raw") : VIS.last.model_yearly;
@@ -21,25 +29,27 @@ view.model.yearly = function (p) {
         raw: raw
     });
 
-    if (!VIS.ready.model_yearly) {
-        svg.append("rect")
-            .attr("width", spec.w)
-            .attr("height", spec.h)
-            .classed("bg", true);
+    bg = svg.selectAll("rect.bg")
+        .data([1])
+        .enter().append("rect").classed("bg", true);
+    bg.attr("width", spec.w)
+        .attr("height", spec.h)
+        .classed("bg", true);
 
-        svg.append("clipPath").attr("id", "clip")
-            .append("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", spec.w)
-            .attr("height", spec.h);
+    clip = svg.selectAll("clipPath")
+        .data([1]);
 
-        // clear old elements TODO proper update
+    clip.enter().append("clipPath").attr("id", "model_yearly_clip")
+        .append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", spec.w)
+        .attr("height", spec.h);
 
-        svg.selectAll("path.topic_area").remove();
-        svg.selectAll("text.layer_label").remove();
-        VIS.ready.model_yearly = true;
-    } // if (!VIS.ready.model_yearly)
+    clip.select("rect").transition()
+        .duration(2000)
+        .attr("width", spec.w)
+        .attr("height", spec.h);
 
     // scales
     // ------
@@ -68,27 +78,30 @@ view.model.yearly = function (p) {
         .range([spec.h, 0])
         .nice();
 
-    // clear axes
-    svg.selectAll("g.axis").remove();
-
     // x axis (no y axis: streamgraph makes it meaningless)
+    // and preempt any initial transition from the top
     axis_x = d3.svg.axis()
         .scale(scale_x)
         .orient("bottom");
 
-    svg.append("g")
-        .classed("axis", true)
-        .classed("x", true)
+    g_axis = svg.selectAll("g.axis")
+        .data([1]);
+    g_axis.enter().append("g").classed("axis", true).classed("x", true)
+        .attr("transform", "translate(0," + spec.h + ")");
+
+    g_axis.transition()
+        .duration(2000)
         .attr("transform", "translate(0," + spec.h + ")")
         .call(axis_x);
 
+    // the actual streams
     paths = svg.selectAll("path.topic_area")
         .data(to_plot.data);
 
     paths.enter()
         .append("path")
         .classed("topic_area", true)
-        .attr("clip-path", "url(#clip)")
+        .attr("clip-path", "url(#model_yearly_clip)")
         .style("fill", function (d) {
             return scale_color(d.t);
         })
@@ -111,33 +124,57 @@ view.model.yearly = function (p) {
             }
         });
 
+    paths.exit().remove();
+
+    area = d3.svg.area()
+        .x(function (d) { return scale_x(d.x); })
+        .y0(function (d) { return scale_y(d.y0); })
+        .y1(function (d) { return scale_y(d.y0 + d.y); });
+
+    // purely geometric smoothing is possible with
+    // area.interpolate("basis");
+    // or
+    // area.interpolate("monotone");
+    // These are quite slow.
+
+    areas = function (d) { return area(d.values); };
+
+    // draw the streams: ensure transition for raw/frac swap
+    paths.transition()
+        .duration(2000)
+        .attr("d", areas)
+
+    // the stream labels
     labels = svg.selectAll("text.layer_label")
-        .data(to_plot.data);
+        .data(to_plot.data, function (d) { return d.t; });
 
     labels.enter().append("text")
         .classed("layer_label", true)
-        .attr("clip-path", "url(#clip)");
+        .attr("clip-path", "url(#model_yearly_clip)");
+
+    labels.exit().remove();
 
     render_labels = function (sel) {
-        var t, i, xs, cur, show = [ ], max = [ ],
+        var i, j, t, xs, cur, show = [ ], max = [ ],
             x0 = scale_x.domain()[0],
             x1 = scale_x.domain()[1],
             y0 = scale_y.domain()[0],
             y1 = scale_y.domain()[1],
             b = scale_y(0); // area heights are b - scale_y(y)
-        for (t = 0; t < to_plot.data.length; t += 1) {
+        for (i = 0; i < to_plot.data.length; i += 1) {
+            t = to_plot.data[i].t;
             show[t] = false;
-            xs = to_plot.data[t].values;
-            for (i = 0, cur = 0; i < xs.length; i += 1) {
-                if (xs[i].x >= x0 && xs[i].x <= x1
-                        && xs[i].y0 + xs[i].y >= y0
-                        && xs[i].y0 + xs[i].y <= y1) {
-                    if (xs[i].y > cur
-                            && b - scale_y(xs[i].y) >
+            xs = to_plot.data[i].values;
+            for (j = 0, cur = 0; j < xs.length; j += 1) {
+                if (xs[j].x >= x0 && xs[j].x <= x1
+                        && xs[j].y0 + xs[j].y >= y0
+                        && xs[j].y0 + xs[j].y <= y1) {
+                    if (xs[j].y > cur &&
+                            b - scale_y(xs[j].y) >
                             VIS.model_view.yearly.label_threshold) {
                         show[t] = true;
-                        max[t] = i;
-                        cur = xs[i].y;
+                        max[t] = j;
+                        cur = xs[j].y;
                     }
                 }
             }
@@ -159,26 +196,6 @@ view.model.yearly = function (p) {
                 return view.topic.label(d).title;
             });
     };
-
-    d3.select("div#model_view_yearly").classed("hidden", false);
-
-    area = d3.svg.area()
-        .x(function (d) { return scale_x(d.x); })
-        .y0(function (d) { return scale_y(d.y0); })
-        .y1(function (d) { return scale_y(d.y0 + d.y); });
-
-    // purely geometric smoothing is possible with
-    // area.interpolate("basis");
-    // or
-    // area.interpolate("monotone");
-    // These are quite slow.
-
-    areas = function (d) { return area(d.values); };
-
-    // ensure transition for raw/frac swap
-    paths.transition()
-        .duration(2000)
-        .attr("d", areas);
 
     render_labels(labels.transition().duration(2000));
 
