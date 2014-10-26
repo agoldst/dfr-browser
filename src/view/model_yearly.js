@@ -36,18 +36,18 @@ view.model.yearly = function (p) {
         .attr("height", spec.h)
         .classed("bg", true);
 
-    clip = svg.selectAll("clipPath")
-        .data([1]);
+    clip = d3.select("#model_yearly_clip");
+    if (clip.size() === 0) {
+        clip = d3.select("#model_view_yearly svg").append("clipPath")
+            .attr("id", "model_yearly_clip");
+        clip.append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", spec.w)
+            .attr("height", spec.h);
+    }
 
-    clip.enter().append("clipPath").attr("id", "model_yearly_clip")
-        .append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", spec.w)
-        .attr("height", spec.h);
-
-    clip.select("rect").transition()
-        .duration(2000)
+    d3.select("#model_yearly_clip rect").transition().duration(2000)
         .attr("width", spec.w)
         .attr("height", spec.h);
 
