@@ -1,4 +1,4 @@
-/*global VIS, d3 */
+/*global VIS, d3, window */
 "use strict";
 var view = (function () {
 
