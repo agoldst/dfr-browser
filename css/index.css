@@ -269,20 +269,25 @@ text.topic_name.merged_topic_sep {
     visibility: visible;
 }
 
-th#model_view_list_topic {
-    width: 8.33%;
-}
-
 th#model_view_list_year {
     width: 12.5%;
 }
 
 th#model_view_list_words {
-    width: 62.5%;
+    width: 67.5%;
 }
 
 th#model_view_list_frac {
-    width: 16.66%;
+    width: 20%;
+}
+
+/* i.e., percentages */
+#model_view_list td:last-child {
+    text-align: right;
+}
+
+#model_view_list td.weight {
+    width: 15%;
 }
 
 a.topic_words span.name {
@@ -415,9 +420,21 @@ div.bar_tooltip {
  * the same percentage value will be represented by a different-sized bar.
  */
 
+th#topic_docs_doc {
+    width: 50%;
+}
+
+th#topic_docs_weight {
+    width: 40%;
+}
+
+/* remaining 10% ad libitum */
+
+/*
 #topic_docs td.weight {
     width: 25em;
 }
+*/
 
 /* word_view */
 
@@ -486,6 +503,16 @@ ul#vocab_list li a:visited {
 
 
 /* doc_view */
+
+th#doc_view_topic {
+    width: 50%;
+}
+
+th#doc_view_weight {
+    width: 40%;
+}
+
+/* remaining 10% goes to last two columns ad libitum */
 
 /* bib_view */
 
