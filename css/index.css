@@ -551,7 +551,7 @@ th#doc_view_weight {
 #bib_headings ul {
     list-style-type: none;
     height: auto;
-    max-height: 200px; /* short affix on small screens */
+    max-height: 210px; /* short affix on small screens */
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid rgb(221, 221, 211);
@@ -575,6 +575,10 @@ th#doc_view_weight {
 #bib_headings li.journal {
     min-width: 260px;
     font-style: italic;
+}
+
+#bib_headings li.year {
+    min-width: 4em;
 }
 
 #bib_headings a {
