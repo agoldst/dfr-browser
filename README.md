@@ -99,17 +99,11 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 The necessary files are `index.html`, the data files (looked for in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
 
-To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. I use the python3 `http.server` module, which I have wrapped in a one-line script, so that you can simply type:
+To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. A widely available option is Python's  `SimpleHTTPServer` module, which I have wrapped in a one-line script, so that you can simply type:
 
 ````
 cd dfr-browser
 bin/server
-````
-
-This makes the browser available at `http://localhost:8888`. If you don't have python 3, you could use python 2:
-
-````
-python -m SimpleHTTPServer 8888
 ````
 
 ## Adapting to other kinds of documents
