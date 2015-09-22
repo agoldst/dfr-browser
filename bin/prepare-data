@@ -309,9 +309,9 @@ def help():
 def key_arg(args, key):
     res = None
     try:
-        i = args(key)
+        i = args.index(key)
         res = rest[i + 1]
-        del rest[i:i + 1]
+        del rest[i:i + 2]
     except:
         pass
 
