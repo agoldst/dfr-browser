@@ -149,8 +149,9 @@ def convert_citations(fs, matchfile, out):
             meta.readline() # header
             i = 0
             for line in meta:
-                fields = ll.strip().split("\t")
-                ll.append(fields[0] + "\t" + "\t".join(fields[2:9]))
+                fields = [s.replace('"', '""') for s in line.strip().split("\t")]
+                ll.append('"' + fields[0] + '","' + '","'.join(fields[2:9]) +
+                        '"')
                 in_ids[fields[0]] = i
                 i += 1
 
@@ -158,12 +159,12 @@ def convert_citations(fs, matchfile, out):
         with open(matchfile) as f:
             out_ids = f.readlines()
         ll = [ll[in_ids[key]] for key in out_ids]
-         
+
     meta_out = "\n".join(ll)
-    with zf.Zipfile(out, "w") as z:
+    with zf.ZipFile(out, "w") as z:
         z.writestr("meta.csv", meta_out)
 
-    print("Wrote metadata to " + z.name)
+    print("Wrote metadata to " + out)
 
 def convert_tw(twf, out, vocabf, paramf, n):
     tw = []
