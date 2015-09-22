@@ -66,7 +66,6 @@ Use "prepare-data info-stub" to create one.
         with open(os.path.join(d, "info.json")) as f:
             try:
                 json.load(f)
-                print("info.json: ok")
             except Exception as e:
                 print("Unable to parse info.json as JSON. json error:\n" +
                         e.message)
@@ -114,8 +113,7 @@ Use "prepare-data convert-tw" on a topic-word matrix CSV or
 
     print("Checking dt.json.zip...")
     if "dt.json.zip" not in fs:
-        print("""
-No dt.json.zip found.
+        print("""No dt.json.zip found.
 Use "prepare-data convert-dt" on a document-topic matrix CSV.
 """)
     else:
@@ -170,16 +168,14 @@ def convert_citations(fs, matchfile, out):
 def convert_tw(twf, out, vocabf, paramf, n):
     tw = []
     with open(vocabf) as f:
-        vocab = f.readlines()
+        vocab = [s.strip() for s in f]
 
     with open(twf) as f:
         for line in f:
             weights = [int(x) for x in line.strip().split(",")]
-            words = xrange(len(weights))
-            words.sort(key=lambda i: -weights[i])
             tw.append(transform_topic_weights(weights, vocab))
 
-    if paramf is None: 
+    if paramf is None:
         print("Warning: no parameters file, so alpha_k will be set to zero")
         alpha = [0] * len(tw)
     else:
@@ -191,7 +187,7 @@ def convert_tw(twf, out, vocabf, paramf, n):
     write_tw(alpha, tw, out)
 
 def transform_topic_weights(weights, vocab):
-    words = xrange(len(weights))
+    words = range(len(weights))
     words.sort(key=lambda i: -weights[i])
     return({
         "words": [vocab[w] for w in words[:n]],
@@ -200,10 +196,10 @@ def transform_topic_weights(weights, vocab):
 
 def write_tw(alpha, tw, out):
     twj = {
-        alpha: alpha,
-        tw: tw
+        "alpha": alpha,
+        "tw": tw
     }
-    with open(out) as f:
+    with open(out, "w") as f:
         json.dump(twj, f)
 
     print("Wrote topic-words information to " + f.name)
@@ -256,7 +252,7 @@ def transform_dt(dt):
     return({ "i": i, "p": p, "x": x })
 
 def write_dt(dtj, out):
-    with zf.Zipfile(out, "w") as z:
+    with zf.ZipFile(out, "w") as z:
         z.writestr("dt.json", json.dumps(dtj))
 
     print("Wrote sparse doc-topics to " + z.name)
@@ -275,7 +271,7 @@ def convert_state(statef, twout, dtout):
         vocab = dict()
         K = 0
         V = 0
-        for line in f: 
+        for line in f:
             doc,source,pos,typeindex,word,topic = line.strip().split()
             doc = int(doc)
             typeindex = int(typeindex)
@@ -299,7 +295,7 @@ def convert_state(statef, twout, dtout):
         # final doc: after end of for loop
         if len(curdt) > 0:
             dt.append(cur_dt)
-    
+
     write_tw([transform_topic_weights(tw[t], vocab) for t in xrange(K)],
             alpha, twout)
     write_dt(transform_dt([[d[t] for d in dt] for t in xrange(K)]), dtout)
