@@ -180,7 +180,7 @@ def convert_tw(twf, out, vocabf, paramf, n):
     with open(twf) as f:
         for line in f:
             weights = [int(x) for x in line.strip().split(",")]
-            tw.append(transform_topic_weights(weights, vocab))
+            tw.append(transform_topic_weights(weights, vocab, n))
 
     if paramf is None:
         print("Warning: no parameters file, so alpha_k will be set to zero")
@@ -193,7 +193,7 @@ def convert_tw(twf, out, vocabf, paramf, n):
 
     write_tw(alpha, tw, out)
 
-def transform_topic_weights(weights, vocab):
+def transform_topic_weights(weights, vocab, n):
     words = range(len(weights))
     words.sort(key=lambda i: -weights[i])
     return({
@@ -212,21 +212,26 @@ def write_tw(alpha, tw, out):
     print("Wrote topic-words information to " + f.name)
 
 def convert_keys(keysf, out):
+    tw = []
     with open(keysf) as f:
         header = f.readline()
         last_topic = 1
+        words = []
+        weights = []
+        alphas = []
         for line in f:
-            topic, alpha, word, weight = f.strip().split(",")
+            topic, alpha, word, weight = line.strip().split(",")
+            topic = int(topic)
             if topic != last_topic:
-                tw.append({ words: words, weights: weights })
+                tw.append({ "words": words, "weights": weights })
                 words = []
                 weights = []
-                alphas.append(alpha)
+                alphas.append(float(alpha))
             words.append(word)
-            weights.append(weight)
+            weights.append(int(weight))
             last_topic = topic
-        tw.append({ words: words, weights: weights})
-        alphas.append(alpha)
+        tw.append({ "words": words, "weights": weights})
+        alphas.append(float(alpha))
 
     write_tw(alphas, tw, out)
 
@@ -365,7 +370,7 @@ if __name__=="__main__":
             n = key_arg(rest, "-n")
             if n is None:
                 n = 50
-            convert_tw(rest[0], out, vocabf, paramf, n)
+            convert_tw(rest[0], out, vocabf, paramf, int(n))
         elif cmd == "convert-keys":
             if out is None:
                 out = "tw.json"
