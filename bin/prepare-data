@@ -133,12 +133,12 @@ Use "prepare-data convert-dt" on a document-topic matrix CSV.
 
 def info_stub(out):
     with open(out, "w") as f:
-        json.dump(
-{
-    "title": "",
-    "meta_info": r'<h2><\/h2>',
-    "VIS": { "overview_words": 15 }
-})
+        json.dump({
+            "title": "",
+            "meta_info": r'<h2></h2>',
+            "VIS": { "overview_words": 15 }
+            },
+            fp=f, indent=4)
         print("Created stub file in " + f.name)
 
 def convert_citations(fs, matchfile, out):
@@ -325,6 +325,7 @@ if __name__=="__main__":
 
         if len(sys.argv) == 2:
             rest = []
+            out = None
         else:
             rest = sys.argv[2:]
             out = key_arg(rest, "-o")
