@@ -130,7 +130,7 @@ Use "prepare-data convert-dt" on a document-topic matrix CSV.
                     if "i" not in dt or "p" not in dt or "x" not in dt:
                         raise Exception("i, p, or x member missing")
                     if len(meta) > 0:
-                        if max(dt["i"] != len(meta) - 1):
+                        if max(dt["i"]) != len(meta) - 1:
                             raise Exception("doc-topics / metadata mismatch")
                     print("dt.json.zip: ok")
                 except Exception as e:
@@ -240,6 +240,7 @@ def convert_dt(dtf, out):
     with open(dtf) as f:
         d1 = f.readline().strip()
         dt = [[int(x)] for x in d1.split(",")]
+        K = len(dt)
         for line in f:
             xs = line.strip().split(",")
             for t in xrange(K):
@@ -248,18 +249,18 @@ def convert_dt(dtf, out):
     write_dt(transform_dt(dt), out)
 
 def transform_dt(dt):
-    K = len(dt)
     D = len(dt[0])
     p = [0]
     i = []
     x = []
-    for t in xrange(K):
+    p_cur = 0
+    for topic_docs in dt:
         for d in xrange(D):
-            if d != 0:
+            if topic_docs[d] != 0:
                 i.append(d)
-                x.append(dt[t][d])
-                p += 1
-        p.append(p)
+                x.append(topic_docs[d])
+                p_cur += 1
+        p.append(p_cur)
 
     return({ "i": i, "p": p, "x": x })
 
@@ -267,7 +268,7 @@ def write_dt(dtj, out):
     with zf.ZipFile(out, "w") as z:
         z.writestr("dt.json", json.dumps(dtj))
 
-    print("Wrote sparse doc-topics to " + z.name)
+    print("Wrote sparse doc-topics to " + out)
 
 def convert_state(statef, twout, dtout):
     with gzip.open(statef, 'rb') as f:
