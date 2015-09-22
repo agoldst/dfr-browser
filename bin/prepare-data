@@ -66,6 +66,7 @@ Use "prepare-data info-stub" to create one.
         with open(os.path.join(d, "info.json")) as f:
             try:
                 json.load(f)
+                print("info.json: ok")
             except Exception as e:
                 print("Unable to parse info.json as JSON. json error:\n" +
                         e.message)
@@ -75,6 +76,7 @@ Use "prepare-data info-stub" to create one.
         with zf.ZipFile(os.path.join(d, "meta.csv.zip")) as z:
             with z.open(z.infolist()[0]) as f:
                 meta = f.readlines()
+                print("meta.csv.zip: ok")
     else:
         print("""No meta.csv.zip found.
 Use "prepare-data convert-citations" on DfR citations.tsv files.
@@ -85,6 +87,8 @@ Use "prepare-data convert-citations" on DfR citations.tsv files.
         print("""No topic_scaled.csv found. This file is required only for the "scaled" overview.
 """
         )
+    else:
+        print("topic.scaled.csv: ok")
 
     print("Checking tw.json...")
     if "tw.json" not in fs:
@@ -102,12 +106,14 @@ Use "prepare-data convert-tw" on a topic-word matrix CSV or
                 if "tw" not in tw:
                     raise Exception("tw field missing")
 
-                for t in range(len(tw)):
-                    if "words" not in tw[t]:
+                tws = tw["tw"]
+                for t in xrange(len(tws)):
+                    if "words" not in tws[t]:
                         raise Exception("words missing for topic " + str(t + 1))
-                    if "weights" not in tw[t]:
+                    if "weights" not in tws[t]:
                         raise Exception("weights missing for topic " +
                                 str(t + 1))
+                print("tw.json: ok")
             except Exception as e:
                 print("Problem with tw.json: " + e.message)
 
@@ -126,6 +132,7 @@ Use "prepare-data convert-dt" on a document-topic matrix CSV.
                     if len(meta) > 0:
                         if max(dt["i"] != len(meta) - 1):
                             raise Exception("doc-topics / metadata mismatch")
+                    print("dt.json.zip: ok")
                 except Exception as e:
                     print("problem with doc-topics JSON: " + e.message)
 
