@@ -53,6 +53,7 @@ import re
 import os
 import json
 import zipfile as zf
+import gzip
 from collections import defaultdict
 
 def check_files(d):
@@ -304,11 +305,12 @@ def write_dt(dtj, out):
 
     print("Wrote sparse doc-topics to " + out)
 
-def convert_state(statef, twout, dtout):
+def convert_state(statef, twout, dtout, n):
     with gzip.open(statef, 'rb') as f:
         f.readline()
-        alpha = f.readline().strip().split(" ")[2:]
+        alpha = map(float, f.readline().strip().split(" ")[2:])
         beta = f.readline().strip().split(" ")[2]
+        print("beta value, not saved in a file: " + beta)
 
         dt = []
 
@@ -317,7 +319,6 @@ def convert_state(statef, twout, dtout):
         cur_dt = defaultdict(int)
         vocab = dict()
         K = 0
-        V = 0
         for line in f:
             doc,source,pos,typeindex,word,topic = line.strip().split()
             doc = int(doc)
@@ -325,26 +326,27 @@ def convert_state(statef, twout, dtout):
             topic = int(topic)
             if topic > K:
                 K = topic
-            if typeindex > V:
-                V = typeindex
 
             if last_doc != doc:
                 dt.append(cur_dt)
                 cur_dt = defaultdict(int)
 
-            curdt[topic] += 1
+            cur_dt[topic] += 1
             tw[topic][typeindex] += 1
             if typeindex not in vocab:
                 vocab[typeindex] = word
 
             last_doc = doc
 
+        # K is max(topic), but we want it to be number of topics:
+        K = K + 1
         # final doc: after end of for loop
-        if len(curdt) > 0:
+        if len(cur_dt) > 0:
             dt.append(cur_dt)
 
-    write_tw([transform_topic_weights(tw[t], vocab) for t in xrange(K)],
-            alpha, twout)
+    write_tw(alpha,
+            [transform_topic_weights(tw[t], vocab, n) for t in xrange(K)],
+            twout)
     write_dt(transform_dt([[d[t] for d in dt] for t in xrange(K)]), dtout)
 
 def help():
@@ -421,7 +423,10 @@ if __name__=="__main__":
             dt = key_arg(rest, "--dt")
             if dt is None:
                 dt = "dt.json.zip"
-            convert_state(rest[0], tw, dt)
+            n = key_arg(rest, "-n")
+            if n is None:
+                n = 50
+            convert_state(rest[0], tw, dt, n)
         else:
             help()
 
