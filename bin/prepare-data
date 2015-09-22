@@ -3,21 +3,25 @@
 
 """
 Prepare dfr-browser data files from MALLET outputs.
-An alternative to this script with more features can be found in the export_browser_data function in this R package:
-http://github.com/agoldst/dfrtopics.
+An alternative to this script with more features can be found in the
+export_browser_data function in this R package:
+http://github.com/agoldst/dfrtopics
 
 Usage:
     prepare-data check [<dir>]
         Check presence and format of data files in <dir> or PWD
+
     prepare-data info-stub [-o <file>]
         Write stub info.json to <file> or "info.json"
+
     prepare-data convert-citations ... [-o <file>] [--ids <ids>]
         Convert JSTOR DfR citations.tsv files ... into zipped metadata
-        <file>: name of file to write ("meta.csv.zip" by default) 
+        <file>: name of file to write ("meta.csv.zip" by default)
         <ids>: (optional) a file with one document ID per line. If
         supplied, these IDs are matched against the first column of the
         input metadata, and the output contains only matching documents
-        (in the order given in <ids>).  
+        (in the order given in <ids>).
+
     prepare-data convert-tw [-o <file>] <tw> --vocab <v> [--param <p>] [-n N]
         Write topic-word information to <file> or "tw.json"
         <tw>: CSV with topic-word matrix (headerless)
