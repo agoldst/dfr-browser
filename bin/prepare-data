@@ -144,10 +144,10 @@ def info_stub(out):
 def convert_citations(fs, matchfile, out):
     ll = []
     in_ids = defaultdict(int)
+    i = 0
     for f in fs:
         with open(f) as meta:
             meta.readline() # header
-            i = 0
             for line in meta:
                 fields = [s.replace('"', '""') for s in line.strip().split("\t")]
                 ll.append('"' + fields[0] + '","' + '","'.join(fields[2:9]) +
@@ -157,10 +157,11 @@ def convert_citations(fs, matchfile, out):
 
     if matchfile is not None:
         with open(matchfile) as f:
-            out_ids = f.readlines()
-        ll = [ll[in_ids[key]] for key in out_ids]
+            out_ids = [s.strip() for s in f]
+        meta_out = "\n".join([ll[in_ids[key]] for key in out_ids])
+    else:
+        meta_out = "\n".join(ll)
 
-    meta_out = "\n".join(ll)
     with zf.ZipFile(out, "w") as z:
         z.writestr("meta.csv", meta_out)
 
