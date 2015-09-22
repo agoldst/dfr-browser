@@ -29,69 +29,69 @@ Usage:
         <p>: (optional) params.txt written by dfrtopics v0.2
             If this is missing, topic alpha values will be missing
         <n>: number of top words per topic (50 by default)
+
     prepare-data convert-keys [-o <file>] <keys>
         Write topic-word information to <file> or "tw.json"
         <keys>: CSV with topic,alpha,word,weight columns (from dfrtopics v0.1)
+
     prepare-data convert-dt [-o <file>] <dt>
         Write zipped document-topic information to <dt> or <dt.json.zip>
         <dt>: CSV with document-word weights (headerless).
             This ordinary matrix is converted to the required sparse format.
+
     prepare-data convert-state <state> [--tw <tw>] [--dt <dt>]
-        Use the MALLET sampling state to write both topic words and document 
+        Use the MALLET sampling state to write both topic words and document
         topics.
-        <state>: gzipped file from mallet train-topics --output-state or 
+        <state>: gzipped file from mallet train-topics --output-state or
         dfrtopics::write_mallet_state
         <tw>: name of topic-word file to output ("tw.json" by default)
         <dt>: name of doc-topic file to output ("dt.json.zip" by default)
-
 """
 
 import re
 import os
 import json
-import zipfile
+import zipfile as zf
 from collections import defaultdict
 
 def check_files(d):
     fs = os.listdir(d)
 
-    print("Checking info.json")
+    print("Checking info.json...")
     if "info.json" not in fs:
-        print("""
-info.json not found.
+        print("""info.json not found.
 Use "prepare-data info-stub" to create one.
 """)
     else:
         with open(os.path.join(d, "info.json")) as f:
             try:
                 json.load(f)
+                print("info.json: ok")
             except Exception as e:
                 print("Unable to parse info.json as JSON. json error:\n" +
                         e.message)
 
-    print("Checking meta.csv.zip")
+    print("Checking meta.csv.zip...")
     if "meta.csv.zip" in fs:
-        with zf.Zipfile(os.path.join(d, "meta.csv.zip")) as z:
+        with zf.ZipFile(os.path.join(d, "meta.csv.zip")) as z:
             with z.open(z.infolist()[0]) as f:
                 meta = f.readlines()
     else:
-        print("""
-No meta.csv.zip found.
-Use "prepare-data --convert-citations" on DfR citations.tsv files.
+        print("""No meta.csv.zip found.
+Use "prepare-data convert-citations" on DfR citations.tsv files.
 """)
 
-    print("Checking topic_scaled.csv")
+    print("Checking topic_scaled.csv...")
     if "topic_scaled.csv" not in fs:
-        print("""
-No topic_scaled.csv found. This file is required only for the "scaled" overview.
+        print("""No topic_scaled.csv found. This file is required only for the "scaled" overview.
 """
         )
 
+    print("Checking tw.json...")
     if "tw.json" not in fs:
-        print("""
-No tw.json found.
-Use "prepare-data --convert-tw" on a topic-word matrix CSV or
-"prepare-data --convert-keys" on a CSV listing top words and weights.
+        print("""No tw.json found.
+Use "prepare-data convert-tw" on a topic-word matrix CSV or
+"prepare-data convert-keys" on a CSV listing top words and weights.
 """)
     else:
         with open(os.path.join(d, "tw.json")) as f:
@@ -112,13 +112,14 @@ Use "prepare-data --convert-tw" on a topic-word matrix CSV or
             except Exception as e:
                 print("Problem with tw.json: " + e.message)
 
+    print("Checking dt.json.zip...")
     if "dt.json.zip" not in fs:
         print("""
 No dt.json.zip found.
-Use "prepare-data --convert-dt" on a document-topic matrix CSV.
+Use "prepare-data convert-dt" on a document-topic matrix CSV.
 """)
     else:
-        with zf.Zipfile(os.path.join(d, "dt.json.zip")) as z:
+        with zf.ZipFile(os.path.join(d, "dt.json.zip")) as z:
             with z.open(z.infolist()[0]) as f:
                 try:
                     dt = json.load(f)
