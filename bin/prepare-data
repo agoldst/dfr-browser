@@ -33,6 +33,7 @@ Usage:
     prepare-data convert-keys [-o <file>] <keys>
         Write topic-word information to <file> or "tw.json"
         <keys>: CSV with topic,alpha,word,weight columns (from dfrtopics v0.1)
+            or with topic,word,weight columns (from dfrtopics v0.2)
 
     prepare-data convert-dt [-o <file>] <dt>
         Write zipped document-topic information to <dt> or <dt.json.zip>
@@ -212,28 +213,61 @@ def write_tw(alpha, tw, out):
     print("Wrote topic-words information to " + f.name)
 
 def convert_keys(keysf, out):
-    tw = []
     with open(keysf) as f:
         header = f.readline()
-        last_topic = 1
-        words = []
-        weights = []
-        alphas = []
-        for line in f:
-            topic, alpha, word, weight = line.strip().split(",")
-            topic = int(topic)
-            if topic != last_topic:
-                tw.append({ "words": words, "weights": weights })
-                words = []
-                weights = []
-                alphas.append(float(alpha))
-            words.append(word)
-            weights.append(int(weight))
-            last_topic = topic
-        tw.append({ "words": words, "weights": weights})
-        alphas.append(float(alpha))
+        style = len(header.strip().split(","))
+        if style == 3:
+            print("New-style top topic words: alpha_k missing and left at 0")
+            alphas, tw = keys_newstyle(f)
+        elif style == 4:
+            alphas, tw = keys_oldstyle(f)
+        else:
+            raise Exception("Unknown top topic words format: expect 3 or 4 cols")
 
     write_tw(alphas, tw, out)
+
+def keys_oldstyle(f):
+    tw = []
+    last_topic = 1
+    words = []
+    weights = []
+    alphas = []
+    for line in f:
+        topic, alpha, word, weight = line.strip().split(",")
+        topic = int(topic)
+        if topic != last_topic:
+            tw.append({ "words": words, "weights": weights })
+            words = []
+            weights = []
+            alphas.append(float(alpha))
+        words.append(word)
+        weights.append(int(weight))
+        last_topic = topic
+    tw.append({ "words": words, "weights": weights})
+    alphas.append(float(alpha))
+
+    return(alphas, tw)
+
+def keys_newstyle(f):
+    tw = []
+    last_topic = 1
+    words = []
+    weights = []
+    for line in f:
+        topic, word, weight = line.strip().split(",")
+        topic = int(topic)
+        if topic != last_topic:
+            tw.append({ "words": words, "weights": weights })
+            words = []
+            weights = []
+        words.append(word)
+        weights.append(int(weight))
+        last_topic = topic
+    tw.append({ "words": words, "weights": weights})
+
+    # alpha left at zero
+    return([0] * len(tw), tw)
+
 
 
 def convert_dt(dtf, out):
