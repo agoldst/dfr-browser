@@ -49,19 +49,6 @@
         <li id="nav_help"><a>Getting started</a></li>
       </ul>
     </div><!--/.navbar-collapse -->
-    <div class="hidden" id="help_box">
-      <div id="help_box_content">
-        <button type="button" class="close close_button">
-          &times;
-        </button>
-        <h4>Getting started</h4>
-        <p>This site invites you to explore the archive of <a href="http://signsjournal.org/" target="_blank"><em>Signs: Journal of Women in Culture and Society</em></a> (1975–2015) through a model that describes each article as a mixture of verbal patterns or <em>topics</em>.  Every topic is a family of words that tend to occur together in articles—as, for example, <a href="#/topic/29"><em>family</em>, <em>children</em>, and <em>mother</em></a> do. Every article is in turn divided into multiple topics.  Words, too, may belong to more than one topic. The word <a href="#/word/women"><em>women</em></a>, for instance, is part of many topics. By following the shifting proportions of topics over time, we offer one way into thinking about the history of <em>Signs</em> in its first four decades.</p>
-        <p>Click on anything you see to focus in on a particular topic, word, or article. Or you can use the navigation menus across the top of the page. There are several versions of an overview showing all of the topics in the model: in addition to a <a href="#/model/list">list</a>, there is also a graphical overview that shows <a href="#/model/scaled">related topics near one another</a> and another indicating <a href="#/model/yearly">relative proportions over time</a>.</p>
-        <p>On the page devoted to <a href="#/about">interpreting this site</a>, we explain how this model was created and suggest some of the interpretive possibilities it offers.</p>
-        <button type="button" class="btn btn-default close_button pull-right">
-        Close</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -159,114 +146,11 @@
   </div>
 
   <div id="about_view" class="hidden">
-    <div class="row">
-      <div class="col-md-3">
-        <div id="about_contents" data-spy="affix">
-          <ul class="list-unstyled">
-            <li id="about_contents_intro"><a href="#/about/intro">
-              Introduction</a></li>
-            <li id="about_contents_topic_modeling"><a href="#/about/topic_modeling">
-              About topic modeling</a></li>
-            <li id="about_contents_overview"><a href="#/about/overview">
-              Reading the model overview</a></li>
-            <li id="about_contents_depth"><a href="#/about/depth">
-              Exploring in depth</a></li>
-            <li id="about_contents_index_bib"><a href="#/about/index_bib">
-              The index and the bibliography</a></li>
-            <li id="about_contents_choices"><a href="#/about/choices">
-              Modeling choices</a></li>
-          </ul>
-        </div>
-      </div>
-      <div id="discussion_text" class="col-md-9">
-<div id="about_intro">
-  <h2>The <em>Signs</em> 40th Anniversary Issue</h2>
-  <p>This site is a project of the journal <em>Signs: Women in Culture and Society</em>, jointly created by Susana Galán, Lindsey Whitmore, Andrew Mazzaschi, and Andrew Goldstone. It uses the results of a computer-assisted <em>topic modeling</em> technique to explore thematic and rhetorical patterns in the history of <em>Signs</em> from its first issue in 1975 up until 2013. The site offers pathways through the overall tendencies that have characterized the journal and novel routes to particular articles from the journal's run so far. Though we have included some interpretations of some of the results on the site, our hope is that you will discover new patterns and trends yourself—and that you may find this a useful way to (re)discover aspects of the <em>Signs</em> archive and to open up new channels of interpretation for the field of feminist scholarship. </p>
-  <p>For more discussion and explanation, use the links at left.</p>
-</div>
-<div id="about_topic_modeling">
-  <h3>About topic modeling</h3>
-  <p>Topic modeling is a family of algorithms in the field of machine learning which seek to characterize a large number of documents in terms of a smaller number of themes or topoi (<em>topics</em>). The result of the algorithm is a <em>model</em>: deliberately simplifying the documents, it attempts to describe their interconnections concisely and cogently.</p>
-  <p>A <em>topic</em>, in the sense used by the model, is a collection of words that tend to occur in the same documents. One topic here is characterized by the words: "<a href="#/topic/57">political, movement, politics, national, rights</a>."  Because the technique focuses on words that occur together, it attempts to capture the way that the same word may be used (sometimes with different meanings) in different contexts. Thus, another topic also using the word <em>political</em> is characterized by words like "<a href="#/topic/1">social, class, economic, family, political</a>."</p>
-  <p>Because topics are models of word usage, the term <em>topic</em> is misleadingly narrow. The patterns of language are better described as <em>discourses</em>, <em>topoi</em>, or <em>rhetorical frames</em>. The attraction of topic modeling is precisely its capacity to capture (if only approximately) these central concepts of cultural and political analysis.</p>
-  <p>The particular technique we have used is Latent Dirichlet Allocation, an algorithm first described by David Blei, Andrew Ng, and Michael Jordan <a target="_blank" href="http://dl.acm.org/citation.cfm?id=944919.944937">in a 2003 technical article</a> (Blei has more recently written <a target="_blank" href="http://dl.acm.org/citation.cfm?id=2133826">a explanation for a broader audience</a> as well). Like most such algorithms, it focuses its attention solely on patterns of word use.</p>
-  <p>The model treats each article in <em>Signs</em> as a mixture of topics, recognizing that the typical article incorporates multiple major themes or discourses. Thus, for example, Mary Hawkesworth's 2006 editorial "<a href="#/doc/218">Legacies, Transitions, and New Directions at <em>Signs</em></a>," is divided by the model among ten topics, including <a href="#/topic/49">"women, international, development</a>," "<a href="#/topic/45">feminist, feminism, theory</a>," and "<a href="#/topic/15">gender, social, power</a>." As this example indicates, these patterns of word use are by no means definitive interpretations of the content and rhetoric of an individual text; instead, this model offers a guide for exploration and further reading.</p>
-  <p>This browser serves as one way of visualizing our model of the <em>Signs</em> archive. It presents multiple ways of viewing topics: individual topics over time; articles that are most strongly associated with particular topics; multiple topics contained in each article; the words that contribute most significantly to each topic.</p>
-</div>
-  
-<div id="about_overview">
-  <h3>Reading the model overview</h3>
-  <p>In the <a href="#">overview</a>, topics are represented by their most frequent words. Remember that these lists of words as a collection constitute a single "topic"; they are the words that tend to co-occur when a particular subject is being discussed or when a particular analytical frame is being employed. There are four ways of viewing the overview. In any of them, click a topic to examine that topic in more depth. </p>
-  <p><em>(NB: In a future iteration of this project, we hope to hand label topics--that is, to give them shorthand names. For instance, <a href="#/topic/50">topic 50</a>, whose top words are "freud psychoanalytic theory psychoanalysis mother," could be referred to simply as </em>psychoanalysis<em> rather than </em>topic 50<em>.) </em></p>
-  <h4>List subview</h4>
-  <p>In the <a href="#/model/list">list view</a>, the topics appear in a table. The ordering of topics and the numbers assigned to them are arbitrary. To help compare topics, the table can be sorted in several ways by clicking the table's column headers. </p>
-  <p><a href="#/model/list"><img class="img-responsive img-thumbnail center-block" src="http://signsjournal.org/wp-content/uploads/2014/04/list-view-screenshot.jpg"></a></p>
-    <p>The column to the right of the topic numbers shows a miniature graph of the topic over time (visible more fully on the specific pages for each topic; see below). This gives a rough sense of the distribution of the topic over the forty years of the <em>Signs</em> archive. Click the column's header ("1975-2013") to sort by the year in which the topic attains its maximum proportion within the overall corpus. (Note that the y-axes of these miniature bar charts are not all on the same scale.) <a href="#/model/list/year/up">Sorting chronologically</a> in this manner may be of particular interest since it can point to topics that have strong trends over time.</p>
-    <p>Click the "top words" header to see <a href="#/model/list/words">the list sorted alphabetically by most frequent words</a>. On the far right is the proportion of all the words in the corpus assigned to the given topic, visualized by the length of the blue bars. <a href="#/model/list/frac">Sorting by corpus proportion</a> moves topics that are assigned to a high proportion of the overall corpus to the top. This view can be deceptive in the sense that the highest-proportion topics are often the <em>least</em> interesting parts of the model—agglomerations of very common words without a clear thematic content.</p> <!-- should change/delete previous sentence if topics 31, 59, 37, and/or 54 are suppressed -->
-  <h4>Grid subview</h4>
-  <p>In the <a href="#/model/grid">grid view</a>, the topics are arranged in arbitrary order in a grid. Topics are represented by the six top words from the topic enclosed in a circle. The relative size of the words in the circle reflects a word's weight in a topic.</p>
-  <h4>Scaled subview</h4>
-  <p>In the <a href="#/model/scaled">scaled view</a>, topics are placed close to one another if they are similar in the sense of having similar distributions of frequent words. To see overlapping topics more clearly, hover the mouse over a topic or use the mouse to pan or zoom. </p>
-  <h4>Yearly subview</h4>
-  <p><a href="#/model/yearly">The yearly view</a> visualizes each topic's prominence over time through a streamgraph. The height of each topic's stream shows the proportion of the topic in a given year. Colors are used to distinguish topics from one another (colors are not, however, unique to each topic; they repeat after twenty colors). Here, the topics are reordered by a heuristic for making the visualization less jagged, and the topics are designated by their numbers and top words. Clicking on any of the individual streams takes you to the topic's more detailed page.</p>
-  <p><a href="#/model/yearly"><img class="img-responsive img-thumbnail center-block" src="http://signsjournal.org/wp-content/uploads/2014/05/streamgraph-screengrab.jpg"></a></p>
-  <p>"Islands" of prominence sometimes indicate special issues of <em>Signs</em> devoted to a particular topic. For example, the sudden spread of the bottom stream (the stream for topic 38) in the lower righthand corner of the graph represents the 2013 special issue on prisons. Topics with other unusual patterns over the time are also visible in this view. To take exploration a little further, it is possible to pan and zoom the view (using the mouse to scroll or holding down shift while dragging).</p>
-  <p>By default the yearly subview is displayed using <em>percentages of the year's words</em> accounted for by a topic. But it can also be shifted to display <a href="#/model/yearly/raw">raw counts of words assigned to topics</a> per year, since not all years contain the same number of words.</p>
-</div>
-  
-<div id="about_depth">
-  <h3>Exploring in depth</h3>
-  <h4>Topic pages</h4> <!-- I thought that referring to "topic pages" rather than "The topic view" is more accessible for some reason, but I could easily be convinced otherwise -->
-  <p>Each topic's page gives a fuller sense of the makeup of that topic. The lefthand column shows the topic as a distribution of words, with each word's weight within the topic indicated by a blue bar. Clicking on any of the individual words in this column will take you to a list of all of the topics in which that word appears (see below for more on the word view). For example, if you are viewing <a href="#/topic/50">topic 50</a>, which concerns psychoanalysis, clicking "<a href="#/word/freud">freud</a>" will take you to a page listing only topic 50 itself, since this is the only topic in which "freud" is a prominent term. Clicking on "<a href="#/word/theory">theory</a>" or "<a href="#/word/mother">mother</a>," however, will take you to a page displaying the multiple topics in which those words are prominent.<!-- should all discussion of words be saved for Word View section? --></p>
-  <p> The topic page also contains a list of the "Top documents" for the topic. This displays the documents that contain the highest proportion of the topic. For instance, for <a href="#/topic/2">topic 2</a>, which pertains to sexuality, <!-- insert label we actually give it -->Annamarie Jagose's "'Critical Extasy': Orgasm and Sensibility in <em>Memoirs of a Woman of Pleasure</em>" (vol. 32, no. 2) is listed first because the model estimates that 34.4 percent of that article is a discussion of this topic (or, more precisely, it has assigned 34.4 percent of the words in Jagose's article to this topic). However, pay attention to the absolute weights (the raw number of words in the article assigned to the topic)--a very small weight with a large proportion usually indicates a very brief article. Remember also that the document with the largest proportion of a particular topic may nonetheless have an even larger proportion of another topic.</p><!-- if short articles are penalized we'll need to revise above -->
-  <p>On the upper right is the time-series. This gives a sense of the topic's prominence over time. The y-axis is the yearly proportion of words in the corpus belonging to the topic; that is, out of all the words published in <em>Signs</em> in a given year, the percentage devoted to the particular topic. The bars emphasize that the model does not assume a smooth evolution from year to year in topics, and neither should we, but it is still possible to see trends over time. For instance, <a href="#/topic/39">topic 39</a>, which deals with globalization, is clearly a topic whose prominence is relatively recent. However, it is not wholly absent in the early years of <em>Signs</em>, either. To focus on prominent documents in the topic <em>for a given year only</em>, click a year's bar on the chart. Thus, to see which are the top documents for topic 39 in 1984, <a href="#/topic/39/1984">click that year on the chart.</a></p>
-  
-  <h4>Document view</h4>
-  <p>The document view simply represents the estimated proportions of the various topics in a given article. For instance, in the document view for Maxine Baca Zinn's "<a href="#/doc/1428">Family, Race, and Poverty in the Eighties</a>," one can see that the model assigns 31.4 percent of the article to topic 41 (which deals with welfare and poverty) and 16.7 percent to the topic 26 (which contains terms related to quantitative analysis), along with various other topics. This view also offers a link to the document on JSTOR itself.</p>
-  
-  <h4>Word view</h4>
-  <p>The word view allows users to see all the topics in which a particular word appears. In the <a href="#/word">word view</a>, users can search for a particular word using the text box in the upper righthand corner. This view is also reached by clicking on a word from a topic on that topic's page or by selecting a word from the <a href="#/words">list of all words</a>. This view reminds us that the topic model tends to divide occurrences of each word among multiple topics (for example, <a href="/#/word/difference"><em>difference</em></a>).  It lists the topics in which a word is highly ranked, as well as the word&rsquo;s rank within that topic. </p>
-  
-</div>
-<div id="about_index_bib">
-  <h3>The index and the bibliography</h3>
-  <h4>Word index</h4>
-  <p>The <a href="#/words">word index</a> is an alphabetical list of words that are prominent in any topic. Each word links back to the word view. This page does not include all the language of the articles, only words that are highly ranked in at least one topic. A more comprehensive search interface for the journal is available <a class="external" href="http://www.jstor.org/action/showPublication?journalCode=signs">on JSTOR</a>.</p>
-  
-  <h4>Bibliography view</h4>
-  <p><a href="#/bib">The bibliography</a> lists the citations for all the articles included in the model. By default, articles are listed by the issue of <em>Signs</em> they appear in. To look up particular authors' contributions, you can also sort the list <a href="#/bib/alpha/alpha">by author</a> or <a href="#/bib/year/alpha">by year and then by author</a>. However you sort, you can also use your browser's own "Find" function to locate a particular article by title on this page.
-  </p>
-  <p>Not every item published in <em>Signs</em> is to be found in this index, only those included in our topic model. See our discussion of <a href="#/about/choices">modeling choices</a> for an explanation of our decisions.
-  </p>
-
-  <h4>Special issues</h4>
-  <p><em>Signs</em> is distinguished by its frequent thematic special issues. Though we have not incorporated the distinction between special and regular issues into the topic model itself, the browser can highlight articles drawn from special issues. To turn this feature on, visit the <a href="#/settings">Settings</a>. The <a href="#/bib">bibliography</a> also indicates which issues were special issues.</p>
-</div>
-
-<div id="about_choices">
-  <h3>Modeling choices</h3>
-  <p>Despite the complexity of modeling topics, words, and documents all at once, in other respects a topic model like the one presented here represents a drastic simplification. We have disregarded word order: our model considers only the number of times a given word occurs in a given article, not their placement in relation to one another. The model of article composition is instead as follows.</p>
-  <p>Suppose I want to write a <em>Signs</em> article, operating according to the assumptions made by the model:</p>
-  <ol style="list-style-type: decimal">
-    <li>I begin with only one piece of information: the number of words I want to write. Let's imagine I am writing a 5000-word article.</li>
-    <li>I randomly choose <em>proportions</em> of each of the 65 topics that will make up the document. (I don't have an even chance of picking any topic; instead, some topics are more likely than others, as the topic proportions in the <a href="#/model/list">topic list</a> suggest.)</li>
-    <li>Now I divide up my 5000 words according to the proportions I have picked. If I have randomly picked 50% of topic <em>a</em> and 25% each of topics <em>b</em> and <em>c</em>, then I will have 2500 words to pick from topic <em>a</em> and 1250 words from each of <em>b</em> and <em>c</em>.</li>
-    <li>Now I randomly pick the specified fraction of my total 5000 words from each topic. Picking words is like drawing Scrabble tiles from a bag: some words are much more likely than others. Each topic has a different mixture of Scrabble tiles. I take 2500 words at random from the mixture of words in topic <em>a</em>, 1250 from the mixture in <em>b</em>, 1250 from that in <em>c</em>.</li>
-    <li>Leaving the words in their random order, I submit the article to <em>Signs</em> and await publication.</li>
-  </ol>
-  <p>Notice how much has been ignored by this model: not only the order of words but the identity of the author, the date of composition, even the title. Yet this drastic simplification allows us to hand the task of categorizing the language of 1822 <em>Signs</em> articles to the computer, and to use it to aid our reading of the journal as a whole and as a collection of very diverse parts.</p>
-  <p>The inputs to the algorithm consisted of the digitally scanned and encoded version of the journal, with bibliographic data and word-counts as supplied by JSTOR's <a target="_blank" href="http://dfr.jstor.org">Data for Research</a> service. </p>
-  <p>The algorithmic nature of the technique does not mean the model presented here is free of interpretation. The major interpretive choice is, of course, the decision to offer the model in the first place. But other, technical choices are interpretive as well. The algorithm requires the user to specify the number of topics in advance; we have settled on 65 topics as yielding the most suggestive and interesting models of our documents. We have also not taken every page of <em>Signs</em> into consideration; we have limited ourselves to articles (rather than reviews) and we have excluded short texts (those under 800 words). And, finally, we have omitted from consideration a list of <em>stop words</em> (including very common words like <em>the</em> and <em>and</em>, as well as personal names) which would otherwise distort the modeling results.</p>
-  <h4>The software</h4>
-  <p>To construct the topic model, we have used <a target="_blank" href="http://mallet.cs.umass.edu">MALLET</a> by Andrew K. McCallum et al., as well as the <a target="_blank" href="http://cran.r-project.org/web/packages/mallet/index.html">R mallet package</a> by David Mimno and the <a target="_blank" href="http://github.com/agoldst/dfrtopics">dfrtopics package</a> by Andrew Goldstone. This site uses code from <a target="_blank" href="http://agoldst.github.io/dfr-browser/">dfr-browser</a> by Andrew Goldstone. It also uses the code of the following open-source projects: <a target="_blank" href="http://d3js.org">d3</a> by Mike Bostock; <a target="_blank" href="http://getbootstrap.com/">bootstrap</a> by Twitter, Inc.; <a target="_blank"href="http://jquery.com">JQuery</a> by the JQuery Foundation; and <a target="_blank" href="http://stuk.github.io/jszip/">JSZip</a> by Stuart Knightley.</p>
-  <p>This site works best in recent web browsers and on screens that are at least 1100 pixels wide.  The total data download is approximately one megabyte.
-  On touchscreen devices, some features may not work as expected.
-  </p>
-</div>
-
-      </div><!-- discussion_text -->
-    </div><!-- row -->
-  </div><!-- about_view -->
+    <div id="meta_info"></div>
+    <div id="about_browser">
+      <p>Model-browser interface by <a class="external" href="http://andrewgoldstone.com">Andrew Goldstone</a>; source available on <a class="external" href="http://agoldst.github.io/dfr-browser/">github</a>. Made using <a class="external" href="http://d3js.org">d3.js</a> and <a class="external" href="http://getbootstrap.com/">Bootstrap</a>. Zip support using <a class="external" href="http://stuk.github.io/jszip/">JSZip</a>.</p>
+    </div>
+  </div>
 
   <div id="settings_view" class="hidden">
     <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
