@@ -12,14 +12,6 @@ view.doc = function (p) {
     div.select("h2#doc_header")
         .html(bib.citation(p.meta));
 
-    if (p.special) {
-        div.select("#doc_remark .special_issue a")
-            .attr("href", p.special.url)
-            .text(p.special.title);
-    }
-    div.select("#doc_remark .special_issue")
-        .classed("hidden", !p.special);
-
     div.select("#doc_remark .token_count")
         .text(p.total_tokens);
 

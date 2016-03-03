@@ -71,22 +71,11 @@ view.bib = function (p) {
             d3.event.preventDefault();
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
-        .text(function (o) {
-            return (p.major === "issue") ?
-                view.bib.decode_issue(o.heading, false)
-                : o.heading;
-        });
-
-    if (p.major === "issue") {
-        lis.classed(VIS.special_issue_class, function (o) {
-            return !!p.specials[o.docs[0]];
-        });
-    }
+        .text(function (o) { o.heading; });
 
     view.bib.render({
         ordering: ordering,
         citations: p.citations,
-        specials: p.specials,
         major: p.major
     });
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
@@ -112,27 +101,10 @@ view.bib.render = function (p) {
             return view.bib.id(o.heading);
         });
 
-    if (p.major === "issue") {
-        sec_enter.append("h2")
-            .classed(VIS.special_issue_class, function (o) {
-                return !!p.specials[o.docs[0]];
-            })
-            .html(function (o) {
-                var s = view.bib.decode_issue(o.heading, true),
-                    d = o.docs[0];
-                if (p.specials[d]) {
-                    s += '. <a href="' + p.specials[d].url + '">';
-                    s += p.specials[d].title;
-                    s += '</a>';
-                }
-                return s;
-            });
-    } else {
-        sec_enter.append("h2")
-            .html(function (o) {
-                return o.heading;
-            });
-    }
+    sec_enter.append("h2")
+        .html(function (o) {
+            return o.heading;
+        });
     sec_enter.append("ul");
 
     sections.exit().remove();
@@ -158,9 +130,6 @@ view.bib.render = function (p) {
             s += '</a>';
 
             return s;
-        })
-        .classed(VIS.special_issue_class, function (d) {
-            return !!p.specials[d];
         });
 
     view.loading("false");
@@ -171,25 +140,3 @@ view.bib.id = function (heading) {
     return "bib_" + String(heading).replace(/\W/g,"_");
 };
 
-view.bib.decode_issue = function (code, chicago) {
-    var vol, no, splits,
-        result;
-
-    splits = code.split("_");
-    vol = +splits[1];
-    if (+splits[2] % 10 === 0) {
-        no = +splits[2] / 10;
-    } else {
-        no = (+splits[2] - 5) / 10;
-        no = String(no) + "S";
-    }
-
-    if (chicago) {
-        result = "<em>Signs</em> " + vol;
-        result += ", no. " + no;
-    } else {
-        result = String(vol);
-        result += "." + no;
-    }
-    return result;
-};

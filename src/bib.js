@@ -72,18 +72,10 @@ bib.sort = function (m, major, minor, asc_maj, asc_min) {
         };
     } else if (major === "issue") {
         major_key = function (i) {
-            var doc = m.meta(i),
-                k, iss;
+            var doc = m.meta(i), k;
             k = doc.journaltitle;
             k += "_" + d3.format("05d")(doc.volume);
-            // Signs-specific issue logic: issue := [1234]S?
-            if (String(doc.issue).search("S") !== -1) {
-                // encode nS as an integer, n * 10 + 5. 5 = S. Funny.
-                iss = +doc.issue.replace("S", "") * 10 + 5;
-            } else {
-                iss = +doc.issue * 10;
-            }
-            k += "_" + String(iss);
+            k += "_" + doc.issue;
             return k;
         };
     } else { // expected: major === "alpha"
@@ -297,8 +289,8 @@ bib.citation = function (doc) {
 bib.parse = function (d) {
 
     // no header, but this is the column order:
-    // 0  1     2      3            4      5     6       7         8
-    // id,title,author,journaltitle,volume,issue,pubdate,pagerange,special
+    // 0  1     2      3            4      5     6       7
+    // id,title,author,journaltitle,volume,issue,pubdate,pagerange
     var a_str = d[2].trim(), // author
         date = new Date(d[6].trim()); // pubdate (UTC)
 
@@ -312,7 +304,6 @@ bib.parse = function (d) {
         date: date, // pubdate
         pagerange: d[7].trim()
             .replace(/^p?p\. /, "")
-            .replace(/-/g, "–"),
-        special: d[8].trim()
+            .replace(/-/g, "–")
     };
 };

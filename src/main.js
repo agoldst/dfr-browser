@@ -235,7 +235,6 @@ topic_view = function (m, t_user, y) {
         view.topic.docs({
             t: t,
             docs: docs,
-            specials: m.special_issue(ds),
             citations: docs.map(function (d) {
                 return bib.citation(m.meta(d.doc));
             }),
@@ -364,7 +363,6 @@ doc_view = function (m, d) {
         view.doc({
             topics: topics,
             meta: m.meta(doc),
-            special: m.special_issue(doc),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
@@ -431,8 +429,7 @@ bib_view = function (m, maj, min, dir) {
         major: sorting.major,
         minor: sorting.minor,
         dir: sorting.dir,
-        citations: VIS.bib_citations,
-        specials: m.special_issue()
+        citations: VIS.bib_citations
     });
 
     view.loading(false);

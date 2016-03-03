@@ -28,25 +28,6 @@ view.settings = function (p) {
             VIS.topic_view.docs = this.valueAsNumber;
         });
 
-    d3.select("#highlight_special")
-        .property("checked", VIS.special_issue_class === "special_issue")
-        .on("change", function () {
-            var flag = VIS.special_issue_class === "special_issue";
-            if (flag) {
-                VIS.special_issue_class  = "special_issue_nohighlight";
-                d3.selectAll(".special_issue").classed({
-                    special_issue: false,
-                    special_issue_nohighlight: true
-                });
-            } else {
-                VIS.special_issue_class  = "special_issue";
-                d3.selectAll(".special_issue_nohighlight").classed({
-                    special_issue: true,
-                    special_issue_nohighlight: false
-                });
-            }
-        });
-
     d3.select("#reveal_hidden")
         .property("checked", VIS.show_hidden_topics === true)
         .on("change", function () {
