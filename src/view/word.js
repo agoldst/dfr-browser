@@ -134,10 +134,7 @@ view.word = function (p) {
                 
     gs_t_label = gs_t.selectAll("text.topic")
         .data(function (t, j) {
-            var ws = view.topic.label.words({
-                t: t.topic,
-                name: p.names[j]
-            });
+            var ws = p.labels[j].split(" ");
             return ws.map(function (w, k) {
                 return {
                     word: w,

@@ -2,19 +2,12 @@
 "use strict";
 
 view.topic = function (p) {
-    var div = d3.select("div#topic_view"),
-        ttl;
+    var div = d3.select("div#topic_view");
 
     // heading information
     // -------------------
 
-    ttl = view.topic.label(p);
-    div.select("#topic_header").text(ttl.title);
-    div.select("#topic_subheader")
-        .classed("hidden", !ttl.subtitle)
-        .select(".topic_subtitle").text(ttl.subtitle || "");
-
-    console.log(ttl);
+    div.select("#topic_header").text(p.label);
 
     // (later: nearby topics by J-S div or cor on log probs)
 };
@@ -110,9 +103,6 @@ view.topic.docs = function (p) {
 
     trs_d
         .append("td")
-        .classed(VIS.special_issue_class, function (d, j) {
-            return !!p.specials[j];
-        })
         .append("a")
         .html(function (d, j) {
             return p.citations[j];
@@ -361,52 +351,12 @@ view.topic.yearly_barplot = function (param) {
     view.dirty("topic/yearly", false);
 };
 
-view.topic.label = function (p) {
-    var result,
-        sub;
-    
-    if (typeof p.name === "string") {
-        sub = p.name.match(/: .*$/);
-        sub = sub ? sub[0] : "";
-        sub = sub.replace(/^: /, "");
-        result = p.name.replace(/: .*$/, "");
-    } else { 
-        // for numerical label, user-facing index is 1-based
-        result = "Topic " + String(p.t + 1); 
+view.topic.sort_name = function (label) {
+    var nn = label.match(/^Topic\s(\d+)$/);
+    if (nn) {
+        return +(nn[1]);
     }
-
-    return {
-        title: result,
-        subtitle: sub
-    };
-};
-
-view.topic.label.verbose = function (p) {
-    var ttl = view.topic.label(p),
-        result = ttl.title,
-        i;
-    if (p.words && p.words.length > 0) {
-        if (ttl.subtitle) { 
-            result += ": " + ttl.subtitle;
-        }
-        result += ": "; // word divider
-        for (i = 0; i < p.words.length; i += 1) {
-            result += " " + p.words[i].word;
-        }
-    }
-    return result;
-};
-
-view.topic.label.words = function (p) { 
-    var ws = view.topic.label(p).title.split(/\s+/);
-    return ws.map(function (w) {
-        return w === "/" ? "or" : w;
-    });
-};
-
-
-view.topic.sort_name = function (name) {
-    return name.replace(/^(the|a|an) /i,"").toLowerCase();
+    return label.replace(/^(the|a|an) /i, "").toLowerCase();
 };
 
 view.topic.dropdown = function (topics) {
@@ -415,20 +365,27 @@ view.topic.dropdown = function (topics) {
     d3.select("ul#topic_dropdown").selectAll("li.loading_message").remove();
 
     // Add menu items 
-    lis = d3.select("ul#topic_dropdown").selectAll("li")
-        .data(topics, function (t) { return t.topic; });
+    lis = d3.select("ul#topic_dropdown")
+        .selectAll("li")
+        .data(topics, function (t) {
+            return t.topic;
+        });
+
     lis.enter().append("li").append("a")
         .text(function (t) {
-            return view.topic.label(t).title;
+            var words = t.words
+                .slice(0, VIS.overview_words)
+                .map(function (w) { return w.word; })
+                .join(" ");
+            return t.label + ": " + words;
         })
         .attr("href", function (t) {
             return topic_link(t.topic);
         });
     lis.sort(function (a, b) {
-        return d3.ascending(view.topic.sort_name(a.name),
-            view.topic.sort_name(b.name));
-    })
-        .order();
+        return d3.ascending(view.topic.sort_name(a.label),
+            view.topic.sort_name(b.label));
+    });
 
     lis.classed("hidden_topic", function (t) {
         return t.hidden;

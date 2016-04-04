@@ -187,7 +187,7 @@ topic_view = function (m, t_user, y) {
     view.topic({
         t: t,
         words: words,
-        name: m.topic_name(t)
+        label: m.topic_label(t)
     });
 
     // reveal the view div
@@ -302,8 +302,8 @@ word_view = function (m, w) {
         }),
         n: n,
         n_topics: m.n(),
-        names: topics.map(function (t) {
-            return m.topic_name(t.topic);
+        labels: topics.map(function (t) {
+            return m.topic_label(t.topic);
         })
     });
     return true;
@@ -367,8 +367,8 @@ doc_view = function (m, d) {
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
             }),
-            names: topics.map(function (t) {
-                return m.topic_name(t.topic);
+            labels: topics.map(function (t) {
+                return m.topic_label(t.topic);
             })
         });
 
@@ -544,7 +544,7 @@ model_view_list = function (m, sort, dir) {
                 words: m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
                 dir: dir,
-                names: d3.range(m.n()).map(m.topic_name),
+                labels: d3.range(m.n()).map(m.topic_label),
                 topic_hidden: VIS.topic_hidden
             });
 
@@ -570,7 +570,7 @@ model_view_plot = function (m, type) {
                     words: m.topic_words(t, VIS.model_view.words),
                     scaled: m.topic_scaled(t),
                     total: totals[t],
-                    name: m.topic_name(t)
+                    label: m.topic_label(t)
                 };
             })
         });
@@ -600,7 +600,7 @@ model_view_yearly = function (m, type) {
                     t: t,
                     wts: wts,
                     words: m.topic_words(t, VIS.model_view.yearly.words),
-                    name: m.topic_name(t)
+                    label: m.topic_label(t)
                 };
             })
                 .filter(function (topic) {
@@ -869,7 +869,7 @@ main = function () {
                     return {
                         topic: t,
                         words: m.topic_words(t, VIS.model_view.words),
-                        name: m.topic_name(t),
+                        label: m.topic_label(t),
                         hidden: VIS.topic_hidden[t]
                     };
                 }));

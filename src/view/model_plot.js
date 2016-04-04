@@ -49,8 +49,7 @@ view.model.plot = function (param) {
         // default to grid
         // arrange alphabetically by name, or top words if name missing
         topics.forEach(function (p, j) {
-            topics[j].sort_key = p.name ? view.topic.sort_name(p.name)
-                : p.words.join(" ");
+            topics[j].sort_key = view.topic.sort_name(p.label);
         });
         topics = topics.sort(function (a, b) {
             return d3.ascending(a.sort_key, b.sort_key);
@@ -180,7 +179,7 @@ view.model.plot = function (param) {
 
     gs_enter.selectAll("text.topic_name")
         .data(function (p) {
-            var ws = view.topic.label.words(p);
+            var ws = p.label.split(" ");
             // TODO 1 label word on each "line" is a problem for "of" and "the" etc.
             return ws.map(function (w, j) {
                 return {

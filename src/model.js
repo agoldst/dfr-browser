@@ -32,7 +32,7 @@ model = function (spec) {
         doc_topics,
         word_topics,
         year_topics,
-        topic_name,
+        topic_label,
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
@@ -378,14 +378,16 @@ model = function (spec) {
     };
     that.year_topics = year_topics;
 
-    topic_name = function (t) {
+    topic_label = function (t) {
+        // expect names keyed to 1-indexed numbers (easier to edit)
         if (my.info.names) {
-            return my.info.names[t + 1]; // access by 1-index
+            return my.info.names[String(t + 1)];
         }
 
-        return undefined;
+        // default name: use a no-break space
+        return "Topic" + "\u00a0" + String(t + 1);
     };
-    that.topic_name = topic_name;
+    that.topic_label = topic_label;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {

@@ -25,6 +25,15 @@ view.model.list = function (p) {
             return p.topic_hidden[t];
         });
 
+        trs.append("td").append("a").classed("topic_name", true)
+            .attr("href", topic_link)
+            .text(function (t) {
+                return view.topic.label({
+                    t: t,
+                    name: p.names[t]
+                }).title;
+            });
+
         divs = trs.append("td").append("div").classed("spark", true);
         view.append_svg(divs, VIS.model_view.list.spark)
             .each(function (t) {
@@ -38,11 +47,8 @@ view.model.list = function (p) {
                 });
             });
 
-        trs.append("td").append("a").classed("topic_words", true);
-        trs.selectAll("a.topic_words")
-            .append("span").classed("name", true);
-        trs.selectAll("a.topic_words")
-            .append("span").classed("words", true);
+        trs.append("td").append("a").classed("topic_words", true)
+            .attr("href", topic_link);
 
         token_max = d3.max(p.sums);
         view.append_weight_tds(trs, function (t) {
@@ -59,16 +65,6 @@ view.model.list = function (p) {
     // since the number of topic words can be changed, we need to
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
-        .attr("href", topic_link);
-    trs.selectAll("td a.topic_words span.name")
-        .text(function (t) {
-            return view.topic.label({
-                t: t,
-                words: p.words[t],
-                name: p.names[t]
-            }).title + ":"; // no subtitle in this view
-        });
-    trs.selectAll("td a.topic_words span.words")
         .text(function (t) {
             return p.words[t].reduce(function (acc, x) {
                 return acc + " " + x.word;
