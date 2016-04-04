@@ -581,6 +581,10 @@ th#doc_view_weight {
     min-width: 4em;
 }
 
+#bib_headings li.issue {
+    min-width: 6em;
+}
+
 #bib_headings a {
     padding-left: 0.25em;
     padding-right: 0.25em;

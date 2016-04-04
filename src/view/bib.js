@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, d3, $, window */
+/*global view, bib, VIS, set_view, d3, $, window */
 "use strict";
 
 view.bib = function (p) {
@@ -71,7 +71,11 @@ view.bib = function (p) {
             d3.event.preventDefault();
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
-        .text(function (o) { return o.heading; });
+        .text(function (o) {
+            return (p.major === "issue") ? bib.decode_issue(o.heading)
+                : o.heading;
+        });
+
 
     view.bib.render({
         ordering: ordering,
@@ -102,8 +106,9 @@ view.bib.render = function (p) {
         });
 
     sec_enter.append("h2")
-        .html(function (o) {
-            return o.heading;
+        .text(function (o) {
+            return (p.major === "issue") ? bib.decode_issue(o.heading)
+                : o.heading;
         });
     sec_enter.append("ul");
 

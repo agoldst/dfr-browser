@@ -72,11 +72,7 @@ bib.sort = function (m, major, minor, asc_maj, asc_min) {
         };
     } else if (major === "issue") {
         major_key = function (i) {
-            var doc = m.meta(i), k;
-            k = doc.journaltitle;
-            k += "_" + d3.format("05d")(doc.volume);
-            k += "_" + doc.issue;
-            return k;
+            return bib.encode_issue(m.meta(i));
         };
     } else { // expected: major === "alpha"
         // default to alphabetical by author
@@ -306,4 +302,24 @@ bib.parse = function (d) {
             .replace(/^p?p\. /, "")
             .replace(/-/g, "–")
     };
+};
+
+bib.encode_issue = function (doc) {
+    var k = doc.journaltitle;
+    k += "_" + d3.format("05d")(doc.volume);
+    if (doc.issue) {
+        k += "_" + doc.issue;
+    }
+    return k;
+};
+
+bib.decode_issue = function (code) {
+    var splits, result;
+
+    splits = code.split("_");
+    result = splits[0] + " " + String(+splits[1]);
+    if (splits.length > 2) {
+        result += "." + splits[2];
+    }
+    return result;
 };
