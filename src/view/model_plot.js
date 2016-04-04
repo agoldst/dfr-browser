@@ -47,7 +47,7 @@ view.model.plot = function (param) {
         });
     } else {
         // default to grid
-        // arrange alphabetically by name, or top words if name missing
+        // arrange alphabetically by name
         topics.forEach(function (p, j) {
             topics[j].sort_key = view.topic.sort_name(p.label);
         });
