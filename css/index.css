@@ -505,7 +505,11 @@ ul#vocab_list li a:visited {
 /* doc_view */
 
 th#doc_view_topic {
-    width: 50%;
+    width: 15%;
+}
+
+th#doc_view_words {
+    width: 35%;
 }
 
 th#doc_view_weight {

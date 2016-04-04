@@ -36,10 +36,14 @@ view.doc = function (p) {
 
     as_t.append("span").classed("name", true)
         .text(function (t, j) {
-            return p.labels[j] + ": ";
+            return p.labels[j];
         });
 
-    as_t.append("span").classed("words", true)
+    trs.append("td").append("a")
+        .attr("href", function (t) {
+            return topic_link(t.topic);
+        })
+        .append("span").classed("words", true)
         .text(function (t, j) {
             return p.words[j].reduce(function (acc, x) {
                 return acc + " " + x.word;
