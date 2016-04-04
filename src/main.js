@@ -25,7 +25,7 @@ var VIS = {
         stroke_range: 6,    // max. perimeter thickness
         yearly: {
             w: 500,         // px: the minimum svg width
-            aspect: 2,
+            aspect: 1.333,
             m: {
                 left: 20,
                 right: 20,
