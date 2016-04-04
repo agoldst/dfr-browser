@@ -100,6 +100,21 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
+If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The one-based topic numbers in this array will, by default, not be shown. (They can be revealed using Settings.)
+
+## Set topic labels
+
+In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a top-level `topic_labels` object with the following slightly eccentric form:
+
+```json
+"topic_labels": {
+    "1": "label for topic 1",
+    "4": "a very good topic"
+}
+```
+
+One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number.
+
 ## Launch the browser
 
 The necessary files are `index.html`, the data files (looked for in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
@@ -131,3 +146,4 @@ For serving from a web server, a big model means a lot of data has to be sent to
 
 This browser uses the code of the following open-source projects by others, under the `fonts`, `css`, and `lib` directories: [d3](http://d3js.org) by Mike Bostock; [bootstrap](http://getbootstrap.com/) by Twitter, Inc.; [JQuery](http://jquery.com) by the JQuery Foundation; and [JSZip](http://stuk.github.io/jszip/) by Stuart Knightley.
 
+This browser also makes use of code from Andrew Goldstone, Susana Galán, C. Laura Lovin, Andrew Mazzaschi, and Lindsey Whitmore, "An Interactive Topic Model of Signs," in [Signs at 40](http://signsat40.signsjournal.org/topic-model) (source at <http://github.com/signs40th/topic-model>).
