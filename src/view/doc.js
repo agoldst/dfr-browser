@@ -36,10 +36,7 @@ view.doc = function (p) {
 
     as_t.append("span").classed("name", true)
         .text(function (t, j) {
-            return view.topic.label({
-                t: t.topic,
-                name: p.names[j]
-            }).title + ": ";
+            return p.labels[j] + ": ";
         });
 
     as_t.append("span").classed("words", true)
