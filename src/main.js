@@ -441,8 +441,8 @@ bib_view = function (m, maj, min, dir) {
     return true;
 };
 
-about_view = function (m, section) {
-    view.about(section);
+about_view = function (m) {
+    view.about(m.info());
     view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
