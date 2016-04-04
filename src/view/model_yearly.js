@@ -106,8 +106,15 @@ view.model.yearly = function (p) {
             return scale_color(d.t);
         })
         .on("mouseover", function (d) {
+            var label = d.label;
             d3.select(this).style("fill", scale_color(d.t, true));
-            view.tooltip().text(view.topic.label(d).title);
+
+            if (VIS.model_view.yearly.words > 0) {
+                label += ": ";
+                label += d.words.join(" ");
+            }
+            view.tooltip().text(label);
+                    
             view.tooltip().update_pos();
             view.tooltip().show();
         })
@@ -193,7 +200,14 @@ view.model.yearly = function (p) {
                     d.values[max[d.t]].y / 2);
             })
             .text(function (d) {
-                return view.topic.label(d).title;
+                var result = d.label;
+                if (VIS.model_view.yearly.label_words > 0) {
+                    result += ": ";
+                    result += d.words.slice(0,
+                            VIS.model_view.yearly.label_words)
+                        .join(" ");
+                }
+                return result;
             });
     };
 
@@ -267,8 +281,8 @@ view.model.yearly.stacked_series = function (p) {
         all_series = p.topics.map(function (topic) {
             var series = {
                 t: topic.t,
-                words: topic.words,
-                name: topic.name
+                words: topic.words.map(function (w) { return w.word; }),
+                label: topic.label
             };
             series.values = year_keys.map(function (yr, j) {
                 var result = {
@@ -304,7 +318,7 @@ view.model.yearly.stacked_series = function (p) {
             return {
                 t: s.t,
                 words: s.words,
-                name: s.name,
+                label: s.label,
                 values: s.values.map(function (d) {
                     return {
                         x: d.x,
