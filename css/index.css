@@ -1,19 +1,29 @@
+body {
+    height: 100%;
+    overflow-y: scroll;
+}
 
 .hidden {
     display: none;
 }
 
-p a,td a {
+a {
     text-decoration: none;
     color: black;
 }
 
-p a:hover,td a:hover {
+a:hover {
+    color: black;
     text-decoration: underline;
 }
 
-p a:visited,td a:visited {
+a:visited {
     color: black;
+}
+
+a:active {
+    color:black;
+    text-decoration: underline;
 }
 
 a.external {
@@ -22,6 +32,22 @@ a.external {
 
 a.external:visited {
     color: purple;
+}
+
+.special_issue a {
+    color: #000066;
+}
+
+.special_issue a:visited {
+    color: #000066;
+}
+
+.special_issue a:hover {
+    color: #000066;
+}
+
+label span.special_issue_example {
+    color: #000066;
 }
 
 /* long subclass for headers */
@@ -56,7 +82,7 @@ ul.scroll-menu {
 }
 
 td.weight {
-    min-width: 10em;
+    min-width: 1em;
 }
 
 td.weight div.proportion {
@@ -76,6 +102,53 @@ th.wide {
     min-width: 20em;
 }
 
+/* help_box */
+
+#help_box {
+    position: relative;
+}
+
+#help_box_content {
+    position: absolute;
+    left: 60%;
+    width: 40%;
+    background-color: white;
+    z-index: 1001;
+    border: 3px solid rgba(200,200,200,0.6);
+    border-radius: 6px;
+    padding: 12px;
+    min-height: 100%;
+    height: 100%;
+}
+
+#main_container {
+    padding-top: 20px;
+    min-height: 100%;
+    height: 100%;
+}
+
+#main_container > .row {
+    min-height: 100%;
+    height: 100%;
+}
+
+.nav .dropdown.active {
+    background-color: #eee;
+}
+
+/* dropdown tweak */ 
+#topic_dropdown.scroll-menu {
+    height: auto;
+    max-height: 480px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+#help_box_content p a {
+    color: blue;
+}
+
 td.td-right {
     text-align: right;
 }
@@ -86,7 +159,7 @@ td.td-right {
     text-align: left;
 }
 
-p.help {
+.help {
     font-style: italic;
 }
 
@@ -103,11 +176,22 @@ rect.bg {
     fill: white;
 }
 
-text.topic_label {
+text.topic_word {
     text-anchor: middle;
     fill: rgba(0,0,0,0.6);
     pointer-events: none;
     font: sans-serif;
+}
+
+text.topic_name {
+    text-anchor: middle;
+    fill: black;
+    pointer-events: none;
+    font-style: italic;
+}
+
+text.topic_name.merged_topic_sep {
+    font-style: normal;
 }
 
 .topic_cloud {
@@ -118,6 +202,20 @@ text.topic_label {
 .topic_cloud:hover {
     fill: rgba(51,153,255,0.9);
 }
+
+.topic_cloud ~ text.topic_name {
+    display: none;
+}
+
+.topic_cloud:hover ~ text.topic_name {
+    display: inherit;
+}
+
+.topic_cloud:hover ~ text.topic_word {
+    fill: rgba(0,0,0,0.05);
+    stroke: rgba(0,0,0,0.05);
+}
+
 
 /* model_view_list */
 
@@ -168,7 +266,7 @@ text.topic_label {
 }
 
 th#model_view_list_topic {
-    width: 8.33%;
+    width: 12.5%;
 }
 
 th#model_view_list_year {
@@ -176,11 +274,24 @@ th#model_view_list_year {
 }
 
 th#model_view_list_words {
-    width: 62.5%;
+    width: 55%;
 }
 
 th#model_view_list_frac {
-    width: 16.66%;
+    width: 20%;
+}
+
+/* i.e., percentages */
+#model_view_list td:last-child {
+    text-align: right;
+}
+
+#model_view_list td.weight {
+    width: 15%;
+}
+
+a.topic_words span.name {
+    font-style: italic;
 }
 
 /* model_view_yearly */
@@ -195,12 +306,26 @@ path.topic_area {
     stroke: rgba(0,0,0,0.2);
 }
 
-
-
 /* topic_view */
 
+/*
 #topic_view_header {
     height: 4em;
+}
+*/
+#topic_view_header {
+}
+
+#topic_view_annotation {
+    font-style: italic;
+}
+
+#topic_view_annotation a {
+    color: blue;
+}
+
+#topic_view_annotation a:visited {
+    color: purple;
 }
 
 #topic_words a {
@@ -215,11 +340,11 @@ tr:hover a {
     text-decoration: underline;
 }
 
-/* topic_plot */
-
-div#topic_yearly {
-    height: 410px;
+a:hover {
+    color: black;
 }
+
+/* topic_plot */
 
 .axis path, .axis line {
     fill: none;
@@ -295,9 +420,21 @@ div.bar_tooltip {
  * the same percentage value will be represented by a different-sized bar.
  */
 
+th#topic_docs_doc {
+    width: 50%;
+}
+
+th#topic_docs_weight {
+    width: 40%;
+}
+
+/* remaining 10% ad libitum */
+
+/*
 #topic_docs td.weight {
     width: 25em;
 }
+*/
 
 /* word_view */
 
@@ -308,6 +445,8 @@ div.bar_tooltip {
 #word_view g.topic text.topic {
     text-anchor: end;
     pointer-events: none;
+    font-style: italic;
+    font-size: 14pt;
 }
 
 #word_view rect.interact {
@@ -343,6 +482,7 @@ div.bar_tooltip {
 
 #word_view g.word.selected_word text {
     fill: black;
+    font-weight: bold;
 }
 
 /* words_view */
@@ -364,6 +504,20 @@ ul#vocab_list li a:visited {
 
 /* doc_view */
 
+th#doc_view_topic {
+    width: 15%;
+}
+
+th#doc_view_words {
+    width: 35%;
+}
+
+th#doc_view_weight {
+    width: 40%;
+}
+
+/* remaining 10% goes to last two columns ad libitum */
+
 /* bib_view */
 
 #bib_main {
@@ -376,19 +530,46 @@ ul#vocab_list li a:visited {
 #bib_nav {
 }
 
+/* TODO Less ugly responsive affix dimensions? */
+
 #bib_headings {
     padding-top: 5px;
-    max-width: 260px; /* TODO hard-codes 3 grid cols. not responsive */
+    max-width: 260px; /* Wide affix for wide screens */
+}
+
+/* slimmer affix on all but the widest screens */
+@media only screen and (max-width: 1200px) {
+    #bib_headings {
+        max-width: 200px;
+    }
+}
+
+/* hide the affix on narrow screens */
+
+@media only screen and (max-width: 1000px) {
+    #bib_headings {
+        display: none;
+    }
 }
 
 #bib_headings ul {
     list-style-type: none;
     height: auto;
-    max-height: 600px; /* TODO hard-coding height again not great */
+    max-height: 210px; /* short affix on small screens */
     overflow-y: auto;
     overflow-x: hidden;
-    border: 1px solid rgb(221, 221, 221);
+    border: 1px solid rgb(221, 221, 211);
 }
+
+/* tall affix on tall screens only */
+
+@media only screen and (min-height: 850px) {
+    #bib_headings ul {
+        max-height: 700px;
+        border: none;
+    }
+}
+
 
 #bib_headings li {
     min-width: 3.25em; /* TODO hard-codes width, degrades uglily */
@@ -400,16 +581,18 @@ ul#vocab_list li a:visited {
     font-style: italic;
 }
 
-#bib_headings li.issue {
-    min-width: 260px;
+#bib_headings li.year {
+    min-width: 4em;
 }
 
+#bib_headings li.issue {
+    min-width: 6em;
+}
 
 #bib_headings a {
     padding-left: 0.25em;
     padding-right: 0.25em;
     text-decoration: none;
-    color: black;
 }
 
 #bib_headings a:hover {
@@ -420,18 +603,26 @@ ul#vocab_list li a:visited {
     background-color: #f5f5f5;
 }
 
-div.section h2 {
+#bib_view div.section h2 {
     border-top: 1px solid rgb(221, 221, 221);
     border-bottom: 1px solid rgb(221, 221, 221);
     padding-top: 0.25em;
     padding-bottom: 0.25em;
 }
 
-#bib_view .section a {
-    display: block;
+#bib_view .section ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#bib_view .section li {
     line-height: 1.33em;
     text-indent: -3em;
     margin-left: 3em;
+    color: black;
+}
+
+#bib_view li:not(.special_issue) a:hover {
     color: black;
 }
 
@@ -443,6 +634,31 @@ div.section h2 {
 
 #about_view a:visited {
     color: purple;
+}
+
+#about_contents a {
+    color: black;
+}
+
+#about_contents a:visited {
+    color: black;
+}
+
+#about_contents li a {
+    display: block;
+    padding-top: 1ex;
+    padding-bottom: 1ex;
+    padding-left: 1em;
+    padding-right: 1em;
+    text-decoration: none;
+}
+
+#about_contents li:hover {
+    background-color: #f5f5f5;
+}
+
+#about_contents li.selected {
+    background-color: #f5f5f5;
 }
 
 #about_view div#about_browser {

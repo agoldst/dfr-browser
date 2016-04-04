@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, utils, d3 */
+/*global view, VIS, set_view, topic_hash, topic_link, utils, d3 */
 "use strict";
 
 view.topic = function (p) {
@@ -7,25 +7,21 @@ view.topic = function (p) {
     // heading information
     // -------------------
 
-    div.select("h2#topic_header")
-        .text(view.topic.label(p.t,
-                    utils.shorten(p.words, VIS.overview_words)));
+    div.select("#topic_header").text(p.label);
 
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
 view.topic.remark = function (p) {
-    d3.select("#topic_view p#topic_remark")
-        .text("α = " + VIS.float_format(p.alpha)
-                + "; "
-                + VIS.percent_format(p.col_sum / p.total_tokens)
-                + " of corpus.");
+    d3.select("#topic_view #topic_remark")
+        .text(VIS.percent_format(p.col_sum / p.total_tokens)
+                + " of corpus");
 };
 
 view.topic.words = function (words) {
     var trs_w;
 
-    if (view.updating()) {
+    if (view.updating() && !view.dirty("topic/words")) {
         return;
     }
 
@@ -53,6 +49,7 @@ view.topic.words = function (words) {
         return w.weight / words[0].weight;
     });
 
+    view.dirty("topic/words", false);
 };
 
 view.topic.docs = function (p) {
@@ -105,10 +102,8 @@ view.topic.docs = function (p) {
     trs_d.selectAll("td").remove();
 
     trs_d
-        .append("td").append("a")
-        .attr("href", function (d) {
-            return "#/doc/" + d.doc;
-        })
+        .append("td")
+        .append("a")
         .html(function (d, j) {
             return p.citations[j];
         });
@@ -133,17 +128,22 @@ view.topic.docs = function (p) {
 };
 
 view.topic.yearly = function (p) {
-    if (!view.updating()) {
-        view.topic.yearly_barplot({
-            t: p.t,
-            yearly: p.yearly,
-            svg: view.plot_svg("div#topic_plot", VIS.topic_view),
-            axes: true,
-            clickable: true,
-            year: p.year,
-            spec: VIS.topic_view
-        });
-    }
+    var spec = VIS.topic_view;
+    spec.w = d3.select("#topic_yearly").node().clientWidth || spec.w;
+    spec.w = Math.max(spec.w, VIS.topic_view.w); // set a min. width
+    spec.w -= spec.m.left + spec.m.right;
+    spec.h = Math.floor(spec.w / VIS.topic_view.aspect)
+        - spec.m.top - spec.m.bottom;
+
+    view.topic.yearly_barplot({
+        t: p.t,
+        yearly: p.yearly,
+        svg: view.plot_svg("div#topic_plot", spec),
+        axes: true,
+        clickable: true,
+        year: p.year,
+        spec: spec
+    });
 };
 
 view.topic.yearly_barplot = function (param) {
@@ -152,9 +152,11 @@ view.topic.yearly_barplot = function (param) {
         scale_y,
         w,
         w_click,
-        bars,
+        bars, bars_enter,
         bars_click,
+        axes,
         tip_text,
+        tx_duration = view.dirty("topic/yearly") ? 1000 : 0,
         svg = param.svg,
         spec = param.spec;
 
@@ -186,65 +188,83 @@ view.topic.yearly_barplot = function (param) {
     // ----
 
     if (param.axes) {
-        // clear
-        svg.selectAll("g.axis").remove();
+        axes = svg.selectAll("g.axis")
+            .data(["x", "y"]);
 
-        // x axis
-        svg.append("g")
-            .classed("axis", true)
-            .classed("x", true)
-            .attr("transform", "translate(0," + spec.h + ")")
-            .call(d3.svg.axis()
-                .scale(scale_x)
-                .orient("bottom")
-                .ticks(d3.time.years.utc, spec.ticks));
+        axes.enter().append("g").classed("axis", true)
+            .classed("x", function (v) {
+                return v === "x";
+            })
+            .classed("y", function (v) {
+                return v === "y";
+            })
+            .attr("transform", function (v) {
+                return v === "x" ? "translate(0," + spec.h + ")"
+                    : "translate(-5, 0)";
+            });
 
-        // y axis
-        svg.append("g")
-            .classed("axis", true)
-            .classed("y", true)
-            .call(d3.svg.axis()
-                .scale(scale_y)
-                .orient("left")
-                .tickSize(-spec.w)
-                .outerTickSize(0)
-                .tickFormat(VIS.percent_format)
-                .ticks(spec.ticks));
+        axes.transition()
+            .duration(tx_duration)
+            .attr("transform", function (v) {
+                return v === "x" ? "translate(0," + spec.h + ")"
+                    : undefined;
+            })
+            .each(function (v) {
+                var sel = d3.select(this),
+                    ax = d3.svg.axis()
+                        .scale(v === "x" ? scale_x : scale_y)
+                        .orient(v === "x" ? "bottom" : "left");
 
-        svg.selectAll("g.axis.y g").filter(function (d) { return d; })
-            .classed("minor", true);
+                if (v === "x") {
+                    ax = ax.ticks(d3.time.years.utc, spec.ticks);
+                } else {
+                    ax = ax.tickSize(-spec.w)
+                        .outerTickSize(0)
+                        .tickFormat(VIS.percent_format)
+                        .tickPadding(w_click / 2)
+                        .ticks(spec.ticks);
+                }
+                // redraw axis
+                sel.call(ax);
+
+                // set all y gridlines to minor except baseline
+                if (v === "y") {
+                    sel.selectAll("g")
+                        .filter(function (d) { return d > 0; })
+                        .classed("minor", true);
+                }
+            });
     }
 
     // bars
     // ----
 
-    // clear
-    svg.selectAll("g.topic_proportion").remove();
-
     bars = svg.selectAll("g.topic_proportion")
-        .data(series);
+        .data(series, function (s) {
+            return String(s[0].getUTCFullYear());
+        }); // key by year
 
     // for each year, we will have two rects in a g: one showing the yearly
     // proportion and an invisible one for mouse interaction,
     // following the example of http://bl.ocks.org/milroc/9842512
-    bars.enter().append("g")
-        .classed("topic_proportion", true);
+    bars_enter = bars.enter().append("g")
+        .classed("topic_proportion", true)
+        .attr("transform", function (d) {
+            // new bars shouldn't transition out from the left, so preempt that
+            return "translate(" + scale_x(d[0]) + ",0)";
+        });
 
-    // the g sets the x position of each pair of bars
-    bars.attr("transform", function (d) {
-        return "translate(" + scale_x(d[0]) + ",0)";
-    });
-
-    // set a selected year if any
-    bars.classed("selected_year", function (d) {
-        return String(d[0].getUTCFullYear()) === param.year;
-    });
+    bars.exit().remove(); // should also remove child display and interact rects
 
     if (param.clickable) {
         // add the clickable bars, which are as high as the plot
         // and a year wide
-        bars_click = bars.append("rect")
-            .classed("interact", true)
+        bars_enter.append("rect").classed("interact", true);
+
+        bars_click = bars.select("rect.interact");
+
+        bars_click.transition()
+            .duration(tx_duration)
             .attr("x", -w_click / 2.0)
             .attr("y", 0)
             .attr("width", w_click)
@@ -253,9 +273,23 @@ view.topic.yearly_barplot = function (param) {
             });
     }
 
+    // set a selected year if any
+    bars.classed("selected_year", function (d) {
+        return String(d[0].getUTCFullYear()) === param.year;
+    });
+
     // add the visible bars
-    bars.append("rect")
-        .classed("display", true)
+    bars_enter.append("rect").classed("display", true)
+        .style("fill", param.color)
+        .style("stroke", param.color);
+
+    // the g sets the x position of each pair of bars
+    bars.transition()
+        .duration(tx_duration)
+        .attr("transform", function (d) {
+            return "translate(" + scale_x(d[0]) + ",0)";
+        })
+        .select("rect.display")
         .attr("x", -w / 2.0)
         .attr("y", function (d) {
             return scale_y(d[1]);
@@ -263,9 +297,7 @@ view.topic.yearly_barplot = function (param) {
         .attr("width", w)
         .attr("height", function (d) {
             return spec.h - scale_y(d[1]);
-        })
-        .style("fill", param.color)
-        .style("stroke", param.color);
+        });
 
     if (param.clickable) {
         bars.on("mouseover", function (d) {
@@ -316,13 +348,50 @@ view.topic.yearly_barplot = function (param) {
             });
     }
 
+    view.dirty("topic/yearly", false);
 };
 
-view.topic.label = function (t, words) {
-    var i,
-        result = String(t + 1); // user-facing index is 1-based
-    for (i = 0; i < words.length; i += 1) {
-        result += " " + words[i].word;
+// Topic sorting rule: explicit labels over default "Topic NNN"
+// achieved by ugly kludge
+view.topic.sort_name = function (label) {
+    var nn = label.match(/^Topic\s(\d+)$/);
+    if (nn) {
+        return "zzz" + d3.format("05d")(+(nn[1]));
     }
-    return result;
+    
+    return label.replace(/^(the|a|an) /i, "").toLowerCase();
 };
+
+view.topic.dropdown = function (topics) {
+    var lis;
+    // Set up topic menu: remove loading message
+    d3.select("ul#topic_dropdown").selectAll("li.loading_message").remove();
+
+    // Add menu items 
+    lis = d3.select("ul#topic_dropdown")
+        .selectAll("li")
+        .data(topics, function (t) {
+            return t.topic;
+        });
+
+    lis.enter().append("li").append("a")
+        .text(function (t) {
+            var words = t.words
+                .slice(0, VIS.overview_words)
+                .map(function (w) { return w.word; })
+                .join(" ");
+            return t.label + ": " + words;
+        })
+        .attr("href", function (t) {
+            return topic_link(t.topic);
+        });
+    lis.sort(function (a, b) {
+        return d3.ascending(view.topic.sort_name(a.label),
+            view.topic.sort_name(b.label));
+    });
+
+    lis.classed("hidden_topic", function (t) {
+        return t.hidden;
+    });
+};
+

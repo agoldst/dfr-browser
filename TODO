@@ -1,3 +1,112 @@
-- uglifyjs into a single versioned file linked in index.html
-- stricter "namespacing": everything under dfb object?
-- refactor infinitely-long index.js
+
+sidebar with topic model vocabulary:
+
+- topics
+- key word
+- top document
+
+example narratives
+
+speed up loading (mod_zip rather than jszip?) [DONE]
+
+fix linking into jstor. [DONE]
+
+words should also have links to jstor dfr search in signs (for ngrams-like exploration---this needs a note) [CAN'T BE DONE]
+
+uglifyjs into a single versioned file linked in index.html [DONE]
+
+AM 5/2 questions: 
+- get rid of "by journal, then by journal contents" option in bibliography view?
+- Signs logo in nav bar?
+- Center screenshots
+- Is all words the top 50 words for all topics?
+
+5/2 Ideas discussed
+- Titles or popovers for key terms
+- Enhanced word view [DONE]
+- Default view as list?
+
+
+BUGS
+
+- 65 topics - does not show up on grid [DONE]
+- jstor id resolution for older items: write JSTOR [DONE: link fixed]
+- apparent problems with d3 (?) on firefox 30 under MacOS 10.8, unable to replicate on ffx 30 on 10.7.5
+
+FIXED BUGS
+
+- chrome vs firefox vs ... sorting not the same (not stable sort??) [DONE]
+
+TEXT TO WRITE
+
+1. Introductory text [DONE]
+2. Explanation of the technique [DONE]
+3. How to read (vocabulary [DONE]
+4. Interpretive narratives (later) and cautions
+
+Tasks:
+
+1. ask others to comment
+2. RUCore or other permanent storage
+3. indication of journal special issues  [DONE]
+	-Signs editorial intern Tatiana working on a list
+4. hand label topics individually, compare to decide on labels
+
+
+Per 7/28/14 email conversation:
+
+Analyzing the model:
+
+- topic labels
+	- Susana, Lindsey, Andy, and Laura (SLAL) - Aug 1
+
+- which are uninformative?
+	- SLAL - Aug 1
+	-consult with AG after early Aug Skype convo
+
+
+ Text:
+
+- editorial comments on the model?
+	- Early Sept
+
+ - other remaining writing/editing?
+	- short analysis of example topics
+		-SLA draft Aug 30
+
+Software:
+
+- topic labels
+- hiding topics
+- article/issue tagging (e.g.: virtual ToCs, indication of special issues...)
+    [DONE]
+- interface refinements, various (e.g.: how the introductory text appears/disappears, whether the site detects incompatible browsers)
+    + scroll to top when click into new view
+    + topic view needs less obtrusive special-issue flagging
+- links or other display of editorial comments?
+- more appropriate bibliography page sorting options... [DONE]
+- fixing links to articles? [DONE]
+- retooling dates? [DONE]
+
+ Design:
+
+- where and how to display editorial comments
+- match Signs's style more closely? Nothing about the typography, color scheme, etc. of the browser is fixed. I think it would be good to think about distinguishing this a little from the bland default look of bootstrap (and, in fact, from the other model browser site I've made public, www.rci.rutgers.edu/~ag978/quiet).
+	-Andy plus others' input
+		-initial attempts ~Aug 15
+
+ Other tasks?
+- overall site design
+	-AM and Susana, Lindsey and Laura
+		-sample page mockups and overall structure before Aug 30
+- contact Jonathan Goodwin re: republishing his cocitation graph (http://jgoodwin.net/signs/test.html)
+	-Andy, 7/29
+
+
+Agenda for SLAL early Aug Skype meeting
+- compare topic labels
+- brainstorm overall site design
+- ideas for styling model browser
+- finalize 10 ToCs
+
+

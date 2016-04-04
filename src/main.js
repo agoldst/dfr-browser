@@ -7,7 +7,6 @@ var VIS = {
     last: { // which subviews last shown?
         bib: { }
     },
-    view_updating: false, // do we need to redraw the whole view?
     files: { // what data files to request
         info: "data/info.json",
         meta: "data/meta.csv.zip",  // remove .zip to use uncompressed data
@@ -18,14 +17,15 @@ var VIS = {
     default_view: "/model", // specify the part after the #
     overview_words: 15,     // may need adjustment
     model_view: {
-        w: 1140,            // px: the bootstrap container width
+        w: 500,            // px: the minimum svg width
         aspect: 1.3333,     // for calculating height
-        words: 4,           // may need adjustment
+        words: 4,           // maximum: may need adjustment
         size_range: [7, 18], // points. may need adjustment
+        name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness
         yearly: {
-            w: 1090,
-            h: 800,
+            w: 500,         // px: the minimum svg width
+            aspect: 1.333,
             m: {
                 left: 20,
                 right: 20,
@@ -53,8 +53,8 @@ var VIS = {
     topic_view: {
         words: 50,
         docs: 20,
-        w: 800, // fixed dimensions; this will need tweaking
-        h: 300, // NB the topic_plot div has a fixed height in index.css
+        w: 400, // minimum in px
+        aspect: 3,
         m: {
             left: 40,
             right: 20,
@@ -67,10 +67,10 @@ var VIS = {
     word_view: {
         n_min: 10, // words per topic
         topic_label_padding: 8, // pt
-        topic_label_size: 14, // pt
+        topic_label_leading: 14, // pt
         row_height: 80, // pt
         svg_rows: 10, // * row_height gives min. height for svg element
-        w: 1000,
+        w: 700, // px: minimum width
         m: {
             left: 100,
             right: 40,
@@ -112,7 +112,11 @@ var VIS = {
     },
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
-    uri_proxy: ""
+    uri_proxy: "",
+    resize_refresh_delay: 100, // ms
+    hidden_topics: [],      // list of 1-based topic numbers to suppress
+    show_hidden_topics: false,
+    annotes: []             // list of CSS classes annotating the current view
 };
 
 /* declaration of functions */
@@ -120,21 +124,20 @@ var VIS = {
 var topic_link, // stringifiers
     topic_hash,
     topic_view, // view generation
-    topic_view_words,
-    topic_view_docs,
     word_view,
     words_view,
     doc_view,
     bib_view,
     about_view,
-    settings_view,
     model_view,
     model_view_list,
     model_view_plot,
     model_view_yearly,
     set_view,
     view_refresh,
+    hide_topics,
     view_loading,
+    settings_modal,
     setup_vis,          // initialization
     load_data,
     main;               // main program
@@ -155,21 +158,18 @@ topic_hash = function (t) {
     return "/topic/" + String(t + 1);
 };
 
-
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (m, t, y) {
-    var words, year;
+topic_view = function (m, t_user, y) {
+    var words, year,
+        t = +t_user - 1; // t_user is 1-based topic index, t is 0-based
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         // not ready yet; show loading message
         view.loading(true);
         return true;
     }
-
-    // TODO don't need anything but tw to show topic words h2 and div; so can 
-    // have div-specific loading messages instead
 
     // if the topic is missing or unspecified, show the help
     if (!isFinite(t) || t < 0 || t >= m.n()) {
@@ -186,7 +186,8 @@ topic_view = function (m, t, y) {
 
     view.topic({
         t: t,
-        words: words
+        words: words,
+        label: m.topic_label(t)
     });
 
     // reveal the view div
@@ -207,8 +208,15 @@ topic_view = function (m, t, y) {
     view.topic.words(words);
 
     // topic yearly barplot subview
-    if (!view.updating()) {
-        d3.select("#topic_plot").classed("hidden", true);
+
+    // if the last view was also a topic view, we'll decree this a qualified
+    // redraw and allow a nice transition to happen
+    if (VIS.cur_view && VIS.cur_view.attr("id") === "topic_view") {
+        view.dirty("topic/yearly", true);
+    }
+
+    if (!view.updating() && !view.dirty("topic/yearly")) {
+        d3.select("#topic_plot").classed("invisible", true);
     }
     m.topic_yearly(t, function (yearly) {
         view.topic.yearly({
@@ -216,12 +224,13 @@ topic_view = function (m, t, y) {
             year: year,
             yearly: yearly
         });
-        d3.select("#topic_plot").classed("hidden", false);
+        d3.select("#topic_plot").classed("invisible", false);
     });
 
     // topic top documents subview
     view.calculating("#topic_docs", true); 
     m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
+        var ds = docs.map(function (d) { return d.doc; });
         view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
@@ -269,7 +278,10 @@ word_view = function (m, w) {
 
     VIS.last.word = word;
 
-    topics = m.word_topics(word);
+    topics = m.word_topics(word).filter(function (t) {
+        return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+    });
+
     if (topics.length > 0) {
         n = 1 + d3.max(topics, function (t) {
             return t.rank; // 0-based, so we rank + 1
@@ -290,8 +302,10 @@ word_view = function (m, w) {
         }),
         n: n,
         n_topics: m.n(),
+        labels: topics.map(function (t) {
+            return m.topic_label(t.topic);
+        })
     });
-
     return true;
 };
 
@@ -308,7 +322,7 @@ words_view = function (m) {
 
 doc_view = function (m, d) {
     var div = d3.select("div#doc_view"),
-        doc = d;
+        doc = +d;
 
     if (!m.meta() || !m.has_dt() || !m.tw()) {
         view.loading(true);
@@ -339,16 +353,26 @@ doc_view = function (m, d) {
     d3.select("#doc_view_main").classed("hidden", false);
 
     view.calculating("#doc_view", true);
-    m.doc_topics(doc, m.n(), function (topics) {
+    m.doc_topics(doc, m.n(), function (ts) {
+        var topics = ts.filter(function (t) {
+            return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+        });
+
         view.calculating("#doc_view", false);
+        
         view.doc({
             topics: topics,
             meta: m.meta(doc),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return m.topic_words(t.topic, VIS.overview_words);
+            }),
+            labels: topics.map(function (t) {
+                return m.topic_label(t.topic);
             })
         });
+
+        hide_topics();
     });
 
     return true;
@@ -412,18 +436,19 @@ bib_view = function (m, maj, min, dir) {
 
     // TODO smooth sliding-in / -out appearance of navbar would be nicer
 
-    return true;
+    VIS.ready.bib = true;
 
+    return true;
 };
 
 about_view = function (m) {
-    view.about(m.info().meta_info);
+    view.about(m.info());
     view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
 };
 
-settings_view = function (m) {
+settings_modal = function (m) {
     var p = {
         max_words: m.n_top_words(),
         max_docs: m.n_docs()
@@ -434,8 +459,7 @@ settings_view = function (m) {
 
     view.settings(p);
 
-    view.loading(false);
-    d3.select("#settings_view").classed("hidden", false);
+    $("#settings_modal").modal();
     return true;
 };
 
@@ -451,8 +475,8 @@ model_view = function (m, type, p1, p2) {
     }
 
     // ensure pill highlighting
-    d3.selectAll("#nav_model li.active").classed("active",false);
-    d3.select("#nav_model_" + type_chosen).classed("active",true);
+    d3.selectAll("#nav_model li.active").classed("active", false);
+    d3.select("#nav_model_" + type_chosen).classed("active", true);
 
     // hide all subviews and controls; we'll reveal the chosen one
     d3.select("#model_view_plot").classed("hidden", true);
@@ -518,8 +542,12 @@ model_view_list = function (m, sort, dir) {
                 sums: sums,
                 words: m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
-                dir: dir
+                dir: dir,
+                labels: d3.range(m.n()).map(m.topic_label),
+                topic_hidden: VIS.topic_hidden
             });
+
+            hide_topics();
         });
     });
 
@@ -528,11 +556,22 @@ model_view_list = function (m, sort, dir) {
 
 model_view_plot = function (m, type) {
     m.topic_total(undefined, function (totals) {
+        var topics = d3.range(m.n());
+        if (!VIS.show_hidden_topics) {
+            topics = topics.filter(function (t) { return !VIS.topic_hidden[t]; });
+        }
+
         view.model.plot({
             type: type,
-            words: m.topic_words(undefined, VIS.model_view.words),
-            scaled: m.topic_scaled(),
-            topic_totals: totals
+            topics: topics.map(function (t) {
+                return {
+                    t: t,
+                    words: m.topic_words(t, VIS.model_view.words),
+                    scaled: m.topic_scaled(t),
+                    total: totals[t],
+                    label: m.topic_label(t)
+                };
+            })
         });
     });
 
@@ -541,8 +580,7 @@ model_view_plot = function (m, type) {
 
 model_view_yearly = function (m, type) {
     var p = {
-        type: type,
-        words: m.topic_words(undefined, VIS.model_view.yearly.words)
+        type: type
     };
 
 
@@ -555,11 +593,21 @@ model_view_yearly = function (m, type) {
     view.calculating("#model_view_yearly", true);
     m.yearly_total(undefined, function (totals) {
         m.topic_yearly(undefined, function (yearly) {
-            view.calculating("#model_view_yearly", false);
             p.yearly_totals = totals;
-            p.yearly = yearly;
+            p.topics = yearly.map(function (wts, t) {
+                return { 
+                    t: t,
+                    wts: wts,
+                    words: m.topic_words(t, VIS.model_view.yearly.words),
+                    label: m.topic_label(t)
+                };
+            })
+                .filter(function (topic) {
+                    return VIS.show_hidden_topics || !VIS.topic_hidden[topic.t];
+                });
 
             view.model.yearly(p);
+            view.calculating("#model_view_yearly", false);
         });
     });
 
@@ -571,45 +619,51 @@ set_view = function (hash) {
 };
 
 view_refresh = function (m, v) {
-    var view_parsed, param, success;
+    var view_parsed, v_chosen, param, success, j;
 
     view_parsed = v.split("/");
+    if (view_parsed[view_parsed.length - 1] === "no_intro") {
+        view_parsed.length -= 1;
+    }
 
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
     }
 
-    if (view_parsed[1] === undefined || view_parsed[1] === "") {
+    // well-formed view must begin #/
+    if (view_parsed[0] !== "#") {
         view_parsed = VIS.default_view.split("/");
     }
 
-    param = view_parsed[2];
-    switch (view_parsed[1]) {
+    v_chosen = view_parsed[1];
+
+    param = view_parsed.slice(2, view_parsed.length);
+    param.unshift(m);
+    switch (v_chosen) {
         case "model":
-            success = model_view(m, param, view_parsed[3], view_parsed[4]);
+            success = model_view.apply(undefined, param);
             break;
         case "about":
-            success = about_view(m);
-            break;
-        case "settings":
-            success = settings_view(m);
+            success = about_view.apply(undefined, param);
             break;
         case "bib":
-            success = bib_view(m, param, view_parsed[3], view_parsed[4]);
+            success = bib_view.apply(undefined, param);
             break;
         case "topic":
-            param = +param - 1;
-            success = topic_view(m, param, view_parsed[3]);
+            success = topic_view.apply(undefined, param);
             break;
         case "word":
-            success = word_view(m, param);
+            success = word_view.apply(undefined, param);
             break;
         case "doc":
-            param = +param;
-            success = doc_view(m, param);
+            success = doc_view.apply(undefined, param);
             break;
         case "words":
-            success = words_view(m);
+            success = words_view.apply(undefined, param);
+            break;
+        case "settings":
+            settings_modal(m);
+            success = false;
             break;
         default:
             success = false;
@@ -617,7 +671,23 @@ view_refresh = function (m, v) {
     }
 
     if (success) {
-        VIS.cur_view = d3.select("div#" + view_parsed[1] + "_view");
+        // TODO get all view functions to report on the chosen view with this
+        // mechanism, then make less kludgy
+        if (typeof success === "string") {
+            param = [undefined].concat(success.split("/"));
+        }
+        VIS.cur_view = d3.select("div#" + v_chosen + "_view");
+
+        VIS.annotes.forEach(function (c) {
+            d3.selectAll(c).classed("hidden", true);
+        });
+        VIS.annotes = [".view_" + v_chosen];
+        for (j = 1; j < param.length; j += 1) {
+            VIS.annotes[j] = VIS.annotes[j - 1] + "_" + param[j];
+        }
+        VIS.annotes.forEach(function (c) {
+            d3.selectAll(c).classed("hidden", false);
+        });
     } else {
         if (VIS.cur_view === undefined) {
             // fall back on model_view
@@ -625,15 +695,36 @@ view_refresh = function (m, v) {
             VIS.cur_view = d3.select("div#model_view");
             model_view(m);
         } 
+        // TODO and register the correct annotations
     }
 
+    if (!view.updating()) {
+        view.scroll_top();
+    }
     view.updating(false);
+    // ensure hidden topics are shown/hidden (actually, with
+    // asynchronous rendering this isn't perfect)
+    hide_topics();
 
     VIS.cur_view.classed("hidden", false);
 
     // ensure highlighting of nav link
-    d3.selectAll("#nav_main li.active").classed("active",false);
-    d3.select("li#nav_" + view_parsed[1]).classed("active",true);
+    d3.selectAll("#nav_main > li.active").classed("active", false);
+    d3.select("li#nav_" + v_chosen).classed("active", true);
+
+    // hide subnavs
+    d3.selectAll("#nav_main li:not(.active) > .nav")
+        .classed("hidden", true);
+    d3.selectAll("#nav_main li.active > .nav")
+        .classed("hidden", false);
+};
+
+hide_topics = function (flg) {
+    var flag = (flg === undefined) ? !VIS.show_hidden_topics : flg;
+    d3.selectAll(".hidden_topic")
+        .classed("hidden", function () {
+            return flag;
+        });
 };
 
 
@@ -656,7 +747,31 @@ setup_vis = function (m) {
         view_refresh(m, window.location.hash, false);
     };
 
-    // TODO settings controls
+    // resizing handler
+    $(window).resize(function () {
+        if (VIS.resize_timer) {
+            window.clearTimeout(VIS.resize_timer);
+        }
+        VIS.resize_timer = window.setTimeout(function () {
+            view.updating(true);
+            view.dirty("topic/yearly", true);
+            view_refresh(m, window.location.hash);
+            VIS.resize_timer = undefined; // ha ha
+        }, VIS.resize_refresh_delay);
+    });
+
+
+    // attach the settings modal to the navbar link
+    d3.select("#nav_settings a").on("click", function () {
+        d3.event.preventDefault();
+        settings_modal(m);
+    });
+
+    $("#settings_modal").on("hide.bs.modal", function () {
+        view.updating(true);
+        view_refresh(m, window.location.hash);
+    });
+
 };
 
 load_data = function (target, callback) {
@@ -747,17 +862,19 @@ main = function () {
             if (typeof tw_s === 'string') {
                 m.set_tw(tw_s);
 
-                // Set up topic menu: remove loading message
-                d3.select("ul#topic_dropdown").selectAll("li").remove();
-                // Add menu items
-                d3.select("ul#topic_dropdown").selectAll("li")
-                    .data(d3.range(m.n()))
-                    .enter().append("li").append("a")
-                    .text(function (t) {
-                        return view.topic.label(t,
-                            m.topic_words(t, VIS.model_view.words));
-                    })
-                    .attr("href", topic_link);
+                // set up list of visible topics
+                VIS.topic_hidden = d3.range(m.n()).map(function (t) {
+                    return VIS.hidden_topics.indexOf(t + 1) !== -1;
+                });
+
+                view.topic.dropdown(d3.range(m.n()).map(function (t) {
+                    return {
+                        topic: t,
+                        words: m.topic_words(t, VIS.model_view.words),
+                        label: m.topic_label(t),
+                        hidden: VIS.topic_hidden[t]
+                    };
+                }));
 
                 view_refresh(m, window.location.hash);
             } else {

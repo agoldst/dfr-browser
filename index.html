@@ -23,7 +23,7 @@
       </button>
       <a class="navbar-brand model_title" href="#"></a>
     </div>
-    <div class="collapse navbar-collapse">
+    <div id="nav_toplevel" class="collapse navbar-collapse">
       <ul id="nav_main" class="nav navbar-nav">
         <li id="nav_model"><a href="#/model">Overview</a></li>
         <li id="nav_topic" class="dropdown">
@@ -31,19 +31,63 @@
             Topic<b class="caret"></b>
           </a>
           <ul id="topic_dropdown" class="dropdown-menu scroll-menu" role="menu" aria-labelledby="topic_dropdown_toggle">
-            <li class="disabled"><a href="#/topic">Loading topics...</a></li>
+            <li class="disabled loading_message"><a href="#/topic">Loading topics...</a></li>
           </ul>
         </li>
         <li id="nav_doc"><a href="#/doc">Document</a></li>
         <li id="nav_word"><a href="#/word">Word</a></li>
         <li id="nav_bib"><a href="#/bib">Bibliography</a></li>
         <li id="nav_words"><a href="#/words">Word index</a></li>
+        <li><a><img id="working_icon" alt="Working..."
+          class="img-responsive"
+          src="img/loading.gif" /></a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
         <li id="nav_settings"><a href="#/settings">Settings</a></li>
         <li id="nav_about"><a href="#/about">About</a></li>
       </ul>
-      <p id="loading_message" class="navbar-text help">Loading...</p>
-      <p id="calc_message" class="navbar-text help hidden">Calculating...</p>
     </div><!--/.navbar-collapse -->
+  </div>
+</div>
+
+<div class="modal fade" id="settings_modal" tabindex="-1"
+    role="dialog" aria-labelledby="settings_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="settings_title">Settings</h4>
+      </div>
+      <div class="modal-body">
+        <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
+        <form role="form">
+          <div>
+            <input id="reveal_hidden" type="checkbox">
+            <label>
+              Show hidden topics<br />
+            </label>
+          </div>
+          <div>
+            <input id="n_words_list" type="number">
+            <label>topic top words in lists</label>
+          </div>
+          <div>
+            <input id="n_words_topic" type="number">
+            <label>topic top words on the topic page</label>
+          </div>
+          <div>
+            <input id="n_topic_docs" type="number">
+            <label>top articles on the topic page</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default pull-right"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -147,32 +191,21 @@
     </div>
   </div>
 
-  <div id="settings_view" class="hidden">
-    <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
-    <form role="form">
-      <div>
-        <label>Number of top words to display in lists</label>
-        <input id="n_words_list" type="number">
-      </div>
-      <div>
-        <label>Number of top words to display on topic page</label>
-        <input id="n_words_topic" type="number">
-      </div>
-      <div>
-        <label>Number of top documents to display on topic page</label>
-        <input id="n_topic_docs" type="number">
-      </div>
-    </form>
-  </div>
-
   <div id="topic_view" class="hidden">
     <div id="topic_view_help" class="hidden">
       <p class="help">Select a topic from the "Topic" menu above.</p>
     </div>
     <div id="topic_view_main">
-      <div id="topic_view_header">
-        <h2 class="h-small" id="topic_header"></h2>
-        <p id="topic_remark"></p>
+      <div class="row">
+        <div id="topic_view_header" class="col-md-8">
+          <h2 id="topic_header"></h2>
+          <h3 id="topic_subheader" class="hidden">
+            <span class="topic_subtitle"></span>
+          </h3>
+        </div>
+        <div id="topic_view_annotation" class="col-md-4">
+          <!-- insert class="view_topic_nn" specific notes here -->
+        </div>
       </div>
       <div class="row">
         <div id="topic_words" class="col-md-3">
@@ -207,10 +240,10 @@
             <table class="table table-condensed hidden calc-done">
               <thead>
                 <tr>
-                  <th>Document</th>
-                  <th></th>
-                  <th class="th-right">%</th>
-                  <th class="th-right">Tokens</th>
+                  <th id="topic_docs_doc">Document</th>
+                  <th id="topic_docs_weight"></th>
+                  <th id="topic_docs_frac" class="th-right">%</th>
+                  <th id="topic_docs_tokens" class="th-right">Tokens</th>
                 </tr>
               </thead>
               <tbody>
@@ -231,14 +264,18 @@
     </div>
     <div id="doc_view_main" class="calc-done">
       <h2 class="h-small" id="doc_header"></h2>
-      <p id="doc_remark"></p>
+      <p id="doc_remark">
+        <span class="token_count"></span> tokens.
+        (<a class="jstor external">view on JSTOR</a>)
+      </p>
       <table class="table table-condensed" id="doc_topics">
         <thead>
           <tr>
-            <th class="wide">Topic</th>
-            <th></th>
-            <th class="th-right">%</th>
-            <th class="th-right">Tokens</th>
+            <th id="doc_view_topic">Topic</th>
+            <th id="doc_view_words">Top words</th>
+            <th id="doc_view_weight"></th>
+            <th id="doc_view_frac" class="th-right">%</th>
+            <th id="doc_view_tokens" class="th-right">Tokens</th>
           </tr>
         </thead>
         <tbody>
@@ -267,13 +304,15 @@
         </form>
       </div>
     </div>
-    <div id="word_view_main" class="hidden">
-      <h2 id="word_header">Prominent topics for <span class="word"></span></h2>
-      <div id="word_view_explainer">
-        <p class="help">Click row labels to go to the topic view; click a word to show the topic list for that word.</p>
-      </div>
-      <div class="alert alert-info none hidden">
-        <p>There are no topics in which this word is prominent.</p>
+    <div id="word_view_main" class="row">
+      <div class="col-md-12">
+        <h2 id="word_header">Prominent topics for <span class="word"></span></h2>
+        <div id="word_view_explainer">
+          <p class="help">Click row labels to go to the corresponding topic page; click a word to show the topic list for that word.</p>
+        </div>
+        <div class="alert alert-info none hidden">
+          <p>There are no topics in which this word is prominent.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -289,6 +328,9 @@
                 <option id="sort_year_alpha" value="year_alpha">
                   by year, then by author
                 </option> 
+                <option id="sort_issue_journal" value="issue_journal">
+                  by journal issue
+                </option> 
                 <option id="sort_year_journal" value="year_journal">
                   by year, then by journal contents
                 </option>
@@ -300,9 +342,6 @@
                 </option>
                 <option id="sort_alpha_alpha" value="alpha_alpha">
                   alphabetically by author
-                </option>
-                <option id="sort_issue_journal" value="issue_journal">
-                  by journal issue, then by journal contents
                 </option>
               </select>
             </div>

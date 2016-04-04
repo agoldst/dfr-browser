@@ -32,6 +32,7 @@ model = function (spec) {
         doc_topics,
         word_topics,
         year_topics,
+        topic_label,
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
@@ -166,6 +167,7 @@ model = function (spec) {
         return d.map(function (j) { return my.meta[j]; });
     };
     that.meta = meta;
+
 
     // validate dates
     valid_year = function (y) {
@@ -375,6 +377,18 @@ model = function (spec) {
         return utils.shorten(result, n);
     };
     that.year_topics = year_topics;
+
+    topic_label = function (t) {
+        var t_s = String(t + 1);
+        // expect names keyed to 1-indexed numbers (easier to edit)
+        if (my.info.topic_labels && my.info.topic_labels[t_s]) {
+            return my.info.topic_labels[t_s];
+        }
+
+        // default name: use a no-break space
+        return "Topic" + "\u00a0" + t_s;
+    };
+    that.topic_label = topic_label;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {
