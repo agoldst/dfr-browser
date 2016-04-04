@@ -129,7 +129,6 @@ var topic_link, // stringifiers
     doc_view,
     bib_view,
     about_view,
-    settings_view,
     model_view,
     model_view_list,
     model_view_plot,
@@ -138,6 +137,7 @@ var topic_link, // stringifiers
     view_refresh,
     hide_topics,
     view_loading,
+    settings_modal,
     setup_vis,          // initialization
     load_data,
     main;               // main program
@@ -448,7 +448,7 @@ about_view = function (m) {
     return true;
 };
 
-settings_view = function (m) {
+settings_modal = function (m) {
     var p = {
         max_words: m.n_top_words(),
         max_docs: m.n_docs()
@@ -459,8 +459,7 @@ settings_view = function (m) {
 
     view.settings(p);
 
-    view.loading(false);
-    d3.select("#settings_view").classed("hidden", false);
+    $("#settings_modal").modal();
     return true;
 };
 
@@ -647,9 +646,6 @@ view_refresh = function (m, v) {
         case "about":
             success = about_view.apply(undefined, param);
             break;
-        case "settings":
-            success = settings_view(m);
-            break;
         case "bib":
             success = bib_view.apply(undefined, param);
             break;
@@ -764,6 +760,12 @@ setup_vis = function (m) {
         }, VIS.resize_refresh_delay);
     });
 
+
+    // attach the settings modal to the navbar link
+    d3.select("#nav_settings a").on("click", function () {
+        d3.event.preventDefault();
+        settings_modal(m);
+    });
 
     $("#settings_modal").on("hide.bs.modal", function () {
         view.updating(true);

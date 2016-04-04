@@ -50,6 +50,47 @@
   </div>
 </div>
 
+<div class="modal fade" id="settings_modal" tabindex="-1"
+    role="dialog" aria-labelledby="settings_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="settings_title">Settings</h4>
+      </div>
+      <div class="modal-body">
+        <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
+        <form role="form">
+          <div>
+            <input id="reveal_hidden" type="checkbox">
+            <label>
+              Show hidden topics<br />
+            </label>
+          </div>
+          <div>
+            <input id="n_words_list" type="number">
+            <label>topic top words in lists</label>
+          </div>
+          <div>
+            <input id="n_words_topic" type="number">
+            <label>topic top words on the topic page</label>
+          </div>
+          <div>
+            <input id="n_topic_docs" type="number">
+            <label>top articles on the topic page</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default pull-right"
+            data-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="main_container" class="container">
 
   <div id="error" class="alert alert-danger alert-dismissable hidden">
@@ -148,24 +189,6 @@
     <div id="about_browser">
       <p>Model-browser interface by <a class="external" href="http://andrewgoldstone.com">Andrew Goldstone</a>; source available on <a class="external" href="http://agoldst.github.io/dfr-browser/">github</a>. Made using <a class="external" href="http://d3js.org">d3.js</a> and <a class="external" href="http://getbootstrap.com/">Bootstrap</a>. Zip support using <a class="external" href="http://stuk.github.io/jszip/">JSZip</a>.</p>
     </div>
-  </div>
-
-  <div id="settings_view" class="hidden">
-    <p class="help">Use these controls to adjust how much information is displayed on some of the browser pages.</p>
-    <form role="form">
-      <div>
-        <label>Number of top words to display in lists</label>
-        <input id="n_words_list" type="number">
-      </div>
-      <div>
-        <label>Number of top words to display on topic page</label>
-        <input id="n_words_topic" type="number">
-      </div>
-      <div>
-        <label>Number of top documents to display on topic page</label>
-        <input id="n_topic_docs" type="number">
-      </div>
-    </form>
   </div>
 
   <div id="topic_view" class="hidden">
