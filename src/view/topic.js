@@ -351,11 +351,14 @@ view.topic.yearly_barplot = function (param) {
     view.dirty("topic/yearly", false);
 };
 
+// Topic sorting rule: explicit labels over default "Topic NNN"
+// achieved by ugly kludge
 view.topic.sort_name = function (label) {
     var nn = label.match(/^Topic\s(\d+)$/);
     if (nn) {
-        return +(nn[1]);
+        return "zzz" + d3.format("05d")(+(nn[1]));
     }
+    
     return label.replace(/^(the|a|an) /i, "").toLowerCase();
 };
 
