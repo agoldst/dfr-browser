@@ -68,8 +68,6 @@ view.model.list = function (p) {
             }, "");
         });
 
-    // TODO filter out hidden topics here
-
     // sorting
 
     if (!VIS.last.model_list) {
@@ -80,8 +78,6 @@ view.model.list = function (p) {
     sort_dir = p.dir || ((sort_choice === VIS.last.model_list.sort) ?
         VIS.last.model_list.dir : "up") || "up";
 
-    // default sort: by label sort name
-    keys = p.labels.map(view.topic.sort_name);
     if (sort_choice === "words") {
         keys = p.words.map(function (ws) {
             return ws.reduce(function (acc, w) {
@@ -103,6 +99,10 @@ view.model.list = function (p) {
             });
             return result;
         });
+    } else {
+        // default sort: by label sort name,
+        // with names promoted over numbers
+        keys = p.labels.map(view.topic.sort_name);
     }
 
     if (sort_dir === "down") {
