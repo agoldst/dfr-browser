@@ -28,10 +28,7 @@ view.model.list = function (p) {
         trs.append("td").append("a").classed("topic_name", true)
             .attr("href", topic_link)
             .text(function (t) {
-                return view.topic.label({
-                    t: t,
-                    name: p.names[t]
-                }).title;
+                return p.labels[t];
             });
 
         divs = trs.append("td").append("div").classed("spark", true);
@@ -83,23 +80,18 @@ view.model.list = function (p) {
     sort_dir = p.dir || ((sort_choice === VIS.last.model_list.sort) ?
         VIS.last.model_list.dir : "up") || "up";
 
-    // default sort: by topic number
-    keys = d3.range(p.yearly.length);
+    // default sort: by label sort name
+    keys = p.labels.map(view.topic.sort_name);
     if (sort_choice === "words") {
-        keys = keys.map(function (t) {
-            if (p.names[t]) {
-                return p.names[t];
-            }
-            return p.words[t].reduce(function (acc, w) {
+        keys = p.words.map(function (ws) {
+            return ws.reduce(function (acc, w) {
                 return acc + " " + w.word;
             }, "");
         });
     } else if (sort_choice === "frac") {
         // default ordering should be largest frac to least,
         // so the sort keys are negative proportions
-        keys = keys.map(function (t) {
-            return -p.sums[t] / total;
-        });
+        keys = p.sums.map(function (x) { return -x / total; });
     } else if (sort_choice === "year") {
         keys = p.yearly.map(function (series) {
             var result, max_weight = 0;
