@@ -71,7 +71,7 @@ view.bib = function (p) {
             d3.event.preventDefault();
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
-        .text(function (o) { o.heading; });
+        .text(function (o) { return o.heading; });
 
     view.bib.render({
         ordering: ordering,
