@@ -379,13 +379,14 @@ model = function (spec) {
     that.year_topics = year_topics;
 
     topic_label = function (t) {
+        var t_s = String(t + 1);
         // expect names keyed to 1-indexed numbers (easier to edit)
-        if (my.info.names) {
-            return my.info.names[String(t + 1)];
+        if (my.info.topic_labels && my.info.topic_labels[t_s]) {
+            return my.info.topic_labels[t_s];
         }
 
         // default name: use a no-break space
-        return "Topic" + "\u00a0" + String(t + 1);
+        return "Topic" + "\u00a0" + t_s;
     };
     that.topic_label = topic_label;
 
