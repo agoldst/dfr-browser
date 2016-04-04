@@ -49,7 +49,7 @@ view.word = function (p) {
     });
 
     spec = { m: VIS.word_view.m };
-    spec.w = d3.select("#view").node().clientWidth || VIS.word_view.w;
+    spec.w = d3.select("#main_container").node().clientWidth || VIS.word_view.w;
     spec.w -= spec.m.left + spec.m.right;
     // adjust svg height so that scroll bar isn't too long
     // and svg isn't so short it clips things weirdly

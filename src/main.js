@@ -70,7 +70,7 @@ var VIS = {
         topic_label_leading: 14, // pt
         row_height: 80, // pt
         svg_rows: 10, // * row_height gives min. height for svg element
-        w: 1000, // px: minimum width
+        w: 700, // px: minimum width
         m: {
             left: 100,
             right: 40,
