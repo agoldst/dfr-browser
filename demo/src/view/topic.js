@@ -125,6 +125,8 @@ view.topic.docs = function (p) {
         .text(function (d) {
             return d.weight;
         });
+
+    view.dirty("topic/docs", false);
 };
 
 view.topic.yearly = function (p) {
