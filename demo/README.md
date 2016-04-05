@@ -1,84 +1,89 @@
 # A simple topic-model browser
 
-These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of JSTOR journal articles in a web browser, relying entirely on static html and javascript files. For more information, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser) and the [working demo](http://agoldst.github.io/dfr-browser/demo), a browser for a 64-topic model of the journal *PMLA*.
+These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of texts in a web browser, relying entirely on static html and javascript files. It is specialized for models of texts from JSTOR's [Data for Research](http://dfr.jstor.org) service, though it can be (and has been) adapted for models of other corpora. For more information, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser) and the [working demo](http://agoldst.github.io/dfr-browser/demo), a browser for a 64-topic model of the journal *PMLA*.
 
 This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). This project skews to my needs as a literary scholar and to my amateurishness as a programmer. No aspect of this code has been systematically tested. Sorry.
 
 The rest of this file explains how to set up the browser to use with your own topic models.
 
-## Generating the model
+## Generate the model
 
-### Gather source data: the model and metadata
+### Creating and saving topic models from R using MALLET
 
-You will need the following source data:
-
-1. A document-topic matrix, in CSV format, with an additional column of document id's that can be matched against JSTOR doc id's. Should also have a header row. 
-2. A file of the *n* top-weighted words in each topic, in CSV format, with a header row, with rows in the following format: *topic*,*alpha*,*word*,*weight*. (Yes, redundantly repeat the topic alpha for each row for a given topic.)
-3. Document metadata (in the format of the files called `citations.CSV` in DfR results).
-4. *Optional*: to display the "scaled" overview of topics, you will also need a CSV file, without a header, with two columns giving x and y coordinates for the topics, in topic order. 
-5. Information about the model itself, in JSON format, which you must write by hand. Here is a minimal example file:
-
-```json
-{
-  "title": "Model title",
-  "meta_info": "<p>About the model...<p>"
-}
-```
-
-### Create the dfr-browser datafiles
-
-One way to create doc-topic, weighted keys, and scaled topic coordinates is to use the `output_model()` model function in my [dfrtopics](http://github.com/agoldst/dfrtopics) experimental R package for topic-modeling DfR data. That package also provides a direct `export_browser_data()` function (see `help(export_browser_data,dfrtopics)` in R).
+The browser looks for the model data in a series of files. The most convenient way to generate these is via my companion R package, [dfrtopics](http://github.com/agoldst/dfrtopics), which supplies an `export_browser_data` function. You can use the package to create topic models and then export them directly---for details, see the [introduction to dfrtopics](http://agoldst.github.io/dfrtopics/introduction.html). The dfrtopics package provides many functions for adjusting the model inputs and parameters, but, very briefly, here is how one might go from a DfR download unzipped in the folder `dfr-data` to a topic model browser:
 
 ```r
-library(dfrtopics)
-m <- model_documents("citations.CSV","wordcounts","stoplist.txt",50)
-export_browser_data("data",
-      m$metadata,
-      m$wkf,
-      m$doc_topics,
-      topic_scaled_2d(m$trainer))
+library("dfrtopics")
+m <- model_dfr_documents(
+    citations_files="dfr-data/citations.tsv",
+    wordcounts_dirs="dfr-data/wordcounts",
+    n_topics=40
+)
+# optional but recommended: save model outputs
+write_mallet_model(m, output_dir="model")
+# save data files and download dfr-browser source
+export_browser_data(m, out_dir="browser", download_dfb=TRUE)
 ```
 
-Or, saving model outputs to files:
+This will create a 40-topic model of all words in all the documents in `dfr-data`, and then create a `browser` folder holding all files necessary to browse the topic model (with `download_dfb=TRUE` a copy of the dfr-browser source is downloaded as well). 
+
+If you have created a topic model with command-line mallet, then dfrtopics can still load and export the necessary files:
 
 ```r
-library(dfrtopics)
-m <- model_documents("citations.CSV","wordcounts","stoplist.txt",50)
-output_model(m, "data")
-# ...in a later session...
-export_browser_data("data",
-    "citations.CSV","keys.csv","doc_topics.csv","topic_scaled.csv")
+library("dfrtopics")
+m <- load_from_mallet_state(
+    mallet_state_file="mallet_state.gz",
+    instances_file="docs.mallet",
+    metadata_file="dfr-data/citations.tsv")
+export_browser_data(m, out_dir="browser", download_dfb=TRUE)
 ```
 
-If you do not wish to install dfrtopics, you can convert these source data files into the formats dfr-browser needs with the provided [prepare_data.R](https://github.com/agoldst/dfr-browser/blob/master/prepare_data.R) script. You can invoke the script within R as follows:
+In either case, when the export is done, change to the `browser` directory, run `bin/server` in the shell, then visit `localhost://8888` in the web browser. 
 
-```r
-source("prepare_data.R")
-dfr_dirs <- c("journal1data","journal2data") # directories containing citations.CSV files
-doc_topics <- "my_model/doc_topics.csv" # doc topics filename
-keys <- "my_model/keys.csv" # weighted keys frame filename
-prepare_data(dfr_dirs,"data",doc_topics,keys)
+### Browser data file specifications
+
+In case you wish to edit the exported files or create them another way, here are the data files expected by this browser:
+
+- browser info (`data/info.json`): a text file giving a JSON object with `title`, `meta_info`, and optionally `VIS` and `topic_labels` members. `dfrtopics::export_browser_data` will create a stub `info.json` file for you to edit. `meta_info` is displayed as part of the "About" page. `VIS` controls many visualization parameters, and `topic_labels` gives hand labels for topics; see below.
+
+- word weights for the *n* most probable words in each topic (`data/tw.json`): a text file giving a JSON object with `alpha`, an array of estimated values for the hyperparameter alpha for each topic, and `tw`, an array of `{ words, weights }` objects, one for each topic. `words` and `weights` are in turn arrays, in order, of the most prominent words in the topic and their weights respectively. The value of *n* is up to you.
+
+- document metadata (`data/meta.csv.zip`): a headerless zipped CSV of document metadata, with the following columns, quoted where required by [RFC 4180](http://tools.ietf.org/html/rfc4180): DOI, title, author(s), journal title, journal issue, publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)), page range. Additional columns after these are ignored.
+
+- the topic weights for each document (`data/dt.json.zip`): a zipped text file giving a JSON object specifying the document-topic matrix in [sparse compressed-column format](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_.28CSC_or_CCS.29) in terms of three arrays `i`, `p`, and `x`. specified as follows. The documents `d` with non-zero weights for topic `t` are given by `i[p[t]], i[p[t] + 1], ... i[p[t + 1] - 1]`, and the corresponding unnormalized topic weights for those documents are given by `x[p[t]], x[p[t] + 1], ..., x[p[t + 1] - 1]`.
+
+- two-dimensional coordinates for each topic (`data/topic_scaled.csv`): a headerless two-column CSV. Row *t* gives the position of topic *t* in some space. dfrtopics generates this with its `topic_scaled_2d` function (q.v.). This file is optional; if it is available, the browser can draw the "scaled" overview plot, but if not, the rest of the browser will still work.
+
+Except for `data/info.json`, which is hard-coded, all of the filenames are configurable. They are properties of the `VIS.files` object and can be modified by adding a `files` property to `VIS` in [info.json](data/info.json). The property names for the last four listed above are `dt`, `tw`, `meta`, and `topic_scaled`. If a given filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. It is normally not worth compressing `tw.json` or `topic_scaled.csv`.
+
+### Preparing data files entirely on the command line
+
+If you prefer not to use dfrtopics, the supplied [prepare-data](bin/prepare-data) python script can produce the necessary files from model data in multiple formats---except for the scaled topic coordinates. The script can also check your browser data folder to verify that you have what you need: `bin/prepare-data check`. Use `bin/prepare-data` without arguments for usage information.
+
+Here is an example:
+
+```Bash
+mallet train-topics ... \   # ...: input parameters
+    --output-state mallet_state.gz --output doc-topics dt.csv
+# generate tw.json and dt.json.zip
+bin/prepare-data convert-state mallet_state.gz \
+    --tw data/tw.json --dt data/dt.json.zip
+# generate meta.csv.zip from dfr-data/citations.tsv
+# dt.csv is needed only for doc id's
+cut -f 2 dt.csv > ids.txt
+bin/prepare-data convert-citations dfr-data/citations.tsv --ids ids.txt \
+    -o data/meta.csv.zip
+# generate info.json
+bin/prepare-data info-stub -o data/info.json
+# edit info.json by hand if needed
+vi data/info.json
 ```
 
-This will generate the remaining needed files in their default locations, under the directory `data`. Note in particular that it looks for a `citations.CSV` file in each of the `dfr_dirs` and produces a single merged metadata file for the browser (`meta.csv.zip`; see "More detail" immediately below). This is for cases in which you have downloaded your DfR data in several chunks.
+### Sample datafiles
 
-Alternatively, you can invoke the R script through the provided [Makefile](https://github.com/agoldst/dfr-browser/blob/master/Makefile) using `make prepare`. Adjust the file paths passed to the script using the Makefile variables `out_dir` and `meta_dirs`. 
+The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*PMLA*, 64 topics) reside in a directory on the [gh-pages branch of this repository](https://github.com/agoldst/dfr-browser/tree/gh-pages/demo/data).
 
-#### More detail on the expected files and their formats
-
-The browser asks for data files using the names stored in the properties of `VIS.files` object. Modify the filenames by adding a `files` property to `VIS` in [info.json](https://github.com/agoldst/dfr-browser/blob/master/data/info.json) if you wish to target filenames other than the default. If a given filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. 
-
-- `data/info.json`: a JSON object with `title`, `meta_info`, and optionally `VIS` members. This file name can't be changed by changing `info.json`.
-- `VIS.files.dt` (*default*: `data/dt.json.zip`): the document-topic matrix, but in sparse compressed-column format (from R's [`CsparseMatrix` class](http://stat.ethz.ch/R-manual/R-devel/library/Matrix/html/CsparseMatrix-class.html). The object properties are three arrays : `i`, `p`, and `x`.
-- `VIS.files.tw` (*default*: `data/tw.json`): a JSON object with `alpha`, a vector of alpha values for each topic, and `tw`, a vector of `{ words, weights }` objects (each of those fields is a vector, in order, of the most prominent words in each topic and their weights).
-- `VIS.files.meta` (*default*: `data/meta.csv.zip`): headerless CSV of document metadata, with rows in the same order as the document-topic matrix, and with fields identical to those in DfR `citations.CSV` files, *excluding* the following: `doi, publisher, reviewed-work`.
-- `VIS.files.topic_scaled` (*default*: `data/topic_scaled.csv`): x and y coordinates for the topics in some space. This is optional; if it is available, the browser can draw the "scaled" overview plot.
-
-#### Sample datafiles
-
-The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*PMLA*, 64 topics) reside in a directory on the [gh-pages branch of this repository](https://github.com/agoldst/dfr-browser/tree/gh-pages/demo/data). They are generated, via the process explained above, from the [demonstration model for my dfr-analysis scripts](https://github.com/agoldst/dfr-analysis/tree/master/demo). 
-
-### Tune the visualization parameters
+## Tune the visualization parameters
 
 In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [src/main.js](https://github.com/agoldst/dfr-browser/blob/master/src/main.js) for the fields of the `VIS` object and their default values. Many properties are nested. Some possibilities of note:
 
@@ -95,24 +100,33 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
-### Launch the browser
+If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The one-based topic numbers in this array will, by default, not be shown. (They can be revealed using the Settings dialog box.)
+
+### Adding topic labels
+
+In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a top-level `topic_labels` property (not a property of `VIS`) with the following slightly eccentric form:
+
+```json
+"topic_labels": {
+    "1": "label for topic 1",
+    "4": "a very good topic"
+}
+```
+
+One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number.
+
+## Launch the browser
 
 The necessary files are `index.html`, the data files (looked for in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
 
-To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. I use the python3 `http.server` module, which I have wrapped in a one-line script, so that you can simply type:
+To preview locally, you will need a local web server, so that the javascript can ask for the data files from your file system. A widely available option is Python's `SimpleHTTPServer` module, which I have wrapped in a one-line script, so that you can simply type:
 
 ````
 cd dfr-browser
 bin/server
 ````
 
-This makes the browser available at `http://localhost:8888`. If you don't have python 3, you could use python 2:
-
-````
-python -m SimpleHTTPServer 8888
-````
-
-## Adapting to other kinds of documents
+## Adapting this project to other kinds of documents
 
 The specialization to JSTOR articles is limited to the bibliography sort, the external document links, and the expectations about the metadata format.  Adapting this code to other kinds of documents would require altering only these aspects of the browser. Most of this behavior is fairly-well encapsulated in the view object `view` and (especially) the model object returned by `model()`.
 
@@ -120,15 +134,16 @@ The data-prep is tuned to MALLET and my MALLET scripts, but again altering the s
 
 ## The "build" process
 
-If you are modifying the code, note that the `js/*.js` files for the server are minified versions. The source code is found in `src/`. To make the minified scripts, run `make uglify`. This requires [uglifyjs](https://github.com/mishoo/UglifyJS2/). 
+If you are modifying the code, note that the `js/*.js` files for the server are minified versions. The source code is found in the [src](src) directory. To make the minified scripts, run `make uglify`. This requires [uglifyjs](https://github.com/mishoo/UglifyJS2/). 
 
 ## Performance
 
 The ranking and sorting calculations are done on the fly, but nothing else is, and the page holds all the data in memory. I haven't done much to optimize it. It's serviceable but not as fast as it could be. The most demanding calculations are done in a separate thread using an HTML5 [Web Worker](http://dev.w3.org/html5/workers/). Other optimizations would be possible, for example using ArrayBuffers for the big matrices rather than ordinary arrays.
 
-For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model on the server, presumably in a real database. I haven't implemented this, but because access to the model is abstracted by the methods of the model object (see [src/model.js](https://github.com/agoldst/dfr-browser/blob/master/src/model.js)), doing so would not be intractable.
+For serving from a web server, a big model means a lot of data has to be sent to the client; keeping the doc-topic matrix sparse saves some room, as does zipping up the datafiles, but there are limits to this. Past a certain limit, it would be necessary to hold the model on the server, presumably in a real database. I haven't implemented this, but because access to the model is abstracted by the methods of the model object (see [src/model.js](src/model.js)), doing so would not be intractable.
 
 ## Libraries
 
 This browser uses the code of the following open-source projects by others, under the `fonts`, `css`, and `lib` directories: [d3](http://d3js.org) by Mike Bostock; [bootstrap](http://getbootstrap.com/) by Twitter, Inc.; [JQuery](http://jquery.com) by the JQuery Foundation; and [JSZip](http://stuk.github.io/jszip/) by Stuart Knightley.
 
+This browser also makes use of code from Andrew Goldstone, Susana Galán, C. Laura Lovin, Andrew Mazzaschi, and Lindsey Whitmore, "An Interactive Topic Model of Signs," in [Signs at 40](http://signsat40.signsjournal.org/topic-model) (source at <http://github.com/signs40th/topic-model>).

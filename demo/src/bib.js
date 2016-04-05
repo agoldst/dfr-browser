@@ -72,13 +72,7 @@ bib.sort = function (m, major, minor, asc_maj, asc_min) {
         };
     } else if (major === "issue") {
         major_key = function (i) {
-            var doc = m.meta(i),
-                k;
-            k = doc.journaltitle;
-            k += "_" + d3.format("05d")(doc.volume);
-            k += "_" + d3.format("05d")((doc.issue === "") ? 0
-                    : doc.issue.replace(/\/.*$/, ""));
-            return k;
+            return bib.encode_issue(m.meta(i));
         };
     } else { // expected: major === "alpha"
         // default to alphabetical by author
@@ -200,74 +194,56 @@ bib.sort.dir = function (p) {
     return result;
 };
 
-
-bib.author = function (doc) {
-    var lead,
-        lead_trail,
-        result;
-
-    if (doc.authors.length > 0) {
-        lead = doc.authors[0].replace(/,/g, "").split(" ");
-        // check for Jr., Sr., 2nd, etc.
-        // Can mess up if last name is actually the letter I, X, or V.
-        lead_trail = lead.pop();
-        if (lead.length >= 2
-                && (lead_trail.search(/^(\d|Jr|Sr|[IXV]+$)/) !== -1)) {
-            result = lead.pop().replace(/_$/, "");
-            lead_trail = ", " + lead_trail.replace(/\W*$/, "");
-        } else {
-            result = lead_trail;
-            lead_trail = "";
-        }
-        result += ", " + lead.join(" ") + lead_trail;
-        if (doc.authors.length > 1) {
-            // "et al" is better for real bibliography, but it's
-            // actually worth being able to search all the multiple authors
-            /*if (doc.authors.length > 3) {
-                result += ", " + doc.authors.slice(1, 3).join(", ");
-                result += "et al.";
-            } else {*/
-            if (doc.authors.length > 2) {
-                result += ", ";
-                result += doc.authors
-                    .slice(1, doc.authors.length - 1)
-                    .join(", ");
-            }
-            result += ", and " + doc.authors[doc.authors.length - 1];
-        }
-    } else {
-        result = "[Anon]";
-    }
-
-    return result;
-};
-
 bib.citation = function (doc) {
-    var result = bib.doc_author(doc);
+    var s = bib.doc_author(doc),
+        title, mo;
 
     // don't duplicate trailing period on middle initial etc.
-    result = result.replace(/\.?$/, ". ");
-    result += '"' + doc.title + '."';
-    result += " <em>" + doc.journaltitle + "</em> ";
-    result += doc.volume;
+    s = s.replace(/\.?$/, ". ");
+    // double quotation marks in title to single
+    // based on https://gist.github.com/drdrang/705071
+    title = doc.title.replace(/“/g,'‘')
+        .replace(/”/g,'’')
+        .replace(/(^|[-\u2014/(\[{\u2018\s])"/g, "$1‘") // opening "
+        .replace(/"/g,'’') // which leaves closing "
+        .replace(/'/g,'’')
+        .replace(/ <br><\/br>/g,'. ');
+    s += '“' + title + '.”';
+    s = s.replace(/’\./g,".’"); // fix up ’.” situations
+
+    s += " <em>" + doc.journaltitle + "</em> ";
+    s += doc.volume;
     if (doc.issue) {
-        result += ", no. " + doc.issue;
+        s += ", no. " + doc.issue;
     }
 
-    result += " (" + VIS.cite_date_format(doc.date) + "): ";
-    result += doc.pagerange + ".";
+    s += " (";
+    mo = doc.date.getUTCMonth(); // 0 to 11
+    if (mo === 0 || mo === 11) {
+        s += "Winter ";
+    } else if (mo === 2 || mo === 3) {
+        s += "Spring ";
+    } else if (mo === 5 || mo === 6) {
+        s += "Summer ";
+    } else if (mo === 8 || mo === 9) {
+        s += "Autumn ";
+    }
 
-    result = result.replace(/\.\./g, ".");
-    result = result.replace(/_/g, ",");
-    result = result.replace(/\t/g, "");
+    s += doc.date.getUTCFullYear() + "): ";
 
-    return result;
+    s += doc.pagerange + ".";
+
+    s = s.replace(/\.\./g, ".");
+    s = s.replace(/_/g, ",");
+    s = s.replace(/\t/g, "");
+
+    return s;
 };
 
 bib.parse = function (d) {
 
     // no header, but this is the column order:
-    // 0  1     2      3            4      5     6       7      
+    // 0  1     2      3            4      5     6       7
     // id,title,author,journaltitle,volume,issue,pubdate,pagerange
     var a_str = d[2].trim(), // author
         date = new Date(d[6].trim()); // pubdate (UTC)
@@ -284,4 +260,24 @@ bib.parse = function (d) {
             .replace(/^p?p\. /, "")
             .replace(/-/g, "–")
     };
+};
+
+bib.encode_issue = function (doc) {
+    var k = doc.journaltitle;
+    k += "_" + d3.format("05d")(doc.volume);
+    if (doc.issue) {
+        k += "_" + doc.issue;
+    }
+    return k;
+};
+
+bib.decode_issue = function (code) {
+    var splits, result;
+
+    splits = code.split("_");
+    result = splits[0] + " " + String(+splits[1]);
+    if (splits.length > 2) {
+        result += "." + splits[2];
+    }
+    return result;
 };
