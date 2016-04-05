@@ -424,16 +424,23 @@ model = function (spec) {
 
     // load meta from a string of CSV lines
     set_meta = function (meta) {
+        var doc_years;
+
         my.meta = meta;
+
+        // calculate and store document years
+        doc_years = meta.doc().map(function (d) {
+            return d.date.getUTCFullYear();
+        });
 
         my.worker.callback("set_doc_years", function (result) {
             my.ready.doc_years = result;
         });
         my.worker.postMessage({
             what: "set_doc_years",
-            doc_years: meta.doc_years()
+            doc_years: doc_years
         });
-        my.years = d3.set(meta.doc_years());
+        my.years = d3.set(doc_years);
     };
     that.set_meta = set_meta;
 

@@ -1,6 +1,17 @@
 /*global d3 */
 "use strict";
 
+// ---- metadata specification ----
+//
+// This object stores metadata. A metadata object should do the following:
+//
+// from_string: load data from text (called by browser().load())
+// doc(i): access metadata for document or documents i
+// n_docs: say how many documents there are
+//
+// metadata() is a generic and not used here except as a template for
+// metadata_dfr(), which understands DfR metadata.
+
 var metadata,
     metadata_dfr;
 
@@ -47,13 +58,12 @@ metadata = function (spec) {
 metadata_dfr = function (spec) {
     var my = spec || { },
         that,
-        from_string,
-        doc_years;
+        from_string;
 
     // constructor: build from parent
     that = metadata(my);
 
-    from_string = function (meta_s) { 
+    from_string = function (meta_s) {
         var s;
         if (typeof meta_s !== 'string') {
             return;
@@ -62,11 +72,6 @@ metadata_dfr = function (spec) {
         // strip blank "rows" at start or end
         s = meta_s.replace(/^\n*/, "")
             .replace(/\n*$/, "\n");
-
-        // -infinity: nothing pre-Gutenberg in JSTOR
-        my.start_date = new Date(1000, 0, 1);
-        my.end_date = new Date(); // today
-        my.doc_years = [ ];
 
         // assume that there is no column header
         my.docs = d3.csv.parseRows(s, function (d, j) {
@@ -89,17 +94,11 @@ metadata_dfr = function (spec) {
                     .replace(/-/g, "–")
             };
             // calculate years from dates just once and store
-            my.doc_years.push(result.date.getUTCFullYear());
 
             return result;
         });
     };
     that.from_string = from_string;
-
-    doc_years = function () {
-        return my.doc_years;
-    };
-    that.doc_years = doc_years;
 
     return that;
 };
