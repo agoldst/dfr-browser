@@ -44,7 +44,7 @@ In either case, when the export is done, change to the `browser` directory, run 
 
 In case you wish to edit the exported files or create them another way, here are the data files expected by this browser:
 
-- browser info (`data/info.json`): a text file giving a JSON object with `title`, `meta_info`, and optionally `VIS` members. (The last is used to change various settings of the visualization.) `dfrtopics::export_browser_data` will create a stub `info.json` file for you to edit.
+- browser info (`data/info.json`): a text file giving a JSON object with `title`, `meta_info`, and optionally `VIS` and `topic_labels` members. `dfrtopics::export_browser_data` will create a stub `info.json` file for you to edit. `meta_info` is displayed as part of the "About" page. `VIS` controls many visualization parameters, and `topic_labels` gives hand labels for topics; see below.
 
 - word weights for the *n* most probable words in each topic (`data/tw.json`): a text file giving a JSON object with `alpha`, an array of estimated values for the hyperparameter alpha for each topic, and `tw`, an array of `{ words, weights }` objects, one for each topic. `words` and `weights` are in turn arrays, in order, of the most prominent words in the topic and their weights respectively. The value of *n* is up to you.
 
@@ -100,11 +100,11 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
-If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The one-based topic numbers in this array will, by default, not be shown. (They can be revealed using Settings.)
+If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The one-based topic numbers in this array will, by default, not be shown. (They can be revealed using the Settings dialog box.)
 
-## Set topic labels
+### Adding topic labels
 
-In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a top-level `topic_labels` object with the following slightly eccentric form:
+In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a top-level `topic_labels` property (not a property of `VIS`) with the following slightly eccentric form:
 
 ```json
 "topic_labels": {
