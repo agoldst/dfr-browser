@@ -240,28 +240,6 @@ bib.citation = function (doc) {
     return s;
 };
 
-bib.parse = function (d) {
-
-    // no header, but this is the column order:
-    // 0  1     2      3            4      5     6       7
-    // id,title,author,journaltitle,volume,issue,pubdate,pagerange
-    var a_str = d[2].trim(), // author
-        date = new Date(d[6].trim()); // pubdate (UTC)
-
-    return {
-        doi: d[0].trim(), // id
-        title: d[1].trim(),
-        authors: a_str === "" ? [] : a_str.split(VIS.bib.author_delimiter),
-        journaltitle: d[3].trim(),
-        volume: d[4].trim(),
-        issue: d[5].trim(),
-        date: date, // pubdate
-        pagerange: d[7].trim()
-            .replace(/^p?p\. /, "")
-            .replace(/-/g, "–")
-    };
-};
-
 bib.encode_issue = function (doc) {
     var k = doc.journaltitle;
     k += "_" + d3.format("05d")(doc.volume);

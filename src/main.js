@@ -1,4 +1,4 @@
-/*global d3, $, JSZip, model, utils, view, window, bib, document */
+/*global d3, $, JSZip, model, utils, view, window, bib, document, dfr_metadata */
 "use strict";
 
 /* declaration of global object (initialized in setup_vis) */
@@ -838,8 +838,12 @@ main = function () {
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(VIS.files.meta, function (error, meta_s) {
+            var meta = dfr_metadata({
+                author_delimiter: VIS.bib.author_delimiter
+            });
             if (typeof meta_s === 'string') {
-                m.set_meta(meta_s);
+                meta.from_string(meta_s);
+                m.set_meta(meta);
                 view_refresh(m, window.location.hash);
             } else {
                 view.error("Unable to load metadata from " + VIS.files.meta);

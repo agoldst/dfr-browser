@@ -64,7 +64,7 @@ model = function (spec) {
         if (my.n_docs !== undefined) {
             result = my.n_docs;
         } else if (my.meta) {
-            result = my.meta.length;
+            result = my.meta.n_docs();
         } 
 
         return result; // undefined if my.meta is missing
@@ -154,17 +154,7 @@ model = function (spec) {
             return undefined;
         }
 
-        // meta(d) for one row of doc metadata or meta() for all of them
-        if (typeof d === 'number') {
-            return my.meta[d];
-        }
-        
-        if (d === undefined) {
-            return my.meta;
-        }
-
-        // otherwise, assume d is an array of indices
-        return d.map(function (j) { return my.meta[j]; });
+        return my.meta.doc(d);
     };
     that.meta = meta;
 
@@ -433,39 +423,17 @@ model = function (spec) {
     that.set_dt = set_dt;
 
     // load meta from a string of CSV lines
-    set_meta = function (meta_s) {
-        var s, doc_years = [ ];
-        if (typeof meta_s !== 'string') {
-            return;
-        }
-
-        // strip blank "rows" at start or end
-        s = meta_s.replace(/^\n*/, "")
-            .replace(/\n*$/, "\n");
-
-        // -infinity: nothing pre-Gutenberg in JSTOR
-        my.start_date = new Date(1000, 0, 1);
-        my.end_date = new Date(); // today
-
-        my.meta = d3.csv.parseRows(s, function (d, j) {
-            var doc = bib.parse(d);
-
-            doc_years.push(doc.date.getUTCFullYear()); // store to pass into worker
-            // set min and max date range
-            my.start_date = doc.date < my.start_date ? doc.date : my.start_date;
-            my.end_date = doc.date > my.end_date ? doc.date : my.end_date;
-
-            return doc;
-        });
+    set_meta = function (meta) {
+        my.meta = meta;
 
         my.worker.callback("set_doc_years", function (result) {
             my.ready.doc_years = result;
         });
         my.worker.postMessage({
             what: "set_doc_years",
-            doc_years: doc_years
+            doc_years: meta.doc_years()
         });
-        my.years = d3.set(doc_years);
+        my.years = d3.set(meta.doc_years());
     };
     that.set_meta = set_meta;
 
