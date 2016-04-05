@@ -1,7 +1,10 @@
 /*global d3 */
 "use strict";
 
-var metadata = function (spec) {
+var metadata,
+    metadata_dfr;
+
+metadata = function (spec) {
     var my = spec || { },
         that = { },
         from_string,
@@ -41,7 +44,7 @@ var metadata = function (spec) {
     return that;
 };
 
-var dfr_metadata = function (spec) {
+metadata_dfr = function (spec) {
     var my = spec || { },
         that,
         from_string,
@@ -67,31 +70,28 @@ var dfr_metadata = function (spec) {
 
         // assume that there is no column header
         my.docs = d3.csv.parseRows(s, function (d, j) {
-            var a_str = d[2].trim(), // author
-            date = new Date(d[6].trim()), // pubdate (UTC)
-            doc;
+            var result;
 
             // assume these columns:
             // 0  1     2      3            4      5     6       7
             // id,title,author,journaltitle,volume,issue,pubdate,pagerange
 
-            doc = {
+            result = {
                 doi: d[0].trim(), // id
                 title: d[1].trim(),
-                authors: a_str === "" ? []
-                    : a_str.split(spec.author_delimiter),
+                authors: d[2].trim(),
                 journaltitle: d[3].trim(),
                 volume: d[4].trim(),
                 issue: d[5].trim(),
-                date: date, // pubdate
+                date: new Date(d[6].trim()), // pubdate (UTC)
                 pagerange: d[7].trim()
                     .replace(/^p?p\. /, "")
                     .replace(/-/g, "–")
             };
             // calculate years from dates just once and store
-            my.doc_years.push(doc.date.getUTCFullYear());
+            my.doc_years.push(result.date.getUTCFullYear());
 
-            return doc;
+            return result;
         });
     };
     that.from_string = from_string;

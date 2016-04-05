@@ -1,14 +1,20 @@
 /*global VIS, d3 */
 "use strict";
-var bib = { };
+var bib = {
+    auth_delim: "\t"  // 2014 JSTOR metadata format uses ", " instead
+};
 
 bib.doc_author = function (doc) {
     var lead,
         lead_trail,
-        result;
+        result,
+        authors = doc.authors.split(bib.auth_delim)
+            // ensure an empty or white-space author is not counted
+            .filter(function (a) { return /\S/.test(a); }),
+        n_auth = authors.length;
 
-    if (doc.authors.length > 0) {
-        lead = doc.authors[0].replace(/,/g, "").split(" ");
+    if (n_auth > 0) {
+        lead = authors[0].replace(/,/g, "").split(" ");
         // check for Jr., Sr., 2nd, etc.
         // Can mess up if last name is actually the letter I, X, or V.
         lead_trail = lead.pop();
@@ -21,20 +27,19 @@ bib.doc_author = function (doc) {
             lead_trail = "";
         }
         result += ", " + lead.join(" ") + lead_trail;
-        if (doc.authors.length > 1) {
+        if (n_auth > 1) {
             // "et al" is better for real bibliography, but it's
             // actually worth being able to search all the multiple authors
-            /*if (doc.authors.length > 3) {
-                result += ", " + doc.authors.slice(1, 3).join(", ");
+            /*if (n_auth > 3) {
+                result += ", " + authors.slice(1, 3).join(", ");
                 result += "et al.";
             } else {*/
-            if (doc.authors.length > 2) {
+            if (n_auth > 2) {
                 result += ", ";
-                result += doc.authors
-                    .slice(1, doc.authors.length - 1)
+                result += authors.slice(1, n_auth - 1)
                     .join(", ");
             }
-            result += ", and " + doc.authors[doc.authors.length - 1];
+            result += ", and " + authors[n_auth - 1];
         }
     } else {
         result = "[Anon]";
@@ -259,3 +264,4 @@ bib.decode_issue = function (code) {
     }
     return result;
 };
+
