@@ -622,9 +622,6 @@ view_refresh = function (m, v) {
     var view_parsed, v_chosen, param, success, j;
 
     view_parsed = v.split("/");
-    if (view_parsed[view_parsed.length - 1] === "no_intro") {
-        view_parsed.length -= 1;
-    }
 
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
