@@ -72,8 +72,7 @@ view.bib = function (p) {
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return (p.major === "issue") ? bib.decode_issue(o.heading)
-                : o.heading;
+            return o.heading_display || o.heading;
         });
 
 
@@ -107,8 +106,7 @@ view.bib.render = function (p) {
 
     sec_enter.append("h2")
         .text(function (o) {
-            return (p.major === "issue") ? bib.decode_issue(o.heading)
-                : o.heading;
+            return o.heading_display || o.heading;
         });
     sec_enter.append("ul");
 

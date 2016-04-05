@@ -147,6 +147,12 @@ bib.sort = function (m, major, minor, asc_maj, asc_min) {
         last = partition[i];
     }
 
+    // decoded equivalent of major keys: only necessary for issue sort
+    if (major === "issue") {
+        result.forEach(function (o) {
+            o.heading_display = bib.decode_issue(o.heading);
+        });
+    }
 
     return result;
 };
