@@ -149,7 +149,7 @@ view.model.yearly = function (p) {
     // draw the streams: ensure transition for raw/frac swap
     paths.transition()
         .duration(2000)
-        .attr("d", areas)
+        .attr("d", areas);
 
     // the stream labels
     labels = svg.selectAll("text.layer_label")

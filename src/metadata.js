@@ -10,12 +10,9 @@
 // n_docs: say how many documents there are
 //
 // metadata() is a generic and not used here except as a template for
-// metadata_dfr(), which understands DfR metadata.
+// metadata.dfr(), which understands DfR metadata.
 
-var metadata,
-    metadata_dfr;
-
-metadata = function (spec) {
+var metadata = function (spec) {
     var my = spec || { },
         that = { },
         from_string,
@@ -55,7 +52,7 @@ metadata = function (spec) {
     return that;
 };
 
-metadata_dfr = function (spec) {
+metadata.dfr = function (spec) {
     var my = spec || { },
         that,
         from_string;

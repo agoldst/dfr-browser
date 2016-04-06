@@ -1,5 +1,6 @@
-/*global view, bib, VIS, set_view, d3, $, window */
+/*global view, VIS, set_view, d3, $, window */
 "use strict";
+
 
 view.bib = function (p) {
     var ordering = p.ordering.map(function (o) {
@@ -59,7 +60,8 @@ view.bib = function (p) {
         .append("a");
     lis.exit().remove();
 
-    VIS.bib.keys.major.forEach(function (k) {
+    // initialized in view.bib.setup
+    view.bib.major_keys.forEach(function (k) {
         lis.classed(k, p.major === k);
     });
 
@@ -143,3 +145,20 @@ view.bib.id = function (heading) {
     return "bib_" + String(heading).replace(/\W/g,"_");
 };
 
+// set up bibliography-sort dropdown menu
+view.bib.dropdown = function (sorting) {
+    var opts = d3.select("select#select_bib_sort")
+        .selectAll("option")
+        .data(sorting);
+
+    opts.enter().append("option");
+    opts.exit().remove();
+
+    opts.attr("id", function (s) { return "sort_" + s[0]; })
+        .property("value", function (s) { return s[0]; })
+        .text(function (s) { return s[1]; });
+
+    view.bib.major_keys = d3.set(sorting.map(function (s) {
+        return s[0].split("_")[0];
+    }));
+};

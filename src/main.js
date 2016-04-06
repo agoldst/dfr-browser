@@ -1,7 +1,7 @@
-/*global d3, $, JSZip, model, utils, view, window, bib, document */
+/*global d3, $, JSZip, model, utils, view, bib, metadata, window, document */
 "use strict";
 
-/* declaration of global object (initialized in setup_vis) */
+// declaration of global object (modified by load())
 var VIS = {
     ready: { }, // which viz already generated?
     last: { // which subviews last shown?
@@ -79,25 +79,18 @@ var VIS = {
         }
     },
     bib: {
-        keys: {
-            major: [
-                "decade",
-                "year",
-                "journal",
-                "issue",
-                "alpha"
-            ],
-            minor: [
-                "date",
-                "journal",
-                "alpha"
-            ]
-        },
+        // default if no author delimiter supplied, but note that
+        // 2014 JSTOR metadata format uses ", " instead
+        author_delimiter: "\t",
+        // "et al" is better for real bibliography, but it's
+        // actually worth being able to search all the multiple authors
+        et_al: Infinity,
+        anon: "[Anon]",
     },
     bib_view: {
         window_lines: 100,
         major: "year",
-        minor: "alpha",
+        minor: "authortitle",
         dir: "up"
     },
     float_format: function (x) {
@@ -111,7 +104,6 @@ var VIS = {
     },
     percent_format: d3.format(".1%"),
     cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
-    uri_proxy: "",
     resize_refresh_delay: 100, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
     show_hidden_topics: false,
@@ -140,7 +132,6 @@ set_view = function (hash) {
 browser = function (spec) {
     var my = spec || { },
         that = { },
-        metadata,
         topic_view, // view generation
         word_view,
         words_view,
@@ -154,18 +145,27 @@ browser = function (spec) {
         view_refresh,
         hide_topics,
         settings_modal,
-        setup_vis,          // initialization
+        setup_listeners, // initialization
         load_data,
         load;
 
-    // Constructor
+    // Constructor: call constructors for model, metadata, bib
     my.m = model();
 
-metadata = function (meta) {
-    my.metadata = meta;
-    return this;
-};
-that.metadata = metadata;
+    // default to DfR subclasses if no other specified
+    if (spec.metadata === undefined) {
+        my.metadata = metadata.dfr();
+    } else {
+        my.metadata = spec.metadata();
+    }
+
+    // we can adjust parameters using VIS.bib only after we have loaded
+    // info.json, so we'll do that in load()
+    if (typeof spec.bib !== "function") {
+        my.bib = bib.dfr();
+    } else {
+        my.bib = spec.bib();
+    }
 
 // Principal view-generating functions
 // -----------------------------------
@@ -237,15 +237,14 @@ topic_view = function (t_user, y) {
     });
 
     // topic top documents subview
-    view.calculating("#topic_docs", true); 
+    view.calculating("#topic_docs", true);
     my.m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
-        var ds = docs.map(function (d) { return d.doc; });
         view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
             docs: docs,
             citations: docs.map(function (d) {
-                return bib.citation(my.m.meta(d.doc));
+                return my.bib.citation(my.m.meta(d.doc));
             }),
             year: year
         });
@@ -370,10 +369,11 @@ doc_view = function (d) {
         });
 
         view.calculating("#doc_view", false);
-        
+
         view.doc({
             topics: topics,
-            meta: my.m.meta(doc),
+            citation: my.bib.citation(my.m.meta(doc)),
+            url: my.bib.url(my.m.meta(doc)),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return my.m.topic_words(t.topic, VIS.overview_words);
@@ -398,7 +398,6 @@ bib_view = function (maj, min, dir) {
             minor: min,
             dir: dir
     },
-        asc,
         ordering;
 
     if (!my.m.meta()) {
@@ -406,7 +405,7 @@ bib_view = function (maj, min, dir) {
         return true;
     }
 
-    sorting = bib.sort.validate(sorting);
+    sorting = my.bib.sort.validate(sorting);
     // it's not really clear how to respond to a URL like #/bib/year,
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
@@ -425,14 +424,19 @@ bib_view = function (maj, min, dir) {
 
     VIS.last.bib = sorting;
 
-    asc = bib.sort.dir(sorting);
-    ordering = bib.sort(my.m, sorting.major, sorting.minor,
-            asc.major, asc.minor);
+    sorting.docs = my.m.meta();
+    ordering = my.bib.sort({
+        major: sorting.major,
+        minor: sorting.minor,
+        dir: my.bib.sort.dir(sorting),
+        docs: my.m.meta()
+    });
 
     if (!VIS.ready.bib) {
         // Cache the list of citations
         // TODO better to do this on the model (in a thread?)
-        VIS.bib_citations = my.m.meta().map(bib.citation);
+        VIS.bib_citations = my.m.meta().map(my.bib.citation);
+        view.bib.dropdown(my.bib.sorting());
         VIS.ready.bib = true;
     }
 
@@ -614,7 +618,7 @@ model_view_yearly = function (type) {
         my.m.topic_yearly(undefined, function (yearly) {
             p.yearly_totals = totals;
             p.topics = yearly.map(function (wts, t) {
-                return { 
+                return {
                     t: t,
                     wts: wts,
                     words: my.m.topic_words(t, VIS.model_view.yearly.words),
@@ -706,7 +710,7 @@ view_refresh = function (v) {
             // TODO make this go to default_view instead
             VIS.cur_view = d3.select("div#model_view");
             model_view();
-        } 
+        }
         // TODO and register the correct annotations
     }
 
@@ -745,15 +749,7 @@ that.hide_topics = hide_topics;
 // --------------
 
 // global visualization setup
-setup_vis = function () {
-    // load any preferences stashed in model info
-    if (my.m.info()) {
-        VIS = utils.deep_replace(VIS, my.m.info().VIS);
-
-        // model title
-        d3.selectAll(".model_title")
-            .html(my.m.info().title);
-    }
+setup_listeners = function () {
 
     // hashchange handler
     window.onhashchange = function () {
@@ -786,7 +782,7 @@ setup_vis = function () {
     });
 
 };
-that.setup_vis = setup_vis;
+that.setup_listeners = setup_listeners;
 
 // data loading
 // ------------
@@ -798,7 +794,7 @@ load_data = function (target, callback) {
     if (target === undefined) {
         return callback("target undefined", undefined);
     }
-    
+
     target_base = target.replace(/^.*\//, "");
     target_id = "m__DATA__" + target_base.replace(/\..*$/, "");
 
@@ -807,7 +803,7 @@ load_data = function (target, callback) {
         return callback(undefined,
                 document.getElementById(target_id).innerHTML);
     }
-    
+
     // otherwise, we have to fetch it
 
     // If the request is for a zip file, we'll unzip.
@@ -825,7 +821,7 @@ load_data = function (target, callback) {
                 return callback(error, text);
             });
     }
-    
+
     // Otherwise, no unzipping
     return d3.text(target, function (error, s) {
         return callback(error, s);
@@ -843,11 +839,25 @@ load = function () {
 
         if (typeof info_s === 'string') {
             my.m.info(JSON.parse(info_s));
+
+            // finish initializing VIS by loading any preferences
+            // stashed in model info
+
+            VIS = utils.deep_replace(VIS, my.m.info().VIS);
+
+            // now we store any specified options for bib
+            my.bib.options(VIS.bib);
+
+            // now we can load the model title
+            d3.selectAll(".model_title")
+                .html(my.m.info().title);
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
 
-        setup_vis();
+        // either way, now we can install the main event listeners
+        // TODO can we do this even earlier?
+        setup_listeners();
 
         // no need to globally expose the model, but handy for debugging
         // __DEV_ONLY__
@@ -921,7 +931,6 @@ that.load = load;
 }; // browser()
 
 // execution is up to index.html:
-// browser()
-//     .metadata(metadata_dfr())
+// browser({ ... })
 //     .load();
 
