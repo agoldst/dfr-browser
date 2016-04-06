@@ -1,4 +1,4 @@
-/*global view, VIS, topic_hash, d3 */
+/*global view, VIS, d3 */
 "use strict";
 
 view.model.plot = function (param) {
@@ -104,7 +104,7 @@ view.model.plot = function (param) {
             })
             .on("click", function (p) {
                 if (!d3.event.shiftKey) {
-                    view.dfb().set_view(topic_hash(p.t));
+                    view.dfb().set_view(view.topic.hash(p.t));
                 }
             })
             .on("mouseover", function (p) {

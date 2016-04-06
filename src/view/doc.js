@@ -1,4 +1,4 @@
-/*global view, VIS, topic_link, topic_hash, utils, d3 */
+/*global view, VIS, set_view, bib, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -30,7 +30,7 @@ view.doc = function (p) {
 
     as_t = trs.append("td").append("a")
         .attr("href", function (t) {
-            return topic_link(t.topic);
+            return view.topic.link(t.topic);
         })
         .classed("topic_words", true);
 
@@ -41,7 +41,7 @@ view.doc = function (p) {
 
     trs.append("td").append("a")
         .attr("href", function (t) {
-            return topic_link(t.topic);
+            return view.topic.link(t.topic);
         })
         .append("span").classed("words", true)
         .text(function (t, j) {
@@ -51,7 +51,7 @@ view.doc = function (p) {
         });
 
     trs.on("click", function (t) {
-        view.dfb().set_view(topic_hash(t.topic));
+        view.dfb().set_view(view.topic.hash(t.topic));
     });
 
     view.append_weight_tds(trs, function (t) {

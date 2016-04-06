@@ -1,4 +1,4 @@
-/*global view, VIS, topic_hash, d3 */
+/*global view, VIS, d3 */
 "use strict";
 
 view.model.yearly = function (p) {
@@ -127,7 +127,7 @@ view.model.yearly = function (p) {
         })
         .on("click", function (d) {
             if (!d3.event.shiftKey) {
-                view.dfb().set_view(topic_hash(d.t));
+                view.dfb().set_view(view.topic.hash(d.t));
             }
         });
 

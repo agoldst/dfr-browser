@@ -1,19 +1,7 @@
 /*global d3, $, JSZip, utils, model, view, bib, metadata, VIS, window */
 "use strict";
 
-var topic_link, // stringifiers
-    topic_hash,
-    dfb;    // main controller
-
-topic_link = function (t) {
-    return "#" + topic_hash(t);
-};
-
-topic_hash = function (t) {
-    return "/topic/" + String(t + 1);
-};
-
-dfb = function (spec) {
+var dfb = function (spec) {
     var my = spec || { },
         that = { },
         topic_view, // view generation

@@ -1,4 +1,4 @@
-/*global view, VIS, topic_hash, d3 */
+/*global view, VIS, d3 */
 "use strict";
 
 view.word = function (p) {
@@ -129,7 +129,7 @@ view.word = function (p) {
             height: row_height
         })
         .on("click", function (t) {
-            view.dfb().set_view(topic_hash(t.topic));
+            view.dfb().set_view(view.topic.hash(t.topic));
         });
                 
     gs_t_label = gs_t.selectAll("text.topic")
