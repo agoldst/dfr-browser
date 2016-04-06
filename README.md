@@ -126,15 +126,87 @@ cd dfr-browser
 bin/server
 ````
 
-## Adapting this project to other kinds of documents
+## Adapting this project to other kinds of documents (or models)
 
-The specialization to JSTOR articles is limited to the bibliography sort, the external document links, and the expectations about the metadata format.  Adapting this code to other kinds of documents would require altering only these aspects of the browser. Most of this behavior is fairly-well encapsulated in the view object `view` and (especially) the model object returned by `model()`.
+The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, but again altering the setup for other implementations of LDA would not be too challenging. Adapting to other kinds of latent topic models would require more changes.
 
-The data-prep is tuned to MALLET and my MALLET scripts, but again altering the setup for other modeling tools or other kinds of latent topic models would be feasible.
+Modifying the display to allow users to emphasize metadata other than publication dates is a larger project that I may undertake eventually.
 
-## The "build" process
+Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. Though some modifications to the program are necessary in such cases, they should normally be limited to the `metadata` and `bib` objects. Let me first 
+explain a little more about the design of the program.
 
-If you are modifying the code, note that the `js/*.js` files for the server are minified versions. The source code is found in the [src](src) directory. To make the minified scripts, run `make uglify`. This requires [uglifyjs](https://github.com/mishoo/UglifyJS2/). 
+### The design
+
+The whole browser is a single webpage, whose source is [index.html](index.html). This defines components of the layout---the various "views" on the model. It also loads includes the necessary JavaScript, including the d3 library and the dfr-browser scripts.
+
+The browser follows (scrappily) the model-view-controller paradigm. The main controller is created by `dfb()`, which has the job of loading all the data and responding to user interaction. The data is stored in a `model()`, which encapsulates the details of storing the model and of aggregating its information in various ways. The details of parsing metadata are handled by separate `metadata` and `bib` objects. The controller has the job of passing the necessary data from the model to the various `view` objects that configure the different views of the model. These view objects do all their work by accessing parts of `index.html` using CSS selectors and transforming them with d3. (This means that the JavaScript makes many assumptions about the elements that are present in [index.html](index.html).)
+
+Suppose you wanted to eliminate one of the views, say the word index. For many cases, you could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The main dispatch to views is the `refresh` method of `dfb()`. The lines
+
+```js
+case "words":
+    success = words_view.apply(undefined, param);
+    break;
+```
+
+are the whole story of this dispatch. Delete them and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
+
+Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` constructs the `metadata` (passing it the incoming data from the metadata file) and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to `bib` for formatting or sorting.  
+
+To run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler).
+
+Thus, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
+
+```js
+dfb({
+    metadata: metadata.dfr,
+    bib: bib.dfr
+})
+    .load();
+```
+
+The parameters in `{ ... }` are optional, since the values here are the defaults, but this design is meant to facilitate modifying the browser by giving you a hint about what to change.
+
+First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here. Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata.js#L63). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
+
+```js
+title: d[1].trim(),
+authors: d[2].trim(),
+```
+
+should switch to
+
+```js
+title: d[2].trim(),
+authors: d[1].trim(),
+```
+
+Or, of course, you may wish to store additional metadata and use it elsewhere. Let's imagine that the publisher is found in the ninth column. Then one might simply have
+
+```js
+issue: d[5].trim(),
+publisher: d[8].trim(),
+```
+
+Now the publisher will be stored for each dcoument, but to display it, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
+
+```js
+s += "Published by " + doc.publisher + "."
+```
+
+Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215).
+
+Comments in these source files should indicate where other modifications could be made. Note that the main logic of bibliographic sorting is implemented in <src/bib.js>, with the derived object in <src/bib_dfr.js> only adding additional sorting options. If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
+
+
+### The "build" process
+
+If you are modifying the code, note that the `js/*.js` files for the server are minified versions. The source code is found in the [src](src) directory. To make the minified scripts, run `make uglify`. This requires [uglifyjs](https://github.com/mishoo/UglifyJS2/). On a Mac, install [homebrew](http://brew.sh), then:
+
+```sh
+brew install npm
+npm install uglify-js -g
+```
 
 ## Performance
 
