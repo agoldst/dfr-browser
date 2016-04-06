@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, d3, $, window */
+/*global view, VIS, d3, $, window */
 "use strict";
 
 
@@ -28,7 +28,7 @@ view.bib = function (p) {
                     sorting = this.value;
                 }
             });
-            set_view("/bib/" + sorting.replace(/_/, "/"));
+            view.dfb().set_view("/bib/" + sorting.replace(/_/, "/"));
         });
     d3.select("select#select_bib_dir")
         .on("change", function () {
@@ -38,7 +38,7 @@ view.bib = function (p) {
                     dir = this.value;
                 }
             });
-            set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
+            view.dfb().set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
         });
 
     d3.select("a#bib_sort_dir")

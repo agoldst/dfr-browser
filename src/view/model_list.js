@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_link, topic_hash, d3 */
+/*global view, VIS, topic_link, topic_hash, d3 */
 "use strict";
 
 view.model.list = function (p) {
@@ -18,7 +18,7 @@ view.model.list = function (p) {
             .enter().append("tr");
 
         trs.on("click", function (t) {
-            set_view(topic_hash(t));
+            view.dfb().set_view(topic_hash(t));
         });
 
         trs.classed("hidden_topic", function (t) {
@@ -138,7 +138,7 @@ view.model.list = function (p) {
                 .attr("href", ref);
         })
         .on("click", function () {
-            set_view(d3.select(this).select("a")
+            view.dfb().set_view(d3.select(this).select("a")
                 .attr("href").replace(/#/, ""));
         });
 

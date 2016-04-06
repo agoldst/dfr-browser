@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, topic_link, utils, d3 */
+/*global view, VIS, topic_hash, topic_link, utils, d3 */
 "use strict";
 
 view.topic = function (p) {
@@ -33,7 +33,7 @@ view.topic.words = function (words) {
     trs_w.exit().remove();
 
     trs_w.on("click", function (w) {
-        set_view("/word/" + w.word);
+        view.dfb().set_view("/word/" + w.word);
     });
 
     // clear rows
@@ -65,7 +65,7 @@ view.topic.docs = function (p) {
             .on("click", function () {
                 d3.select(".selected_year").classed("selected_year", false);
                 view.updating(true);
-                set_view(topic_hash(p.t));
+                view.dfb().set_view(topic_hash(p.t));
             })
             .classed("hidden", false);
 
@@ -109,7 +109,7 @@ view.topic.docs = function (p) {
         });
 
     trs_d.on("click", function (d) {
-        set_view("/doc/" + d.doc);
+        view.dfb().set_view("/doc/" + d.doc);
     });
 
     view.append_weight_tds(trs_d, function (d) { return d.frac; });
@@ -336,7 +336,7 @@ view.topic.yearly_barplot = function (param) {
                     d3.select(this.parentNode).classed("selected_year", false);
                     view.tooltip().text(tip_text(d));
                     view.updating(true);
-                    set_view(topic_hash(param.t));
+                    view.dfb().set_view(topic_hash(param.t));
                 } else {
                     // TODO selection of multiple years
                     // should use a brush http://bl.ocks.org/mbostock/6232537
@@ -345,7 +345,9 @@ view.topic.yearly_barplot = function (param) {
                     d3.select(this.parentNode).classed("selected_year", true);
                     view.tooltip().text(tip_text(d));
                     view.updating(true);
-                    set_view(topic_hash(param.t) + "/" + d[0].getUTCFullYear());
+                    view.dfb().set_view(
+                        topic_hash(param.t) + "/" + d[0].getUTCFullYear()
+                    );
                 }
             });
     }

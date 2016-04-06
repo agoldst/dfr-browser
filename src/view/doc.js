@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_link, topic_hash, utils, d3 */
+/*global view, VIS, topic_link, topic_hash, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -51,7 +51,7 @@ view.doc = function (p) {
         });
 
     trs.on("click", function (t) {
-        set_view(topic_hash(t.topic));
+        view.dfb().set_view(topic_hash(t.topic));
     });
 
     view.append_weight_tds(trs, function (t) {

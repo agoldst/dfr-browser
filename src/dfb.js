@@ -1,9 +1,8 @@
-/*global d3, $, JSZip, model, view, bib, metadata, VIS, window */
+/*global d3, $, JSZip, utils, model, view, bib, metadata, VIS, window */
 "use strict";
 
 var topic_link, // stringifiers
     topic_hash,
-    set_view,   // used by the views: see src/view/*
     dfb;    // main controller
 
 topic_link = function (t) {
@@ -12,10 +11,6 @@ topic_link = function (t) {
 
 topic_hash = function (t) {
     return "/topic/" + String(t + 1);
-};
-
-set_view = function (hash) {
-    window.location.hash = hash;
 };
 
 dfb = function (spec) {
@@ -27,13 +22,14 @@ dfb = function (spec) {
         doc_view,
         bib_view,
         about_view,
+        settings_modal,
         model_view,
         model_view_list,
         model_view_plot,
         model_view_yearly,
-        view_refresh,
+        refresh,
+        set_view,
         hide_topics,
-        settings_modal,
         setup_listeners, // initialization
         load_data,
         load;
@@ -54,6 +50,15 @@ dfb = function (spec) {
         my.bib = bib.dfr();
     } else {
         my.bib = spec.bib();
+    }
+
+    // and tell view who we are
+    if (view.dfb() === undefined) {
+        view.dfb(that);
+    } else {
+        view.error(
+            "view.dfb already defined: browser() called more than once?"
+        );
     }
 
 // Principal view-generating functions
@@ -527,10 +532,10 @@ model_view_yearly = function (type) {
 };
 that.model_view_yearly = model_view_yearly;
 
-view_refresh = function (v) {
+refresh = function () {
     var view_parsed, v_chosen, param, success, j;
 
-    view_parsed = v.split("/");
+    view_parsed = window.location.hash.split("/");
 
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
@@ -623,7 +628,15 @@ view_refresh = function (v) {
     d3.selectAll("#nav_main li.active > .nav")
         .classed("hidden", false);
 };
-that.view_refresh = view_refresh;
+that.refresh = refresh;
+
+// External objects can request a change in the view with this function,
+// which triggers the hashchange handler and thus a call to refresh()
+
+set_view = function (hash) {
+    window.location.hash = hash;
+};
+that.set_view = set_view;
 
 hide_topics = function (flg) {
     var flag = (flg === undefined) ? !VIS.show_hidden_topics : flg;
@@ -642,7 +655,7 @@ setup_listeners = function () {
 
     // hashchange handler
     window.onhashchange = function () {
-        view_refresh(window.location.hash, false);
+        refresh();
     };
 
     // resizing handler
@@ -653,7 +666,7 @@ setup_listeners = function () {
         VIS.resize_timer = window.setTimeout(function () {
             view.updating(true);
             view.dirty("topic/yearly", true);
-            view_refresh(window.location.hash);
+            refresh();
             VIS.resize_timer = undefined; // ha ha
         }, VIS.resize_refresh_delay);
     });
@@ -667,7 +680,7 @@ setup_listeners = function () {
 
     $("#settings_modal").on("hide.bs.modal", function () {
         view.updating(true);
-        view_refresh(window.location.hash);
+        refresh();
     });
 
 };
@@ -758,7 +771,7 @@ load = function () {
             if (typeof meta_s === 'string') {
                 my.metadata.from_string(meta_s);
                 my.m.set_meta(my.metadata);
-                view_refresh(window.location.hash);
+                refresh();
             } else {
                 view.error("Unable to load metadata from " + VIS.files.meta);
             }
@@ -766,7 +779,7 @@ load = function () {
         load_data(VIS.files.dt, function (error, dt_s) {
             my.m.set_dt(dt_s, function (result) {
                 if (result) {
-                    view_refresh(window.location.hash);
+                    refresh();
                 } else {
                     view.error("Unable to load document topics from "
                         + VIS.files.dt);
@@ -791,7 +804,7 @@ load = function () {
                     };
                 }));
 
-                view_refresh(window.location.hash);
+                refresh();
             } else {
                 view.error("Unable to load topic words from " + VIS.files.tw);
             }
@@ -808,10 +821,10 @@ load = function () {
                         .attr("href", "#/model/scaled");
             }
 
-            view_refresh(window.location.hash);
+            refresh();
         });
 
-        view_refresh(window.location.hash);
+        refresh();
     });
 };
 that.load = load;

@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, d3 */
+/*global view, VIS, topic_hash, d3 */
 "use strict";
 
 view.word = function (p) {
@@ -19,7 +19,7 @@ view.word = function (p) {
             var input_word = d3.select("input#word_input")
                 .property("value")
                 .toLowerCase();
-            set_view("/word/" + input_word);
+            view.dfb().set_view("/word/" + input_word);
         });
 
     // setting word to undefined means: do setup only
@@ -129,7 +129,7 @@ view.word = function (p) {
             height: row_height
         })
         .on("click", function (t) {
-            set_view(topic_hash(t.topic));
+            view.dfb().set_view(topic_hash(t.topic));
         });
                 
     gs_t_label = gs_t.selectAll("text.topic")
@@ -179,7 +179,7 @@ view.word = function (p) {
 
     gs_w.selectAll("text, rect")
         .on("click", function (d) {
-            set_view("/word/" + d.word);
+            view.dfb().set_view("/word/" + d.word);
         })
         .on("mouseover", function () {
             d3.select(this.parentNode).classed("hover", true);
