@@ -156,7 +156,7 @@ bib.dfr = function (spec) {
                 }
                 result += authors.slice(1, n_auth - 1)
                     .join(", ");
-                result += "and " + authors[n_auth - 1];
+                result += ", and " + authors[n_auth - 1];
             }
         }
 
