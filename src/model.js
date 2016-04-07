@@ -168,25 +168,35 @@ model = function (spec) {
     };
     that.valid_year = valid_year;
 
-    // aggregate vocabulary of all top words in tw
-    vocab = function () {
-        var result;
-        // memoization
-        if (my.vocab) {
-            return my.vocab;
-        }
-        if (!this.tw()) {
+    // aggregate vocabulary of all top words for some or all topics
+    vocab = function (t) {
+        var result = d3.set(),
+            tws;
+        if (!tw()) {
             return undefined;
         }
 
-        result = d3.set();
-        this.tw().map(function (words) {
-            words.keys().map(function (w) {
-                result.add(w);
+        if (isFinite(t)) {
+            // single topic
+            tw(t).keys().forEach(result.add);
+        } else {
+            if (t === undefined) {
+                // all topics
+                tws = tw();
+            } else {
+                // array of indices
+                tws = t.map(function (t) {
+                    return that.tw(t);
+                });
+            }
+            tws.forEach(function (topic) {
+                topic.keys().forEach(function (w) {
+                    result.add(w);
+                });
             });
-        });
-        my.vocab = result.values().sort();
-        return my.vocab;
+        }
+
+        return result.values().sort();
     };
     that.vocab = vocab;
 

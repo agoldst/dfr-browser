@@ -202,13 +202,21 @@ word_view = function (w) {
 that.word_view = word_view;
 
 words_view = function () {
+    var ts;
     if (!my.m.tw()) {
         view.loading(true);
         return true;
     }
     view.loading(false);
 
-    return view.words(my.m.vocab());
+    if (!VIS.show_hidden_topics) {
+        ts = d3.range(my.m.n())
+            .filter(function (t) { return !VIS.topic_hidden[t]; });
+    }
+    // if we are revealing hidden topics, ts can be undefined
+    // and m.vocab(ts) will return the full vocab.
+
+    return view.words(my.m.vocab(ts));
 };
 that.words_view = words_view;
 
