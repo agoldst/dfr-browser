@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, topic_link, utils, d3 */
+/*global view, VIS, utils, d3 */
 "use strict";
 
 view.topic = function (p) {
@@ -33,7 +33,7 @@ view.topic.words = function (words) {
     trs_w.exit().remove();
 
     trs_w.on("click", function (w) {
-        set_view("/word/" + w.word);
+        view.dfb().set_view("/word/" + w.word);
     });
 
     // clear rows
@@ -65,7 +65,7 @@ view.topic.docs = function (p) {
             .on("click", function () {
                 d3.select(".selected_year").classed("selected_year", false);
                 view.updating(true);
-                set_view(topic_hash(p.t));
+                view.dfb().set_view(view.topic.hash(p.t));
             })
             .classed("hidden", false);
 
@@ -109,7 +109,7 @@ view.topic.docs = function (p) {
         });
 
     trs_d.on("click", function (d) {
-        set_view("/doc/" + d.doc);
+        view.dfb().set_view("/doc/" + d.doc);
     });
 
     view.append_weight_tds(trs_d, function (d) { return d.frac; });
@@ -336,7 +336,7 @@ view.topic.yearly_barplot = function (param) {
                     d3.select(this.parentNode).classed("selected_year", false);
                     view.tooltip().text(tip_text(d));
                     view.updating(true);
-                    set_view(topic_hash(param.t));
+                    view.dfb().set_view(view.topic.hash(param.t));
                 } else {
                     // TODO selection of multiple years
                     // should use a brush http://bl.ocks.org/mbostock/6232537
@@ -345,7 +345,10 @@ view.topic.yearly_barplot = function (param) {
                     d3.select(this.parentNode).classed("selected_year", true);
                     view.tooltip().text(tip_text(d));
                     view.updating(true);
-                    set_view(topic_hash(param.t) + "/" + d[0].getUTCFullYear());
+                    view.dfb().set_view(
+                        view.topic.hash(param.t) + "/"
+                        + d[0].getUTCFullYear()
+                    );
                 }
             });
     }
@@ -385,7 +388,7 @@ view.topic.dropdown = function (topics) {
             return t.label + ": " + words;
         })
         .attr("href", function (t) {
-            return topic_link(t.topic);
+            return view.topic.link(t.topic);
         });
     lis.sort(function (a, b) {
         return d3.ascending(view.topic.sort_name(a.label),
@@ -395,5 +398,15 @@ view.topic.dropdown = function (topics) {
     lis.classed("hidden_topic", function (t) {
         return t.hidden;
     });
+};
+
+// Here we encode the fact that user-facing topic-view links use the 1-based
+// topic index. dfb().topic_view() also expects the 1-based index.
+view.topic.link = function (t) {
+    return "#" + view.topic.hash(t);
+};
+
+view.topic.hash = function (t) {
+    return "/topic/" + String(t + 1);
 };
 

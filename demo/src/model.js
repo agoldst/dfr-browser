@@ -64,7 +64,7 @@ model = function (spec) {
         if (my.n_docs !== undefined) {
             result = my.n_docs;
         } else if (my.meta) {
-            result = my.meta.length;
+            result = my.meta.n_docs();
         } 
 
         return result; // undefined if my.meta is missing
@@ -154,17 +154,7 @@ model = function (spec) {
             return undefined;
         }
 
-        // meta(d) for one row of doc metadata or meta() for all of them
-        if (typeof d === 'number') {
-            return my.meta[d];
-        }
-        
-        if (d === undefined) {
-            return my.meta;
-        }
-
-        // otherwise, assume d is an array of indices
-        return d.map(function (j) { return my.meta[j]; });
+        return my.meta.doc(d);
     };
     that.meta = meta;
 
@@ -178,25 +168,35 @@ model = function (spec) {
     };
     that.valid_year = valid_year;
 
-    // aggregate vocabulary of all top words in tw
-    vocab = function () {
-        var result;
-        // memoization
-        if (my.vocab) {
-            return my.vocab;
-        }
-        if (!this.tw()) {
+    // aggregate vocabulary of all top words for some or all topics
+    vocab = function (t) {
+        var result = d3.set(),
+            tws;
+        if (!tw()) {
             return undefined;
         }
 
-        result = d3.set();
-        this.tw().map(function (words) {
-            words.keys().map(function (w) {
-                result.add(w);
+        if (isFinite(t)) {
+            // single topic
+            tw(t).keys().forEach(result.add);
+        } else {
+            if (t === undefined) {
+                // all topics
+                tws = tw();
+            } else {
+                // array of indices
+                tws = t.map(function (t) {
+                    return that.tw(t);
+                });
+            }
+            tws.forEach(function (topic) {
+                topic.keys().forEach(function (w) {
+                    result.add(w);
+                });
             });
-        });
-        my.vocab = result.values().sort();
-        return my.vocab;
+        }
+
+        return result.values().sort();
     };
     that.vocab = vocab;
 
@@ -433,29 +433,14 @@ model = function (spec) {
     that.set_dt = set_dt;
 
     // load meta from a string of CSV lines
-    set_meta = function (meta_s) {
-        var s, doc_years = [ ];
-        if (typeof meta_s !== 'string') {
-            return;
-        }
+    set_meta = function (meta) {
+        var doc_years;
 
-        // strip blank "rows" at start or end
-        s = meta_s.replace(/^\n*/, "")
-            .replace(/\n*$/, "\n");
+        my.meta = meta;
 
-        // -infinity: nothing pre-Gutenberg in JSTOR
-        my.start_date = new Date(1000, 0, 1);
-        my.end_date = new Date(); // today
-
-        my.meta = d3.csv.parseRows(s, function (d, j) {
-            var doc = bib.parse(d);
-
-            doc_years.push(doc.date.getUTCFullYear()); // store to pass into worker
-            // set min and max date range
-            my.start_date = doc.date < my.start_date ? doc.date : my.start_date;
-            my.end_date = doc.date > my.end_date ? doc.date : my.end_date;
-
-            return doc;
+        // calculate and store document years
+        doc_years = meta.doc().map(function (d) {
+            return d.date.getUTCFullYear();
         });
 
         my.worker.callback("set_doc_years", function (result) {

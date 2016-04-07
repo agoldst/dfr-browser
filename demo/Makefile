@@ -10,9 +10,9 @@ minified := js/utils.min.js js/worker.min.js
 # locations of javascript source files
 # manual dependency tracking, because node-style require is for another day
 src_before := src/view/view.js
-src_after := src/main.js
+src_after := src/dfb.js
 src_skip := src/utils.js src/worker.js
-src := $(wildcard src/*.js src/view/*.js)
+src := $(wildcard src/*.js src/*/*.js)
 
 src := $(filter-out $(min_js) $(src_skip) $(src_before) $(src_after),$(src))
 src := $(src_before) $(src) $(src_after)
@@ -24,7 +24,7 @@ dfb_files := index.html $(dfbjs) $(minified) \
     $(css) $(lib) fonts/
 
 lint:
-	jslint --regexp --todo --white $(src) $(src_skip)
+	jslint --regexp --todo --white --browser --bitwise $(src) $(src_skip)
 
 uglify: $(dfbjs) $(minified)
 

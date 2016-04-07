@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_link, topic_hash, d3 */
+/*global view, VIS, d3 */
 "use strict";
 
 view.model.list = function (p) {
@@ -18,7 +18,7 @@ view.model.list = function (p) {
             .enter().append("tr");
 
         trs.on("click", function (t) {
-            set_view(topic_hash(t));
+            view.dfb().set_view(view.topic.hash(t));
         });
 
         trs.classed("hidden_topic", function (t) {
@@ -26,7 +26,7 @@ view.model.list = function (p) {
         });
 
         trs.append("td").append("a").classed("topic_name", true)
-            .attr("href", topic_link)
+            .attr("href", view.topic.link)
             .text(function (t) {
                 return p.labels[t];
             });
@@ -45,7 +45,7 @@ view.model.list = function (p) {
             });
 
         trs.append("td").append("a").classed("topic_words", true)
-            .attr("href", topic_link);
+            .attr("href", view.topic.link);
 
         token_max = d3.max(p.sums);
         view.append_weight_tds(trs, function (t) {
@@ -138,7 +138,7 @@ view.model.list = function (p) {
                 .attr("href", ref);
         })
         .on("click", function () {
-            set_view(d3.select(this).select("a")
+            view.dfb().set_view(d3.select(this).select("a")
                 .attr("href").replace(/#/, ""));
         });
 

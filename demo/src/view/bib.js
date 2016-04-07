@@ -1,5 +1,6 @@
-/*global view, bib, VIS, set_view, d3, $, window */
+/*global view, VIS, d3, $, window */
 "use strict";
+
 
 view.bib = function (p) {
     var ordering = p.ordering.map(function (o) {
@@ -27,7 +28,7 @@ view.bib = function (p) {
                     sorting = this.value;
                 }
             });
-            set_view("/bib/" + sorting.replace(/_/, "/"));
+            view.dfb().set_view("/bib/" + sorting.replace(/_/, "/"));
         });
     d3.select("select#select_bib_dir")
         .on("change", function () {
@@ -37,7 +38,7 @@ view.bib = function (p) {
                     dir = this.value;
                 }
             });
-            set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
+            view.dfb().set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
         });
 
     d3.select("a#bib_sort_dir")
@@ -59,7 +60,8 @@ view.bib = function (p) {
         .append("a");
     lis.exit().remove();
 
-    VIS.bib.keys.major.forEach(function (k) {
+    // initialized in view.bib.setup
+    view.bib.major_keys.forEach(function (k) {
         lis.classed(k, p.major === k);
     });
 
@@ -72,8 +74,7 @@ view.bib = function (p) {
             d3.select("#" + view.bib.id(o.heading)).node().scrollIntoView();
         })
         .text(function (o) {
-            return (p.major === "issue") ? bib.decode_issue(o.heading)
-                : o.heading;
+            return o.heading_display || o.heading;
         });
 
 
@@ -107,8 +108,7 @@ view.bib.render = function (p) {
 
     sec_enter.append("h2")
         .text(function (o) {
-            return (p.major === "issue") ? bib.decode_issue(o.heading)
-                : o.heading;
+            return o.heading_display || o.heading;
         });
     sec_enter.append("ul");
 
@@ -145,3 +145,20 @@ view.bib.id = function (heading) {
     return "bib_" + String(heading).replace(/\W/g,"_");
 };
 
+// set up bibliography-sort dropdown menu
+view.bib.dropdown = function (sorting) {
+    var opts = d3.select("select#select_bib_sort")
+        .selectAll("option")
+        .data(sorting);
+
+    opts.enter().append("option");
+    opts.exit().remove();
+
+    opts.attr("id", function (s) { return "sort_" + s[0]; })
+        .property("value", function (s) { return s[0]; })
+        .text(function (s) { return s[1]; });
+
+    view.bib.major_keys = d3.set(sorting.map(function (s) {
+        return s[0].split("_")[0];
+    }));
+};

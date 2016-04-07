@@ -6,6 +6,7 @@ var view = (function () {
         my = {
             updating: false
         },
+        dfb,
         updating,
         dirty,
         loading,
@@ -18,6 +19,14 @@ var view = (function () {
         append_svg,
         scroll_top,
         scroll_origin;
+
+    dfb = function (controller) {
+        if (controller !== undefined) {
+            my.dfb = controller;
+        }
+        return my.dfb;
+    };
+    that.dfb = dfb;
 
     updating = function (flag) {
         if (typeof flag === "boolean") {
@@ -167,12 +176,12 @@ var view = (function () {
     };
     that.append_svg = append_svg;
 
-    scroll_top = function() {
+    scroll_top = function () {
         window.scrollTo(window.scrollX, 0);
     };
     that.scroll_top = scroll_top;
 
-    scroll_origin = function() {
+    scroll_origin = function () {
         window.scrollTo(0, 0);
     };
     that.scroll_origin = scroll_origin;

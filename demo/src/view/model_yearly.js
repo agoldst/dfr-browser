@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, topic_hash, d3 */
+/*global view, VIS, d3 */
 "use strict";
 
 view.model.yearly = function (p) {
@@ -127,7 +127,7 @@ view.model.yearly = function (p) {
         })
         .on("click", function (d) {
             if (!d3.event.shiftKey) {
-                set_view(topic_hash(d.t));
+                view.dfb().set_view(view.topic.hash(d.t));
             }
         });
 
@@ -149,7 +149,7 @@ view.model.yearly = function (p) {
     // draw the streams: ensure transition for raw/frac swap
     paths.transition()
         .duration(2000)
-        .attr("d", areas)
+        .attr("d", areas);
 
     // the stream labels
     labels = svg.selectAll("text.layer_label")
@@ -249,7 +249,7 @@ view.model.yearly = function (p) {
     d3.select("button#yearly_raw_toggle")
         .text(raw ? "Show proportions" : "Show counts")
         .on("click", function () {
-            set_view(raw ? "/model/yearly/frac"
+            view.dfb().set_view(raw ? "/model/yearly/frac"
                 : "/model/yearly/raw");
         });
 

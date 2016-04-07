@@ -31,7 +31,7 @@ view.settings = function (p) {
         });
 
     d3.select("#reveal_hidden")
-        .classed("hidden", VIS.hidden_topics.length == 0)
+        .classed("hidden", VIS.hidden_topics.length === 0)
         .select("input")
             .property("checked", VIS.show_hidden_topics === true)
             .on("change", function () {

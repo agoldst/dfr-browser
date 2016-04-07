@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, bib, topic_link, topic_hash, utils, d3 */
+/*global view, VIS, set_view, bib, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -10,13 +10,13 @@ view.doc = function (p) {
     d3.select("#doc_view_main").classed("hidden", false);
 
     div.select("h2#doc_header")
-        .html(bib.citation(p.meta));
+        .html(p.citation);
 
     div.select("#doc_remark .token_count")
         .text(p.total_tokens);
 
-    div.select("#doc_remark a.jstor")
-        .attr("href", view.doc.uri(p.meta));
+    div.select("#doc_remark a.url")
+        .attr("href", p.url);
 
     trs = div.select("table#doc_topics tbody")
         .selectAll("tr")
@@ -30,7 +30,7 @@ view.doc = function (p) {
 
     as_t = trs.append("td").append("a")
         .attr("href", function (t) {
-            return topic_link(t.topic);
+            return view.topic.link(t.topic);
         })
         .classed("topic_words", true);
 
@@ -41,7 +41,7 @@ view.doc = function (p) {
 
     trs.append("td").append("a")
         .attr("href", function (t) {
-            return topic_link(t.topic);
+            return view.topic.link(t.topic);
         })
         .append("span").classed("words", true)
         .text(function (t, j) {
@@ -51,7 +51,7 @@ view.doc = function (p) {
         });
 
     trs.on("click", function (t) {
-        set_view(topic_hash(t.topic));
+        view.dfb().set_view(view.topic.hash(t.topic));
     });
 
     view.append_weight_tds(trs, function (t) {
@@ -70,8 +70,3 @@ view.doc = function (p) {
         });
 };
 
-view.doc.uri = function (meta) {
-    return "http://www.jstor.org"
-        + "/stable/"
-        + meta.doi;
-};
