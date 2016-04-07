@@ -196,7 +196,7 @@ s += "Published by " + doc.publisher + "."
 
 Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215).
 
-Comments in these source files should indicate where other modifications could be made. Note that the main logic of bibliographic sorting is implemented in <src/bib.js>, with the derived object in <src/bib_dfr.js> only adding additional sorting options. If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
+Comments in these source files should indicate where other modifications could be made. Note that the main logic of bibliographic sorting is implemented in [bib.js](src/bib.js), with the derived object in [bib_dfr.js](src/bib_dfr.js) only adding additional sorting options. If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
 
 
 ### The "build" process
