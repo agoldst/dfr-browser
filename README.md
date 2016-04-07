@@ -100,7 +100,7 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
-If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The one-based topic numbers in this array will, by default, not be shown. (They can be revealed using the Settings dialog box.)
+If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The topics identified by numbers (indexed from 1) in this array will, by default, not be shown in any view, including aggregate views. Hidden topics can be revealed using the Settings dialog box. Hiding topics can be misleading and should be done cautiously.
 
 ### Adding topic labels
 
