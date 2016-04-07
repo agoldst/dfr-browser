@@ -85,7 +85,7 @@ The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*P
 
 ## Tune the visualization parameters
 
-In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [src/main.js](https://github.com/agoldst/dfr-browser/blob/master/src/main.js) for the fields of the `VIS` object and their default values. Many properties are nested. Some possibilities of note:
+In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [VIS.js](src/VIS.js) for the fields of the `VIS` object and their default values. Many properties are nested. Some possibilities of note:
 
 `VIS.overview_words`: how many words to use as the "titles" for topics in the List view, and the topics menu.
 
@@ -139,9 +139,9 @@ explain a little more about the design of the program.
 
 The whole browser is a single webpage, whose source is [index.html](index.html). This defines components of the layout---the various "views" on the model. It also loads includes the necessary JavaScript, including the d3 library and the dfr-browser scripts.
 
-The browser follows (scrappily) the model-view-controller paradigm. The main controller is created by `dfb()`, which has the job of loading all the data and responding to user interaction. The data is stored in a `model()`, which encapsulates the details of storing the model and of aggregating its information in various ways. The details of parsing metadata are handled by separate `metadata` and `bib` objects. The controller has the job of passing the necessary data from the model to the various `view` objects that configure the different views of the model. These view objects do all their work by accessing parts of `index.html` using CSS selectors and transforming them with d3. (This means that the JavaScript makes many assumptions about the elements that are present in [index.html](index.html).)
+The browser follows (scrappily) the model-view-controller paradigm. The main controller is created by `dfb()`, which has the job of loading all the data and responding to user interaction. The data is stored in a `model()`, which encapsulates the details of storing the model and of aggregating its information in various ways. The details of parsing metadata are handled by separate `metadata` and `bib` objects. The controller then passes the necessary data from the model to the various `view` objects that configure the different views of the model. These view objects do all their work by accessing parts of `index.html` using CSS selectors and transforming them with d3. (This means that the JavaScript makes many assumptions about the elements that are present in [index.html](index.html).)
 
-Suppose you wanted to eliminate one of the views, say the word index. For many cases, you could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The main dispatch to views is the `refresh` method of `dfb()`. The lines
+As an example of a simple modification, suppose you wanted to eliminate one of the views, say the word index. You could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The main dispatch to views is the `refresh` method of `dfb()`. The lines
 
 ```js
 case "words":
@@ -151,11 +151,7 @@ case "words":
 
 are the whole story of this dispatch. Delete them and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
 
-Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` constructs the `metadata` (passing it the incoming data from the metadata file) and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to `bib` for formatting or sorting.  
-
-To run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler).
-
-Thus, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
+In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
 
 ```js
 dfb({
@@ -166,6 +162,8 @@ dfb({
 ```
 
 The parameters in `{ ... }` are optional, since the values here are the defaults, but this design is meant to facilitate modifying the browser by giving you a hint about what to change.
+
+Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` constructs the `metadata` (passing it the incoming data from the metadata file) and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to `bib` for formatting or sorting.
 
 First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here. Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata.js#L63). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
 
