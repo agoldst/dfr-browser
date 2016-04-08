@@ -103,7 +103,6 @@ var VIS = {
         }
     },
     percent_format: d3.format(".1%"),
-    cite_date_format: d3.time.format.utc("%B %Y"), // JSTOR supplies UTC dates
     resize_refresh_delay: 100, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
     show_hidden_topics: false,

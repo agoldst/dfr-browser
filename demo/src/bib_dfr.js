@@ -167,7 +167,7 @@ bib.dfr = function (spec) {
     // override inherited citation
     that.citation = function (doc) {
         var s = doc_author(doc.authors),
-            title, mo;
+            title;
 
         // don't duplicate trailing period on middle initial etc.
         s = s.replace(/\.?$/, ". ");
@@ -188,19 +188,8 @@ bib.dfr = function (spec) {
             s += ", no. " + doc.issue;
         }
 
-        s += " (";
-        mo = doc.date.getUTCMonth(); // 0 to 11
-        if (mo === 0 || mo === 11) {
-            s += "Winter ";
-        } else if (mo === 2 || mo === 3) {
-            s += "Spring ";
-        } else if (mo === 5 || mo === 6) {
-            s += "Summer ";
-        } else if (mo === 8 || mo === 9) {
-            s += "Autumn ";
-        }
-
-        s += doc.date.getUTCFullYear() + "): ";
+        // JSTOR supplies UTC dates
+        s += " (" + d3.time.format.utc("%B %Y")(doc.date) + "): ";
 
         s += doc.pagerange + ".";
 
