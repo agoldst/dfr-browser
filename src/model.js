@@ -31,7 +31,6 @@ model = function (spec) {
         topic_words,
         doc_topics,
         word_topics,
-        year_topics,
         topic_label,
         set_dt, // methods for loading model data from strings 
         set_tw,
@@ -352,31 +351,6 @@ model = function (spec) {
         });
     };
     that.word_topics = word_topics;
-
-    year_topics = function (year, n) {
-        // TODO DEPRECATED. Not used by the browser.
-        var t, series, result = [];
-
-        // *Could* calculate totals just for this year, but that still
-        // requires running over all the documents to find those that
-        // belong to the right year, and since we're comparing topics
-        // we're cursed to traverse all of the doc-topics matrix anyway.
-
-        for (t = 0; t < this.n(); t += 1) {
-            series = this.topic_yearly(t);
-            result.push({
-                topic: t,
-                weight: series.get(year) || 0 // TODO raw weighting or...?
-            });
-        }
-        result.sort(function (a, b) {
-            return d3.descending(a.weight, b.weight) ||
-                d3.ascending(a.topic, b.topic); // stabilize sort
-        });
-
-        return utils.shorten(result, n);
-    };
-    that.year_topics = year_topics;
 
     topic_label = function (t) {
         var t_s = String(t + 1);
