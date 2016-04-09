@@ -24,6 +24,10 @@ var dfb = function (spec) {
 
     // Constructor: call constructors for model, metadata, bib
     my.m = model();
+    // no need to globally expose the model, but handy for debugging
+    // __DEV_ONLY__
+    // VIS.m = my.m;
+    // __END_DEV_ONLY__
 
     // default to DfR subclasses if no other specified
     if (spec.metadata === undefined) {
@@ -53,8 +57,9 @@ var dfb = function (spec) {
 // -----------------------------------
 
 topic_view = function (t_user, y) {
-    var words, year,
-        t = +t_user - 1; // t_user is 1-based topic index, t is 0-based
+    var words,
+        t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
+        view_top_docs;
 
     if (!my.m.meta() || !my.m.has_dt() || !my.m.tw()) {
         // not ready yet; show loading message
@@ -69,9 +74,6 @@ topic_view = function (t_user, y) {
         view.loading(false);
         return true;
     }
-
-    // validate the year
-    year = my.m.valid_year(y) ? y : undefined;
 
     words = utils.shorten(my.m.topic_words(t), VIS.topic_view.words);
 
@@ -109,18 +111,22 @@ topic_view = function (t_user, y) {
     if (!view.updating() && !view.dirty("topic/yearly")) {
         d3.select("#topic_plot").classed("invisible", true);
     }
-    my.m.topic_yearly(t, function (yearly) {
+
+    my.m.topic_conditional(t, "year", function (yearly) {
+        // check that the year is valid
+        var year = yearly.has(y) ? y : undefined;
         view.topic.yearly({
             t: t,
             year: year,
             yearly: yearly
         });
         d3.select("#topic_plot").classed("invisible", false);
+
     });
 
-    // topic top documents subview
     view.calculating("#topic_docs", true);
-    my.m.topic_docs(t, VIS.topic_view.docs, year, function (docs) {
+    // create callback for showing top docs; used in if/else following
+    view_top_docs = function (docs) {
         view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
@@ -128,9 +134,20 @@ topic_view = function (t_user, y) {
             citations: docs.map(function (d) {
                 return my.bib.citation(my.m.meta(d.doc));
             }),
-            year: year
+            year: y
         });
-    });
+    };
+
+    // if no year given, show unconditional top docs
+    if (y === undefined) {
+        my.m.topic_docs(t, VIS.topic_view.docs, view_top_docs);
+    } else {
+        // otherwise, ask for list conditional on year
+        // N.B. an invalid year will yield no docs
+        // (and a message will show to that effect)
+        my.m.topic_docs_conditional(t, "year", y, VIS.topic_view.docs,
+            view_top_docs);
+    }
 
     view.loading(false);
     return true;
@@ -446,7 +463,7 @@ model_view_list = function (sort, dir) {
     view.calculating("#model_view_list", true);
 
     my.m.topic_total(undefined, function (sums) {
-        my.m.topic_yearly(undefined, function (yearly) {
+        my.m.topic_conditional(undefined, "year", function (yearly) {
             view.calculating("#model_view_list", false);
             view.model.list({
                 yearly: yearly,
@@ -504,8 +521,8 @@ model_view_yearly = function (type) {
 
     // otherwise:
     view.calculating("#model_view_yearly", true);
-    my.m.yearly_total(undefined, function (totals) {
-        my.m.topic_yearly(undefined, function (yearly) {
+    my.m.conditional_total("year", undefined, function (totals) {
+        my.m.topic_conditional(undefined, "year", function (yearly) {
             p.yearly_totals = totals;
             p.topics = yearly.map(function (wts, t) {
                 return {
@@ -761,11 +778,6 @@ load = function () {
         // either way, now we can install the main event listeners
         // TODO can we do this even earlier?
         setup_listeners();
-
-        // no need to globally expose the model, but handy for debugging
-        // __DEV_ONLY__
-        // VIS.m = m;
-        // __END_DEV_ONLY__
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(VIS.files.meta, function (error, meta_s) {

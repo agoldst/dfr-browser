@@ -17,7 +17,8 @@ var metadata = function (spec) {
         that = { },
         from_string,
         doc,
-        n_docs;
+        n_docs,
+        conditionals;
 
     // default method: d3 csv parsing
     from_string = function (s) {
@@ -49,13 +50,24 @@ var metadata = function (spec) {
     };
     that.n_docs = n_docs;
 
+    // Which variables can we condition topic distributions on? This
+    // should return a d3.map where keys name the variable and values
+    // are functions for extracting variable values from a document
+    // (see metadata.dfr.conditionals for an example). This function is
+    // invoked by model.set_meta.
+
+    conditionals = function () {
+        return d3.map();
+    };
+    that.conditionals = conditionals;
+
     return that;
 };
 
 metadata.dfr = function (spec) {
     var my = spec || { },
         that,
-        from_string;
+        from_string, conditionals;
 
     // constructor: build from parent
     that = metadata(my);
@@ -97,5 +109,14 @@ metadata.dfr = function (spec) {
     };
     that.from_string = from_string;
 
+    // for topics by year
+    conditionals = function () {
+        return d3.map({
+            year: function (doc) {
+                return String(doc.date.getUTCFullYear());
+            }
+        });
+    };
+    that.conditionals = conditionals;
     return that;
 };
