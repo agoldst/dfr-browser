@@ -378,7 +378,7 @@ a:hover {
     stroke: #ddd;*/
 }
 
-.selected_year rect.display {
+.selected_condition rect.display {
     fill: rgb(51,153,255);
     stroke: rgb(51,153,255);
 /*    fill: #ddd;

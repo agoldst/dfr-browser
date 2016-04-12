@@ -61,8 +61,28 @@ var VIS = {
             top: 20,
             bottom: 20
         },
-        bar_width: 90, // in days!
-        ticks: 10 // applied to both x and y axes
+        time: { // conditional plot x-axis settings: time variable
+            bar: { // width of bars
+                unit: d3.time.day.utc, // unit is a d3 time interval
+                w: 90
+            },
+            step: { // domain-scale length from one bar to next
+                unit: d3.time.year.utc, // unit is a d3 time interval
+                w: 1
+            },
+        },
+        continuous: { // continuous variable: step is calculated automatically
+            bar: {
+                w: 0.25, // proportion: how much x-axis bar takes up
+            }
+        },
+        ordinal: { // categorical variable: step is calculated automatically
+            bar: {
+                w: 0.25 // proportion
+            }
+        },
+        ticks: 10, // applied to both x and y axes
+        tx_duration: 1000 // animated transition time in ms (where applicable)
     },
     word_view: {
         n_min: 10, // words per topic
