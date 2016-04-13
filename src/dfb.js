@@ -518,6 +518,8 @@ model_view_yearly = function (type) {
         view.model.yearly(p);
         return true;
     }
+    // TODO simplify interaction with VIS.ready
+    view.dirty("model/yearly", true);
 
     // otherwise:
     view.calculating("#model_view_yearly", true);

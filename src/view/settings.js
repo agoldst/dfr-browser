@@ -36,9 +36,7 @@ view.settings = function (p) {
             .property("checked", VIS.show_hidden_topics === true)
             .on("change", function () {
                 VIS.show_hidden_topics = !VIS.show_hidden_topics;
-                // mark yearly series for recalculation
-                VIS.model_view.yearly.data = undefined;
-                VIS.ready.model_yearly = false;
+                view.dirty("model/yearly", true);
             });
 
     VIS.ready.settings = true;

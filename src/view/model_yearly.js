@@ -23,11 +23,25 @@ view.model.yearly = function (p) {
     raw = p.type ? (p.type === "raw") : VIS.last.model_yearly;
     VIS.last.model_yearly = raw;
 
-    to_plot = view.model.yearly.stacked_series({
-        yearly_totals: p.yearly_totals,
-        topics: p.topics,
-        raw: raw
-    });
+    // can become dirty by showing/hiding topics
+    // TODO simplify interaction with VIS.ready
+    if (view.dirty("model/yearly")) {
+        this.yearly.data = view.model.stacked_series({
+            keys: p.yearly_totals.keys().sort(),
+            xs: p.yearly_totals.keys().sort().map(function (y) {
+                return new Date(Date.UTC(+y, 0, 1));
+            }),
+            totals: p.yearly_totals,
+            topics: p.topics
+        });
+        view.dirty("model/yearly", false);
+    }
+    to_plot = {
+        data: this.yearly.data[raw ? "raw" : "frac"],
+        domain_x: this.yearly.data.domain_x,
+        domain_y: this.yearly.data[raw ? "domain_raw" : "domain_frac"],
+        order: this.yearly.data.order
+    };
 
     bg = svg.selectAll("rect.bg")
         .data([1])
@@ -114,7 +128,7 @@ view.model.yearly = function (p) {
                 label += d.words.join(" ");
             }
             view.tooltip().text(label);
-                    
+
             view.tooltip().update_pos();
             view.tooltip().show();
         })
@@ -261,97 +275,81 @@ view.model.yearly = function (p) {
 };
 
 
-view.model.yearly.stacked_series = function (p) {
-    var year_keys, years, all_series,
+// the parameter object p should contain:
+// keys: sequence of values of the conditional variable usable as keys
+// xs: sequence of numeric values corresponding to keys
+// totals: d3.map sending keys to conditional totals over all topics
+// topics: sequence of objects with the following properties:
+//     t: topic number
+//     words: topic words (for tooltip text)
+//     label: label
+//     wts: d3.map sending keys to conditional weight of topic t
+view.model.stacked_series = function (p) {
+    var all_series,
         stack, ord,
-        data_frac, data_raw,
-        stack_domain_y;
+        stack_domain_y,
+        result = { };
 
-    if (!VIS.model_view.yearly.data) {
-        VIS.model_view.yearly.data = { };
-
-        year_keys = p.yearly_totals.keys().sort();
-        years = year_keys.map(function (y) {
-            return new Date(Date.UTC(+y, 0, 1));
-        });
-
-        // save x range
-        VIS.model_view.yearly.domain_years = d3.extent(years);
-
-        all_series = p.topics.map(function (topic) {
-            var series = {
-                t: topic.t,
-                words: topic.words.map(function (w) { return w.word; }),
-                label: topic.label
-            };
-            series.values = year_keys.map(function (yr, j) {
-                var result = {
-                    yr: yr,
-                    x: years[j],
-                    y: topic.wts.get(yr) || 0
-                };
-                return result;
-            });
-            return series;
-        });
-
-        stack = d3.layout.stack()
-            .values(function (d) {
-                return d.values;
-            })
-            .offset("wiggle") // streamgraph
-            .order("inside-out"); // pick a "good" layer order
-
-        data_frac = stack(all_series);
-
-        // retrieve layer order (by recalculating it: dumb)
-        ord = stack.order()(all_series.map(function (ds) {
-            return ds.values.map(function (d) { return [d.x, d.y]; });
-        }));
-
-        // for raw-counts, enforce same order, even if not "good"
-        stack.order(function (d) {
-            return ord;
-        });
-
-        data_raw = stack(all_series.map(function (s) {
-            return {
-                t: s.t,
-                words: s.words,
-                label: s.label,
-                values: s.values.map(function (d) {
-                    return {
-                        x: d.x,
-                        y: d.y * p.yearly_totals.get(d.yr)
-                    };
-                })
-            };
-        }));
-
-        stack_domain_y = function (xs) {
-            return [0, d3.max(xs.map(function (ds) {
-                return d3.max(ds.values, function (d) {
-                    return d.y0 + d.y;
-                });
-            }))];
+    all_series = p.topics.map(function (topic) {
+        var series = {
+            t: topic.t,
+            words: topic.words.map(function (w) { return w.word; }),
+            label: topic.label
         };
+        series.values = p.keys.map(function (k, j) {
+            return {
+                key: k,
+                x: p.xs[j],
+                y: topic.wts.get(k) || 0
+            };
+        });
+        return series;
+    });
 
-        VIS.model_view.yearly.domain_frac =
-            stack_domain_y(data_frac);
-        VIS.model_view.yearly.domain_raw =
-            stack_domain_y(data_raw);
+    stack = d3.layout.stack()
+        .values(function (d) {
+            return d.values;
+        })
+        .offset("wiggle") // streamgraph
+        .order("inside-out"); // pick a "good" layer order
 
-        VIS.model_view.yearly.order = ord;
+    result.frac = stack(all_series);
 
-        VIS.model_view.yearly.data.frac = data_frac;
-        VIS.model_view.yearly.data.raw = data_raw;
-    } // if (!VIS.model_view.yearly.data) -- can get cleared by topic-hiding switch
+    // retrieve layer order (by recalculating it: dumb)
+    result.order = stack.order()(all_series.map(function (ds) {
+        return ds.values.map(function (d) { return [d.x, d.y]; });
+    }));
 
-    return {
-        data: VIS.model_view.yearly.data[p.raw ? "raw" : "frac"],
-        domain_x: VIS.model_view.yearly.domain_years,
-        domain_y: VIS.model_view.yearly[p.raw ? "domain_raw" : "domain_frac"],
-        order: VIS.model_view.yearly.order
+    // for raw-counts, enforce same order, even if not "good"
+    stack.order(function (d) {
+        return result.order;
+    });
+
+    result.raw = stack(all_series.map(function (s) {
+        return {
+            t: s.t,
+            words: s.words,
+            label: s.label,
+            values: s.values.map(function (d) {
+                return {
+                    x: d.x,
+                    y: d.y * p.totals.get(d.key)
+                };
+            })
+        };
+    }));
+
+    stack_domain_y = function (xs) {
+        return [0, d3.max(xs.map(function (ds) {
+            return d3.max(ds.values, function (d) {
+                return d.y0 + d.y;
+            });
+        }))];
     };
 
+    result.domain_x = d3.extent(p.xs);
+    result.domain_frac = stack_domain_y(result.frac);
+    result.domain_raw = stack_domain_y(result.raw);
+
+    return result;
 };
