@@ -110,7 +110,9 @@ view.model.yearly = function (p) {
 
     // the actual streams
     paths = svg.selectAll("path.topic_area")
-        .data(to_plot.data);
+        .data(to_plot.data, function (d) {
+            return d.t;
+        });
 
     paths.enter()
         .append("path")
