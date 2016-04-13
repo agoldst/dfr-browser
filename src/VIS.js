@@ -37,7 +37,7 @@ var VIS = {
             label_words: 2 // should be <= words
         },
         list: {
-            spark: {
+            spark: { // same form as topic_view plot parameters below
                 w: 70,
                 h: 20,
                 m: {
@@ -46,7 +46,16 @@ var VIS = {
                     top: 2,
                     bottom: 2
                 },
-                bar_width: 300
+                time: {
+                    bar: {
+                        unit: d3.time.day.utc,
+                        w: 300
+                    },
+                    step: {
+                        unit: d3.time.year.utc,
+                        w: 1
+                    }
+                }
             }
         }
     },

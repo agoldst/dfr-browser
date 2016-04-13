@@ -286,7 +286,7 @@ view.model.yearly = function (p) {
 //     wts: d3.map sending keys to conditional weight of topic t
 view.model.stacked_series = function (p) {
     var all_series,
-        stack, ord,
+        stack,
         stack_domain_y,
         result = { };
 
