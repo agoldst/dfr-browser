@@ -687,19 +687,23 @@ that.setup_listeners = setup_listeners;
 
 // general file-loading utility
 load_data = function (target, callback) {
-    var target_base, target_id;
+    var target_base, dom_data;
 
     if (target === undefined) {
         return callback("target undefined", undefined);
     }
 
     target_base = target.replace(/^.*\//, "");
-    target_id = "m__DATA__" + target_base.replace(/\..*$/, "");
+    dom_data = d3.select("#m__DATA__" + target_base.replace(/\..*$/, ""));
 
     // preprocessed data available in DOM?
-    if (document.getElementById(target_id)) {
-        return callback(undefined,
-                document.getElementById(target_id).innerHTML);
+    if (!dom_data.empty()) {
+        // we expect the data to be found as the text content of an
+        // element with ID as selected above. Note that we are NOT parsing
+        // the data into objects here, only into an unescaped string;
+        // this string will then be parsed again, either as JSON or as CSV,
+        // in the callback
+        return callback(undefined, JSON.parse(dom_data.html()));
     }
 
     // otherwise, we have to fetch it
