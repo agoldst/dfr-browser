@@ -716,7 +716,8 @@ load_data = function (target, callback) {
             .responseType("arraybuffer")
             .get(function (error, response) {
                 var zip, text;
-                if (response && response.status === 200) {
+                if (response && response.status === 200
+                        && response.response.byteLength) {
                     zip = new JSZip(response.response);
                     text = zip.file(target_base.replace(/\.zip$/, "")).asText();
                 }
