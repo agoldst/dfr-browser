@@ -28,6 +28,10 @@ view.model.yearly = function (p) {
         raw: raw,
         selector: "#model_view_yearly"
     });
+
+    d3.selectAll("#yearly_choice li").classed("active", false);
+    d3.select(raw ? "#nav_model_yearly_raw" : "#nav_model_yearly_frac")
+        .classed("active", true);
 };
 
 view.model.conditional = function (p) {
@@ -266,12 +270,6 @@ view.model.conditional = function (p) {
         });
 
     zoom(svg);
-
-    d3.selectAll("#conditional_choice li").classed("active", false);
-    d3.select(p.raw ? "#nav_model_conditional_raw"
-            : "#nav_model_conditional_frac")
-        .classed("active", true);
-
     return true;
 };
 
