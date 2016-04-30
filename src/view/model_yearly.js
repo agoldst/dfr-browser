@@ -2,25 +2,7 @@
 "use strict";
 
 view.model.yearly = function (p) {
-    var spec = { }, svg,
-        scale_x, scale_y, axis_x, g_axis, area,
-        scale_color,
-        bg, clip,
-        raw,
-        to_plot,
-        paths, labels, render_labels,
-        areas, zoom;
-
-    spec.m = VIS.model_view.yearly.m;
-    spec.w = d3.select("#model_view_yearly").node().clientWidth
-        || VIS.model_view.yearly.w;
-    spec.w = Math.max(spec.w, VIS.model_view.yearly.w); // set a min. width
-    spec.w -= spec.m.left + spec.m.right; // inset margins
-    spec.h = Math.floor(spec.w / VIS.model_view.yearly.aspect);
-    spec.h -= spec.m.top + spec.m.bottom;
-    svg = view.plot_svg("#model_view_yearly", spec);
-
-    raw = p.type ? (p.type === "raw") : VIS.last.model_yearly;
+    var raw = p.type ? (p.type === "raw") : VIS.last.model_yearly;
     VIS.last.model_yearly = raw;
 
     // can become dirty by showing/hiding topics
@@ -36,13 +18,33 @@ view.model.yearly = function (p) {
         });
         view.dirty("model/yearly", false);
     }
-    to_plot = {
+    view.model.conditional({
+        type: "time",
         data: this.yearly.data[raw ? "raw" : "frac"],
         domain_x: this.yearly.data.domain_x,
         domain_y: this.yearly.data[raw ? "domain_raw" : "domain_frac"],
-        order: this.yearly.data.order
-    };
+        order: this.yearly.data.order,
+        spec: VIS.model_view.yearly,
+        raw: raw,
+        selector: "#model_view_yearly"
+    });
+};
 
+view.model.conditional = function (p) {
+    var spec = p.spec, svg,
+        scale_x, scale_y, axis_x, g_axis, area,
+        scale_color,
+        bg, clip,
+        paths, labels, render_labels,
+        areas, zoom;
+
+    spec.w = d3.select(p.selector).node().clientWidth
+        || spec.w;
+    spec.w -= spec.m.left + spec.m.right; // inset margins
+    spec.h = Math.floor(spec.w / spec.aspect);
+    spec.h -= spec.m.top + spec.m.bottom;
+
+    svg = view.plot_svg(p.selector, spec);
     bg = svg.selectAll("rect.bg")
         .data([1])
         .enter().append("rect").classed("bg", true);
@@ -50,10 +52,10 @@ view.model.yearly = function (p) {
         .attr("height", spec.h)
         .classed("bg", true);
 
-    clip = d3.select("#model_yearly_clip");
+    clip = d3.select("#model_conditional_clip");
     if (clip.size() === 0) {
-        clip = d3.select("#model_view_yearly svg").append("clipPath")
-            .attr("id", "model_yearly_clip");
+        clip = d3.select("#model_view_conditional svg").append("clipPath")
+            .attr("id", "model_conditional_clip");
         clip.append("rect")
             .attr("x", 0)
             .attr("y", 0)
@@ -61,7 +63,7 @@ view.model.yearly = function (p) {
             .attr("height", spec.h);
     }
 
-    d3.select("#model_yearly_clip rect").transition().duration(2000)
+    d3.select("#model_conditional_clip rect").transition().duration(2000)
         .attr("width", spec.w)
         .attr("height", spec.h);
 
@@ -76,24 +78,29 @@ view.model.yearly = function (p) {
     scale_color = (function () {
         var cat20 = d3.scale.category20(),
             seq = [ ];
-            to_plot.order.forEach(function (k, r) { seq[k] = r; });
+            p.order.forEach(function (k, r) { seq[k] = r; });
         return function (t, highlight) {
             var c = cat20(seq[t] % 20);
             return highlight ? d3.hsl(c).brighter(0.5).toString() : c;
         };
     }());
 
-    scale_x = d3.time.scale.utc()
-        .domain(to_plot.domain_x)
+    if (p.type === "time") {
+        scale_x = d3.time.scale.utc();
+    } else {
+        // default: continuous
+        scale_x = d3.scale.linear();
+    }
+
+    scale_x.domain(p.domain_x)
         .range([0, spec.w]);
 
     scale_y = d3.scale.linear()
-        .domain(to_plot.domain_y)
+        .domain(p.domain_y)
         .range([spec.h, 0])
         .nice();
 
     // x axis (no y axis: streamgraph makes it meaningless)
-    // and preempt any initial transition from the top
     axis_x = d3.svg.axis()
         .scale(scale_x)
         .orient("bottom");
@@ -103,6 +110,7 @@ view.model.yearly = function (p) {
     g_axis.enter().append("g").classed("axis", true).classed("x", true)
         .attr("transform", "translate(0," + spec.h + ")");
 
+    // and preempt any initial transition from the top
     g_axis.transition()
         .duration(2000)
         .attr("transform", "translate(0," + spec.h + ")")
@@ -110,14 +118,14 @@ view.model.yearly = function (p) {
 
     // the actual streams
     paths = svg.selectAll("path.topic_area")
-        .data(to_plot.data, function (d) {
+        .data(p.data, function (d) {
             return d.t;
         });
 
     paths.enter()
         .append("path")
         .classed("topic_area", true)
-        .attr("clip-path", "url(#model_yearly_clip)")
+        .attr("clip-path", "url(#model_conditional_clip)")
         .style("fill", function (d) {
             return scale_color(d.t);
         })
@@ -125,7 +133,7 @@ view.model.yearly = function (p) {
             var label = d.label;
             d3.select(this).style("fill", scale_color(d.t, true));
 
-            if (VIS.model_view.yearly.words > 0) {
+            if (p.spec.words > 0) {
                 label += ": ";
                 label += d.words.join(" ");
             }
@@ -169,11 +177,11 @@ view.model.yearly = function (p) {
 
     // the stream labels
     labels = svg.selectAll("text.layer_label")
-        .data(to_plot.data, function (d) { return d.t; });
+        .data(p.data, function (d) { return d.t; });
 
     labels.enter().append("text")
         .classed("layer_label", true)
-        .attr("clip-path", "url(#model_yearly_clip)");
+        .attr("clip-path", "url(#model_conditional_clip)");
 
     labels.exit().remove();
 
@@ -184,17 +192,16 @@ view.model.yearly = function (p) {
             y0 = scale_y.domain()[0],
             y1 = scale_y.domain()[1],
             b = scale_y(0); // area heights are b - scale_y(y)
-        for (i = 0; i < to_plot.data.length; i += 1) {
-            t = to_plot.data[i].t;
+        for (i = 0; i < p.data.length; i += 1) {
+            t = p.data[i].t;
             show[t] = false;
-            xs = to_plot.data[i].values;
+            xs = p.data[i].values;
             for (j = 0, cur = 0; j < xs.length; j += 1) {
                 if (xs[j].x >= x0 && xs[j].x <= x1
                         && xs[j].y0 + xs[j].y >= y0
                         && xs[j].y0 + xs[j].y <= y1) {
                     if (xs[j].y > cur &&
-                            b - scale_y(xs[j].y) >
-                            VIS.model_view.yearly.label_threshold) {
+                            b - scale_y(xs[j].y) > spec.label_threshold) {
                         show[t] = true;
                         max[t] = j;
                         cur = xs[j].y;
@@ -217,11 +224,9 @@ view.model.yearly = function (p) {
             })
             .text(function (d) {
                 var result = d.label;
-                if (VIS.model_view.yearly.label_words > 0) {
+                if (spec.label_words > 0) {
                     result += ": ";
-                    result += d.words.slice(0,
-                            VIS.model_view.yearly.label_words)
-                        .join(" ");
+                    result += d.words.slice(0, spec.label_words).join(" ");
                 }
                 return result;
             });
@@ -262,15 +267,9 @@ view.model.yearly = function (p) {
 
     zoom(svg);
 
-    d3.select("button#yearly_raw_toggle")
-        .text(raw ? "Show proportions" : "Show counts")
-        .on("click", function () {
-            view.dfb().set_view(raw ? "/model/yearly/frac"
-                : "/model/yearly/raw");
-        });
-
-    d3.selectAll("#yearly_choice li").classed("active", false);
-    d3.select(raw ? "#nav_model_yearly_raw" : "#nav_model_yearly_frac")
+    d3.selectAll("#conditional_choice li").classed("active", false);
+    d3.select(p.raw ? "#nav_model_conditional_raw"
+            : "#nav_model_conditional_frac")
         .classed("active", true);
 
     return true;
