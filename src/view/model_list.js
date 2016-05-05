@@ -5,7 +5,7 @@ view.model.list = function (p) {
     var trs, divs, token_max,
         total = d3.sum(p.sums),
         keys, sorter, sort_choice, sort_dir,
-        years = p.yearly[0].keys();
+        years = p.yearly[0].keys(); // TODO don't assume year keys here
 
     trs = d3.select("#model_view_list table tbody")
         .selectAll("tr");
@@ -34,12 +34,14 @@ view.model.list = function (p) {
         divs = trs.append("td").append("div").classed("spark", true);
         view.append_svg(divs, VIS.model_view.list.spark)
             .each(function (t) {
-                view.topic.yearly_barplot({
-                    svg: d3.select(this),
+                view.topic.conditional_barplot({ 
                     t: t,
-                    yearly: p.yearly[t],
+                    conditional: p.yearly[t],
+                    invert_key: p.invert_key,
+                    type: "time",
                     axes: false,
                     clickable: false,
+                    svg: d3.select(this),
                     spec: VIS.model_view.list.spark
                 });
             });

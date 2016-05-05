@@ -57,7 +57,7 @@ var metadata = function (spec) {
     // invoked by model.set_meta.
 
     conditionals = function () {
-        return d3.map();
+        return d3.map(my.conditionals);
     };
     that.conditionals = conditionals;
 

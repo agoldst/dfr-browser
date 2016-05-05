@@ -11,10 +11,20 @@
 metadata.dfr = function (spec) {
     var my = spec || { },
         that,
-        from_string, conditionals;
+        from_string;
 
     // constructor: build from parent
     that = metadata(my);
+
+    // set up conditionals
+    if (my.conditionals === undefined) {
+        if (my.time_key === undefined) {
+            my.time_key = "%Y"; // default to year
+        }
+        my.conditionals = {
+            time: metadata.time_key(my.time_key)
+        };
+    }
 
     from_string = function (meta_s) {
         var s;
@@ -53,14 +63,18 @@ metadata.dfr = function (spec) {
     };
     that.from_string = from_string;
 
-    // for topics by year
-    conditionals = function () {
-        return d3.map({
-            year: function (doc) {
-                return String(doc.date.getUTCFullYear());
-            }
-        });
-    };
-    that.conditionals = conditionals;
     return that;
+};
+
+metadata.time_key = function (fmt) {
+    var formatter = d3.time.format.utc(fmt), 
+        result;
+    
+    result = function (doc) {
+        return formatter(doc.date);
+    };
+    result.invert = function (key) {
+        return formatter.parse(key);
+    };
+    return result;
 };

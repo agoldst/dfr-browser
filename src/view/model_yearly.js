@@ -10,9 +10,7 @@ view.model.yearly = function (p) {
     if (view.dirty("model/yearly")) {
         this.yearly.data = view.model.stacked_series({
             keys: p.yearly_totals.keys().sort(),
-            xs: p.yearly_totals.keys().sort().map(function (y) {
-                return new Date(Date.UTC(+y, 0, 1));
-            }),
+            xs: p.yearly_totals.keys().sort().map(p.invert_key),
             totals: p.yearly_totals,
             topics: p.topics
         });

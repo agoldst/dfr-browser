@@ -137,35 +137,23 @@ view.topic.yearly = function (p) {
     spec.h = Math.floor(spec.w / VIS.topic_view.aspect)
         - spec.m.top - spec.m.bottom;
 
-    view.topic.yearly_barplot({
+    view.topic.conditional_barplot({
         t: p.t,
-        yearly: p.yearly,
+        conditional: p.yearly,
+        condition: p.year,
+        invert_key: p.invert_key,
+        type: "time",
         svg: view.plot_svg("div#topic_plot", spec),
         axes: true,
         clickable: true,
-        year: p.year,
+        dirty: view.dirty("topic/yearly"),
         spec: spec
     });
     view.dirty("topic/yearly", false);
 };
 
-view.topic.yearly_barplot = function (p) {
-    p.condition = p.year;
-    p.type = "time";
-    p.dirty = view.dirty("topic/yearly");
-
-    p.series = p.yearly.keys().sort().map(function (y) {
-        return {
-            key: y,
-            x: new Date(Date.UTC(+y, 0, 1)),
-            y: p.yearly.get(y)
-        };
-    });
-    view.topic.conditional_barplot(p);
-};
-
 view.topic.conditional_barplot = function (param) {
-    var series = param.series,
+    var series,
         step, w, w_click,
         scale_x,
         scale_y,
@@ -176,6 +164,14 @@ view.topic.conditional_barplot = function (param) {
         tx_duration = param.dirty ? param.spec.tx_duration : 0,
         svg = param.svg,
         spec = param.spec;
+
+    series = param.conditional.keys().sort().map(function (y) {
+        return {
+            key: y,
+            x: param.invert_key(y),
+            y: param.conditional.get(y)
+        };
+    });
 
     // roll-your-own rangeBands for time and continuous variables
     if (param.type === "continuous") {

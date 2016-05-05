@@ -33,15 +33,15 @@ var dfb = function (spec) {
     if (spec.metadata === undefined) {
         my.metadata = metadata.dfr();
     } else {
-        my.metadata = spec.metadata();
+        my.metadata = spec.metadata;
     }
 
     // we can adjust parameters using VIS.bib only after we have loaded
     // info.json, so we'll do that in load()
-    if (typeof spec.bib !== "function") {
+    if (spec.bib === undefined) {
         my.bib = bib.dfr();
     } else {
-        my.bib = spec.bib();
+        my.bib = spec.bib;
     }
 
     // and tell view who we are
@@ -112,13 +112,15 @@ topic_view = function (t_user, y) {
         d3.select("#topic_plot").classed("invisible", true);
     }
 
-    my.m.topic_conditional(t, "year", function (yearly) {
+    my.m.topic_conditional(t, "time", function (yearly) {
         // check that the year is valid
         var year = yearly.has(y) ? y : undefined;
+
         view.topic.yearly({
             t: t,
             year: year,
-            yearly: yearly
+            yearly: yearly,
+            invert_key: my.m.conditionals("time").invert
         });
         d3.select("#topic_plot").classed("invisible", false);
 
@@ -145,7 +147,7 @@ topic_view = function (t_user, y) {
         // otherwise, ask for list conditional on year
         // N.B. an invalid year will yield no docs
         // (and a message will show to that effect)
-        my.m.topic_docs_conditional(t, "year", y, VIS.topic_view.docs,
+        my.m.topic_docs_conditional(t, "time", y, VIS.topic_view.docs,
             view_top_docs);
     }
 
@@ -463,10 +465,11 @@ model_view_list = function (sort, dir) {
     view.calculating("#model_view_list", true);
 
     my.m.topic_total(undefined, function (sums) {
-        my.m.topic_conditional(undefined, "year", function (yearly) {
+        my.m.topic_conditional(undefined, "time", function (yearly) {
             view.calculating("#model_view_list", false);
             view.model.list({
                 yearly: yearly,
+                invert_key: my.m.conditionals("time").invert,
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
@@ -510,9 +513,9 @@ that.model_view_plot = model_view_plot;
 
 model_view_yearly = function (type) {
     var p = {
-        type: type
+        type: type,
+        invert_key: my.m.conditionals("time").invert
     };
-
 
     if (VIS.ready.model_yearly) {
         view.model.yearly(p);
@@ -523,8 +526,8 @@ model_view_yearly = function (type) {
 
     // otherwise:
     view.calculating("#model_view_yearly", true);
-    my.m.conditional_total("year", undefined, function (totals) {
-        my.m.topic_conditional(undefined, "year", function (yearly) {
+    my.m.conditional_total("time", undefined, function (totals) {
+        my.m.topic_conditional(undefined, "time", function (yearly) {
             p.yearly_totals = totals;
             p.topics = yearly.map(function (wts, t) {
                 return {
@@ -535,7 +538,8 @@ model_view_yearly = function (type) {
                 };
             })
                 .filter(function (topic) {
-                    return VIS.show_hidden_topics || !VIS.topic_hidden[topic.t];
+                    return VIS.show_hidden_topics
+                        || !VIS.topic_hidden[topic.t];
                 });
 
             view.model.yearly(p);
