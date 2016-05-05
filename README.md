@@ -21,11 +21,11 @@ m <- model_dfr_documents(
 )
 # optional but recommended: save model outputs
 write_mallet_model(m, output_dir="model")
-# save data files and download dfr-browser source
-export_browser_data(m, out_dir="browser", download_dfb=TRUE)
+# create data files and copy over dfr-browser sources
+export_browser_data(m, out_dir="browser", supporting_files=TRUE)
 ```
 
-This will create a 40-topic model of all words in all the documents in `dfr-data`, and then create a `browser` folder holding all files necessary to browse the topic model (with `download_dfb=TRUE` a copy of the dfr-browser source is downloaded as well). 
+This will create a 40-topic model of all words in all the documents in `dfr-data`, and then create a `browser` folder holding all files necessary to browse the topic model (with `supporting_files=TRUE` all the other requisite dfr-browser HTML, JavaScript, and CSS files are copied over as well). See `help(export_browser_data)` in R for details on other parameters to `export_browser_data`.
 
 If you have created a topic model with command-line mallet, then dfrtopics can still load and export the necessary files:
 
@@ -35,10 +35,10 @@ m <- load_from_mallet_state(
     mallet_state_file="mallet_state.gz",
     instances_file="docs.mallet",
     metadata_file="dfr-data/citations.tsv")
-export_browser_data(m, out_dir="browser", download_dfb=TRUE)
+export_browser_data(m, out_dir="browser", supporting_files=TRUE)
 ```
 
-In either case, when the export is done, change to the `browser` directory, run `bin/server` in the shell, then visit `localhost://8888` in the web browser. 
+In either case, when the export is done, change to the `browser` directory, run `bin/server` in the shell, then visit `localhost://8888` in the web browser.
 
 ### Browser data file specifications
 
