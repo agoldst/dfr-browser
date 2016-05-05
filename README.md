@@ -48,7 +48,18 @@ In case you wish to edit the exported files or create them another way, here are
 
 - word weights for the *n* most probable words in each topic (`data/tw.json`): a text file giving a JSON object with `alpha`, an array of estimated values for the hyperparameter alpha for each topic, and `tw`, an array of `{ words, weights }` objects, one for each topic. `words` and `weights` are in turn arrays, in order, of the most prominent words in the topic and their weights respectively. The value of *n* is up to you.
 
-- document metadata (`data/meta.csv.zip`): a headerless zipped CSV of document metadata, with the following columns, quoted where required by [RFC 4180](http://tools.ietf.org/html/rfc4180): DOI, title, author(s), journal title, journal issue, publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)), page range. Additional columns after these are ignored.
+- document metadata (`data/meta.csv.zip`): a headerless zipped CSV of document metadata, with the following columns, quoted where required by [RFC 4180](http://tools.ietf.org/html/rfc4180):
+
+    1. DOI
+    1. title
+    1. author(s) (separated by `VIS.bib.author_delimiter`, by default a tab)
+    1. journal title
+    1. volume
+    1. issue
+    1. publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601))
+    1. page range
+
+Additional columns after these are ignored (but will not cause errors). Naturally if your documents are not journal articles this format may not quite fit, and some modification of the metadata parsing code may be necessary. See "Adapting this project" below.
 
 - the topic weights for each document (`data/dt.json.zip`): a zipped text file giving a JSON object specifying the document-topic matrix in [sparse compressed-column format](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_.28CSC_or_CCS.29) in terms of three arrays `i`, `p`, and `x`. specified as follows. The documents `d` with non-zero weights for topic `t` are given by `i[p[t]], i[p[t] + 1], ... i[p[t + 1] - 1]`, and the corresponding unnormalized topic weights for those documents are given by `x[p[t]], x[p[t] + 1], ..., x[p[t + 1] - 1]`.
 
