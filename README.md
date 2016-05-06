@@ -111,6 +111,17 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
+`VIS.condition`: So far dfr-browser has always had a display of topics per year. But this is just a special case of the more general relation between some metadata variable and the marginal topic distribution over that variable (that is, the total proportion of topic weight assigned to documents at each level of the variable). I am working to make dfr-browser capable of displaying other relations of this kind. For now, the only functional extension is the generalization from topics-per-year to topics-per-other-time-unit. To display topics per month, try:
+
+```json
+"condition": {
+    "type": "time",
+    "spec": "%Y-%m"
+}
+```
+
+It will also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see (VIS.js)[src/VIS.js#77] for documentation) as well as the corresponding parameters in `model_view.list.spark`.
+
 If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The topics identified by numbers (indexed from 1) in this array will, by default, not be shown in any view, including aggregate views. Hidden topics can be revealed using the Settings dialog box. Hiding topics can be misleading and should be done cautiously.
 
 ### Adding topic labels
@@ -166,15 +177,15 @@ In any case: to run the program, initialize a `dfb()` object and call its `load(
 
 ```js
 dfb({
-    metadata: metadata.dfr,
-    bib: bib.dfr
+    metadata: metadata.dfr(),
+    bib: bib.dfr()
 })
     .load();
 ```
 
 The parameters in `{ ... }` are optional, since the values here are the defaults, but this design is meant to facilitate modifying the browser by giving you a hint about what to change.
 
-Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` constructs the `metadata` (passing it the incoming data from the metadata file) and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to `bib` for formatting or sorting.
+Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` passes the `metadata` object the incoming data from the metadata file and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to the `bib` object for formatting or sorting.
 
 First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here. Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata.js#L63). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
 
