@@ -52,11 +52,11 @@ var VIS = {
                 },
                 time: {
                     bar: {
-                        unit: d3.time.day.utc,
+                        unit: "day",
                         w: 300
                     },
                     step: {
-                        unit: d3.time.year.utc,
+                        unit: "year",
                         w: 1
                     }
                 }
@@ -76,25 +76,31 @@ var VIS = {
         },
         time: { // conditional plot x-axis settings: time variable
             bar: { // width of bars
-                unit: d3.time.day.utc, // unit is a d3 time interval
+                unit: "day", // unit is used as d3.time[unit].utc
                 w: 90
             },
             step: { // domain-scale length from one bar to next
-                unit: d3.time.year.utc, // unit is a d3 time interval
+                unit: "year", // unit is used as d3.time[unit].utc
                 w: 1
             },
+            ticks: {
+                unit: "year",
+                n: 10
+            }
         },
         continuous: { // continuous variable: step is calculated automatically
             bar: {
                 w: 0.25, // proportion: how much x-axis bar takes up
-            }
+            },
+            ticks: 10
         },
         ordinal: { // categorical variable: step is calculated automatically
             bar: {
                 w: 0.25 // proportion
-            }
+            },
+            ticks: 10
         },
-        ticks: 10, // applied to both x and y axes
+        ticks_y: 10, // y axis ticks
         tx_duration: 1000 // animated transition time in ms (where applicable)
     },
     word_view: {

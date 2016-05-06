@@ -197,16 +197,19 @@ view.topic.conditional_barplot = function (param) {
     } else if (param.type === "time") {
         scale_x = d3.time.scale.utc()
             .domain([series[0].x,
-                spec.time.bar.unit.offset(series[series.length - 1].x,
-                    spec.time.bar.w)])
+                d3.time[spec.time.bar.unit].utc.offset(
+                    series[series.length - 1].x, spec.time.bar.w)
+            ])
             .range([0, spec.w]);
         //.nice();
 
-        w = scale_x(spec.time.bar.unit.offset(series[0].x, spec.time.bar.w))
+        w = scale_x(d3.time[spec.time.bar.unit].utc.offset(
+                    series[0].x, spec.time.bar.w))
             - scale_x(series[0].x);
         w_click = scale_x(
-                spec.time.step.unit.offset(series[0].x, spec.time.step.w)) -
-            scale_x(series[0].x);
+                d3.time[spec.time.step.unit].utc.offset(
+                    series[0].x, spec.time.step.w))
+            - scale_x(series[0].x);
     } else {
         // assume ordinal
         scale_x = d3.scale.ordinal()
@@ -257,16 +260,17 @@ view.topic.conditional_barplot = function (param) {
 
                 if (v === "x") { // x axis
                     if (param.type === "time") {
-                        ax.ticks(spec.time.step.unit, spec.ticks);
+                        ax.ticks(d3.time[spec.time.ticks.unit].utc,
+                                spec.time.ticks.n);
                     } else {
-                        ax.ticks(spec.ticks);
+                        ax.ticks(spec[spec.type].ticks);
                     }
                 } else { // y axis
                     ax.tickSize(-spec.w)
                         .outerTickSize(0)
                         .tickFormat(VIS.percent_format)
                         .tickPadding(w_click / 2)
-                        .ticks(spec.ticks);
+                        .ticks(spec.ticks_y);
                 }
 
                 // redraw axis
