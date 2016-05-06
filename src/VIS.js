@@ -15,9 +15,9 @@ var VIS = {
         topic_scaled: "data/topic_scaled.csv"
     },
     default_view: "/model", // specify the part after the #
-    condition: {
-        type: "time",
-        spec: "%Y"
+    condition: {            // metadata variable to condition topics on
+        type: "time",       // "category" is an EXPERIMENTAL alternative
+        spec: "%Y"          // strftime-type format for time bins
     },
     overview_words: 15,     // may need adjustment
     model_view: {
