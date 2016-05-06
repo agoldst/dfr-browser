@@ -112,7 +112,7 @@ topic_view = function (t_user, y) {
         d3.select("#topic_plot").classed("invisible", true);
     }
 
-    my.m.topic_conditional(t, "time", function (yearly) {
+    my.m.topic_conditional(t, my.conditional, function (yearly) {
         // check that the year is valid
         var year = yearly.has(y) ? y : undefined;
 
@@ -120,7 +120,7 @@ topic_view = function (t_user, y) {
             t: t,
             year: year,
             yearly: yearly,
-            invert_key: my.m.conditionals("time").invert
+            invert_key: my.m.meta_condition(my.conditional).invert
         });
         d3.select("#topic_plot").classed("invisible", false);
 
@@ -147,7 +147,7 @@ topic_view = function (t_user, y) {
         // otherwise, ask for list conditional on year
         // N.B. an invalid year will yield no docs
         // (and a message will show to that effect)
-        my.m.topic_docs_conditional(t, "time", y, VIS.topic_view.docs,
+        my.m.topic_docs_conditional(t, my.conditional, y, VIS.topic_view.docs,
             view_top_docs);
     }
 
@@ -465,11 +465,11 @@ model_view_list = function (sort, dir) {
     view.calculating("#model_view_list", true);
 
     my.m.topic_total(undefined, function (sums) {
-        my.m.topic_conditional(undefined, "time", function (yearly) {
+        my.m.topic_conditional(undefined, my.conditional, function (yearly) {
             view.calculating("#model_view_list", false);
             view.model.list({
                 yearly: yearly,
-                invert_key: my.m.conditionals("time").invert,
+                invert_key: my.m.meta_condition(my.conditional).invert,
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
@@ -514,7 +514,7 @@ that.model_view_plot = model_view_plot;
 model_view_yearly = function (type) {
     var p = {
         type: type,
-        invert_key: my.m.conditionals("time").invert
+        invert_key: my.m.meta_condition(my.conditional).invert
     };
 
     if (VIS.ready.model_yearly) {
@@ -526,8 +526,8 @@ model_view_yearly = function (type) {
 
     // otherwise:
     view.calculating("#model_view_yearly", true);
-    my.m.conditional_total("time", undefined, function (totals) {
-        my.m.topic_conditional(undefined, "time", function (yearly) {
+    my.m.conditional_total(my.conditional, undefined, function (totals) {
+        my.m.topic_conditional(undefined, my.conditional, function (yearly) {
             p.yearly_totals = totals;
             p.topics = yearly.map(function (wts, t) {
                 return {
@@ -781,9 +781,17 @@ load = function () {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
 
+
         // either way, now we can install the main event listeners
         // TODO can we do this even earlier?
         setup_listeners();
+
+        // and get the metadata object ready
+        my.conditional = VIS.condition.type;
+        my.metadata.condition(
+            my.conditional,
+            metadata.key[VIS.condition.type](VIS.condition.spec)
+        );
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(VIS.files.meta, function (error, meta_s) {

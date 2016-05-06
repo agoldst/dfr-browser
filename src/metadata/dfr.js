@@ -4,9 +4,7 @@
 // ---- metadata specification: DfR ----
 //
 // Metadata storage specialized for DfR. from_string() expects the DfR
-// metadata columns (trimmed as by dfrtopics::export_browser_data), and
-// conditionals() keys documents by year (used in the display of yearly
-// topic proportions).
+// metadata columns (trimmed as by dfrtopics::export_browser_data)
 
 metadata.dfr = function (spec) {
     var my = spec || { },
@@ -15,16 +13,6 @@ metadata.dfr = function (spec) {
 
     // constructor: build from parent
     that = metadata(my);
-
-    // set up conditionals
-    if (my.conditionals === undefined) {
-        if (my.time_key === undefined) {
-            my.time_key = "%Y"; // default to year
-        }
-        my.conditionals = {
-            time: metadata.time_key(my.time_key)
-        };
-    }
 
     from_string = function (meta_s) {
         var s;
@@ -64,17 +52,4 @@ metadata.dfr = function (spec) {
     that.from_string = from_string;
 
     return that;
-};
-
-metadata.time_key = function (fmt) {
-    var formatter = d3.time.format.utc(fmt), 
-        result;
-    
-    result = function (doc) {
-        return formatter(doc.date);
-    };
-    result.invert = function (key) {
-        return formatter.parse(key);
-    };
-    return result;
 };

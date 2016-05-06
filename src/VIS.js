@@ -15,6 +15,10 @@ var VIS = {
         topic_scaled: "data/topic_scaled.csv"
     },
     default_view: "/model", // specify the part after the #
+    condition: {
+        type: "time",
+        spec: "%Y"
+    },
     overview_words: 15,     // may need adjustment
     model_view: {
         w: 500,            // px: the minimum svg width

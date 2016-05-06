@@ -18,7 +18,12 @@ var metadata = function (spec) {
         from_string,
         doc,
         n_docs,
+        condition,
         conditionals;
+
+    // constructor: initialize conditionals
+    // empty map if spec.conditionals undefined
+    my.conditionals = d3.map(my.conditionals);
 
     // default method: d3 csv parsing
     from_string = function (s) {
@@ -50,16 +55,57 @@ var metadata = function (spec) {
     };
     that.n_docs = n_docs;
 
-    // Which variables can we condition topic distributions on? This
-    // should return a d3.map where keys name the variable and values
-    // are functions for extracting variable values from a document
-    // (see metadata.dfr.conditionals for an example). This function is
-    // invoked by model.set_meta.
+    // Which variables can we condition topic distributions on?
+    // condition() gets/sets key translators, one for each variable. A
+    // translator t should do two things: t(doc) should return a "key"
+    // string designating the level of the metadata variable (e.g. year
+    // of publication) for doc; t.invert(key) should turn a key string
+    // into a value suitable for plotting (e.g. a Date). It might just
+    // be the identity. See metadata.key and metadata.key.time below.
+    //
+    // conditionals() returns the d3.map of all the pairings.
 
     conditionals = function () {
-        return d3.map(my.conditionals);
+        return my.conditionals;
     };
     that.conditionals = conditionals;
 
+    condition = function (key, value) {
+        if (value === undefined) {
+            return my.conditionals.get(key);
+        }
+        my.conditionals.set(key, value);
+        return this;
+    };
+    that.condition = condition;
+
     return that;
+};
+
+metadata.key = {
+    // Basic conditional key translator: subscript doc, "invert" is identity
+    category: function (k) {
+        var result = function (doc) {
+            return doc[k];
+        };
+        result.invert = function (key) {
+            return key;
+        };
+        return result;
+    },
+
+    // Utility for generating conditional key/inverter for time
+    // metadata.time_key("%Y") is for conditioning by year
+    time: function (fmt) {
+        var formatter = d3.time.format.utc(fmt),
+            result;
+
+        result = function (doc) {
+            return formatter(doc.date);
+        };
+        result.invert = function (key) {
+            return formatter.parse(key);
+        };
+        return result;
+    }
 };

@@ -22,7 +22,7 @@ model = function (spec) {
         topic_total,
         alpha,
         meta,
-        conditionals,
+        meta_condition,
         vocab,
         topic_scaled,
         topic_conditional, // slicing by metadata variable
@@ -160,10 +160,10 @@ model = function (spec) {
     that.meta = meta;
 
     // expose metadata's conditional key/invert functions
-    conditionals = function (key) {
-        return my.meta.conditionals().get(key);
+    meta_condition = function (key) {
+        return my.meta.condition(key);
     };
-    that.conditionals = conditionals;
+    that.meta_condition = meta_condition;
 
     // aggregate vocabulary of all top words for some or all topics
     vocab = function (t) {
