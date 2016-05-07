@@ -120,7 +120,7 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 }
 ```
 
-It will also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see (VIS.js)[src/VIS.js#77] for documentation) as well as the corresponding parameters in `model_view.list.spark`.
+It will also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#77) for documentation) as well as the corresponding parameters in `model_view.list.spark`.
 
 If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The topics identified by numbers (indexed from 1) in this array will, by default, not be shown in any view, including aggregate views. Hidden topics can be revealed using the Settings dialog box. Hiding topics can be misleading and should be done cautiously.
 
