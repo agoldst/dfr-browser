@@ -514,7 +514,8 @@ that.model_view_plot = model_view_plot;
 model_view_yearly = function (type) {
     var p = {
         type: type,
-        invert_key: my.m.meta_condition(my.conditional).invert
+        invert_key: my.m.meta_condition(my.conditional).invert,
+        condition: my.conditional
     };
 
     if (VIS.ready.model_yearly) {
@@ -787,7 +788,7 @@ load = function () {
         setup_listeners();
 
         // and get the metadata object ready
-        my.conditional = VIS.condition.type;
+        my.conditional = VIS.condition.type; // TODO possibly spec separately
         my.metadata.condition(
             my.conditional,
             metadata.key[VIS.condition.type](VIS.condition.spec)

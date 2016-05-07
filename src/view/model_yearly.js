@@ -17,7 +17,7 @@ view.model.yearly = function (p) {
         view.dirty("model/yearly", false);
     }
     view.model.conditional({
-        type: "time",
+        condition: p.condition,
         data: this.yearly.data[raw ? "raw" : "frac"],
         domain_x: this.yearly.data.domain_x,
         domain_y: this.yearly.data[raw ? "domain_raw" : "domain_frac"],
@@ -87,7 +87,7 @@ view.model.conditional = function (p) {
         };
     }());
 
-    if (p.type === "time") {
+    if (p.condition === "time") {
         scale_x = d3.time.scale.utc();
     } else {
         // default: continuous
