@@ -94,15 +94,132 @@ metadata.key = {
         return result;
     },
 
-    // Utility for generating conditional key/inverter for time
-    // metadata.time_key("%Y") is for conditioning by year
-    time: function (fmt) {
-        var formatter = d3.time.format.utc(fmt),
-            result;
-
-        result = function (doc) {
-            return formatter(doc.date);
+    continuous: function (k, start, step) {
+        var result = function (doc) {
+            return Math.round((doc[k] - start) / step) * step;
         };
+        result.invert = function (key) {
+            return +key;
+        };
+        return result;
+    },
+
+    // Utility for generating conditional key/inverter for time
+    // Since we're taking a continuous variable and discretizing it,
+    // we need to choose the levels and round to them.
+    // Naive strategy here is just to round the relevant time segment. So:
+    // metadata.key.time("month") takes year-month combos as the levels;
+    // metadata.key.time("year", 5) means 1990, 1995, 2000 etc.
+    // It's up to the user to specify an N that divides unit evenly.
+    // The date format specifies how to construct the string key. If omitted
+    // a default is used.
+    //
+    // Binning dates as continuous numbers would be more flexible but will
+    // require a pass through the actual data
+    time: function (unit, N, format) {
+        var rounder, fmt, formatter, result,
+            n = N || 1;
+
+        switch (unit) {
+            case "year":
+                rounder = function (dt) {
+                    return new Date(
+                        Math.round(dt.getUTCFullYear() / n) * n, 0
+                    );
+                };
+                fmt = format || "%Y";
+                break;
+
+            case "month":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        Math.round(dt.getUTCMonth() / n) * n, 0
+                    );
+                };
+                fmt = format || "%Y-%m";
+                break;
+
+            case "day":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        Math.round(dt.getUTCDay() / n) * n
+                    );
+                };
+                fmt = format || "%Y-%m-%d";
+                break;
+
+            case "hour":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        dt.getUTCDay(),
+                        Math.round(dt.getUTCHours() / n) * n
+                    );
+                };
+                fmt = format || "%Y-%m-%d %H:%M";
+                break;
+
+            case "minute":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        dt.getUTCDay(),
+                        dt.getUTCHours(),
+                        Math.round(dt.getUTCMinutes() / n) * n
+                    );
+                };
+                fmt = format || "%Y-%m-%d %H:%M";
+                break;
+
+            case "second":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        dt.getUTCDay(),
+                        dt.getUTCHours(),
+                        dt.getUTCMinutes(),
+                        Math.round(dt.getUTCSeconds() / n) * n
+                    );
+                };
+                fmt = format || "%Y-%m-%d %H:%M:%S";
+                break;
+
+            case "millisecond":
+                rounder = function (dt) {
+                    return new Date(
+                        dt.getUTCFullYear(),
+                        dt.getUTCMonth(),
+                        dt.getUTCDay(),
+                        dt.getUTCHours(),
+                        dt.getUTCMinutes(),
+                        dt.getUTCSeconds(),
+                        Math.round(dt.getUTCMilliseconds() / n) * n
+                    );
+                };
+                fmt = format || "%Y-%m-%d %H:%M:%S.%L";
+                break;
+
+            default:
+                rounder = function (dt) { return dt; };
+                fmt = format || "%Y-%m-%dT%H:%M:%S.%LZ";
+                break;
+        }
+        formatter = d3.time.format.utc(fmt);
+        if (n === 1) {
+            result = function (doc) {
+                return formatter(doc.date);
+            };
+        } else {
+            result = function (doc) {
+                return formatter(rounder(doc.date));
+            };
+        }
         result.invert = function (key) {
             return formatter.parse(key);
         };
