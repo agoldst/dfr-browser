@@ -16,8 +16,12 @@ var VIS = {
     },
     default_view: "/model", // specify the part after the #
     condition: {            // metadata variable to condition topics on
-        type: "time",       // "category" is an EXPERIMENTAL alternative
-        spec: "%Y"          // strftime-type format for time bins
+        type: "time",       // alternatives: "category" and "continuous"
+        spec: {
+            unit: "month",  // unit of time bins
+            n: 1           // width of time bins
+            // format: "%Y-%m" // can optionally specify key format (strftime)
+        }
     },
     overview_words: 15,     // may need adjustment
     model_view: {
@@ -54,10 +58,6 @@ var VIS = {
                     bar: {
                         unit: "day",
                         w: 300
-                    },
-                    step: {
-                        unit: "year",
-                        w: 1
                     }
                 }
             }
@@ -78,10 +78,6 @@ var VIS = {
             bar: { // width of bars
                 unit: "day", // unit is used as d3.time[unit].utc
                 w: 90
-            },
-            step: { // domain-scale length from one bar to next
-                unit: "year", // unit is used as d3.time[unit].utc
-                w: 1
             },
             ticks: {
                 unit: "year",

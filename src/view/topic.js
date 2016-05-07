@@ -137,6 +137,8 @@ view.topic.yearly = function (p) {
     spec.h = Math.floor(spec.w / VIS.topic_view.aspect)
         - spec.m.top - spec.m.bottom;
 
+    // copy over conditional variable information to bar-step spec
+    spec.time.step = VIS.condition.spec;
     view.topic.conditional_barplot({
         t: p.t,
         conditional: p.yearly,
@@ -208,7 +210,7 @@ view.topic.conditional_barplot = function (param) {
             - scale_x(series[0].x);
         w_click = scale_x(
                 d3.time[spec.time.step.unit].utc.offset(
-                    series[0].x, spec.time.step.w))
+                    series[0].x, spec.time.step.n))
             - scale_x(series[0].x);
     } else {
         // assume ordinal

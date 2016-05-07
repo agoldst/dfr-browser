@@ -782,22 +782,23 @@ load = function () {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
 
-
         // either way, now we can install the main event listeners
         // TODO can we do this even earlier?
         setup_listeners();
 
-        // and get the metadata object ready
-        my.conditional = VIS.condition.type; // TODO possibly spec separately
-        my.metadata.condition(
-            my.conditional,
-            metadata.key[VIS.condition.type](VIS.condition.spec)
-        );
-
         // now launch remaining data loading; ask for a refresh when done
         load_data(VIS.files.meta, function (error, meta_s) {
             if (typeof meta_s === 'string') {
+                // and get the metadata object ready
                 my.metadata.from_string(meta_s);
+                my.conditional = VIS.condition.type; // TODO spec separately?
+
+                my.metadata.condition(
+                    my.conditional,
+                    metadata.key[VIS.condition.type],
+                    VIS.condition.spec
+                );
+                // pass to object (also stores conditional keys)
                 my.m.set_meta(my.metadata);
                 refresh();
             } else {

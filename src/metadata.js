@@ -70,11 +70,11 @@ var metadata = function (spec) {
     };
     that.conditionals = conditionals;
 
-    condition = function (key, value) {
-        if (value === undefined) {
+    condition = function (key, f, spec) {
+        if (f === undefined) {
             return my.conditionals.get(key);
         }
-        my.conditionals.set(key, value);
+        my.conditionals.set(key, f(spec, my.docs));
         return this;
     };
     that.condition = condition;
@@ -84,9 +84,9 @@ var metadata = function (spec) {
 
 metadata.key = {
     // Basic conditional key translator: subscript doc, "invert" is identity
-    category: function (k) {
+    category: function (p) {
         var result = function (doc) {
-            return doc[k];
+            return doc[p.key];
         };
         result.invert = function (key) {
             return key;
@@ -94,128 +94,114 @@ metadata.key = {
         return result;
     },
 
-    continuous: function (k, start, step) {
-        var result = function (doc) {
-            return Math.round((doc[k] - start) / step) * step;
-        };
+    // TODO but be careful about numeric -> string & alphabetic sort later on
+    continuous: function (p, docs) {
+        var start = d3.min(docs, function (d) { return d[p.key]; }),
+            result;
+        result = function (doc) {
+                return start +
+                    Math.floor((doc[p.key] - start) / p.step) * p.step;
+            };
         result.invert = function (key) {
             return +key;
         };
         return result;
     },
 
-    // Utility for generating conditional key/inverter for time
-    // Since we're taking a continuous variable and discretizing it,
-    // we need to choose the levels and round to them.
-    // Naive strategy here is just to round the relevant time segment. So:
-    // metadata.key.time("month") takes year-month combos as the levels;
-    // metadata.key.time("year", 5) means 1990, 1995, 2000 etc.
-    // It's up to the user to specify an N that divides unit evenly.
-    // The date format specifies how to construct the string key. If omitted
-    // a default is used.
-    //
-    // Binning dates as continuous numbers would be more flexible but will
-    // require a pass through the actual data
-    time: function (unit, N, format) {
-        var rounder, fmt, formatter, result,
-            n = N || 1;
+    // Utility for generating conditional key/inverter for time.  This gives
+    // a step function for times and dates. Sigh. We'll follow
+    // d3.time.interval.offset's decisions, mostly. For numerically even
+    // intervals, specify "ms" as the unit and give the step size in
+    // milliseconds. But note that this will have a tricky interaction with
+    // the calendar. On DST switch days, a day is not 24 * 60 * 60 * 1000 ms,
+    // so if you cross a DST day in a step, you'll drift. The date format
+    // specifies how to construct the string key. If omitted a default is
+    // used.
 
-        switch (unit) {
+    time: function (p, docs) {
+        var start = d3.min(docs, function (d) { return d.date; }),
+            rounder, formatter, result,
+            fmt = p.format,
+            n = p.n || 1,
+            unit = d3.time[p.unit].utc;
+
+        // rounder: overridden for ms units at default: below
+        // also overriden if n = 1 below
+        rounder = (function () {
+            // Brute force: step function as a table lookup.  Needed because
+            // of the nightmare of leap days, DST, etc.  The strategy is to
+            // store an array of steps which we'll grow as needed, then find
+            // the argument's place in the array using bisection.  The array
+            // persists because this is a closure.  This is overkill for
+            // years and months, which could be implemented more simply, but
+            // for code simplicity we'll just write the generic solution.
+            var steps = [start], tail = start;
+
+            return function (dt) {
+                if (dt > tail) {
+                    // can't use unit.range because that has different
+                    // behavior (clamping at segment boundaries)
+                    tail = unit.offset(tail, n);
+                    while (tail < dt) {
+                        steps.push(tail);
+                        tail = unit.offset(tail, n);
+                    }
+                    return tail;
+                }
+
+                return steps[d3.bisect(steps, dt) - 1];
+            }; 
+        }());
+
+        // choose key format, and possibly override rounder
+        switch (p.unit) {
             case "year":
-                rounder = function (dt) {
-                    return new Date(
-                        Math.round(dt.getUTCFullYear() / n) * n, 0
-                    );
-                };
-                fmt = format || "%Y";
+                fmt = fmt || "%Y";
                 break;
 
             case "month":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        Math.round(dt.getUTCMonth() / n) * n, 0
-                    );
-                };
-                fmt = format || "%Y-%m";
+                fmt = fmt || "%Y-%m";
                 break;
 
-            case "day":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        dt.getUTCMonth(),
-                        Math.round(dt.getUTCDay() / n) * n
-                    );
-                };
-                fmt = format || "%Y-%m-%d";
+            case "day": 
+                // default rounder
+                fmt = fmt || "%Y-%m-%d";
                 break;
 
-            case "hour":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        dt.getUTCMonth(),
-                        dt.getUTCDay(),
-                        Math.round(dt.getUTCHours() / n) * n
-                    );
-                };
-                fmt = format || "%Y-%m-%d %H:%M";
+            case "hour": 
+                // default rounder
+                fmt = fmt || "%Y-%m-%d %H:00";
                 break;
 
-            case "minute":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        dt.getUTCMonth(),
-                        dt.getUTCDay(),
-                        dt.getUTCHours(),
-                        Math.round(dt.getUTCMinutes() / n) * n
-                    );
-                };
-                fmt = format || "%Y-%m-%d %H:%M";
+            case "minute": 
+                // default rounder
+                fmt = fmt || "%Y-%m-%d %H:%M";
                 break;
 
-            case "second":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        dt.getUTCMonth(),
-                        dt.getUTCDay(),
-                        dt.getUTCHours(),
-                        dt.getUTCMinutes(),
-                        Math.round(dt.getUTCSeconds() / n) * n
-                    );
-                };
-                fmt = format || "%Y-%m-%d %H:%M:%S";
-                break;
-
-            case "millisecond":
-                rounder = function (dt) {
-                    return new Date(
-                        dt.getUTCFullYear(),
-                        dt.getUTCMonth(),
-                        dt.getUTCDay(),
-                        dt.getUTCHours(),
-                        dt.getUTCMinutes(),
-                        dt.getUTCSeconds(),
-                        Math.round(dt.getUTCMilliseconds() / n) * n
-                    );
-                };
-                fmt = format || "%Y-%m-%d %H:%M:%S.%L";
+            case "second": 
+                // default rounder
+                fmt = fmt || "%Y-%m-%d %H:%M:%S";
                 break;
 
             default:
-                rounder = function (dt) { return dt; };
-                fmt = format || "%Y-%m-%dT%H:%M:%S.%LZ";
+                // numerical rounding instead
+                // n taken to be in the native time unit (ms)
+                rounder = function (dt) { 
+                    return new Date(+start +
+                        Math.floor((+dt - +start) / n) * n);
+                };
+                fmt = fmt || "%Y-%m-%dT%H:%M:%S.%LZ";
                 break;
         }
         formatter = d3.time.format.utc(fmt);
         if (n === 1) {
+            // then never mind all the palaver about rounding, we can just
+            // use d3's formatting as our step function
             result = function (doc) {
                 return formatter(doc.date);
             };
         } else {
+            // Okay, palaver away
             result = function (doc) {
                 return formatter(rounder(doc.date));
             };
