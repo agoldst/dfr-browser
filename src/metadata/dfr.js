@@ -44,7 +44,6 @@ metadata.dfr = function (spec) {
                     .replace(/^p?p\. /, "")
                     .replace(/-/g, "–")
             };
-            // calculate years from dates just once and store
 
             return result;
         });
