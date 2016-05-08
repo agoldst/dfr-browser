@@ -49,7 +49,7 @@ var dfb = function (spec) {
         view.dfb(that);
     } else {
         view.error(
-            "view.dfb already defined: browser() called more than once?"
+            "view.dfb already defined: dfb() called more than once?"
         );
     }
 
