@@ -1,38 +1,39 @@
 /*global view, VIS, d3 */
 "use strict";
 
-view.model.yearly = function (p) {
-    var raw = p.type ? (p.type === "raw") : VIS.last.model_yearly;
-    VIS.last.model_yearly = raw;
+view.model.conditional = function (p) {
+    var raw = p.type ? (p.type === "raw") : VIS.last.model_conditional;
+    VIS.last.model_conditional = raw;
 
     // can become dirty by showing/hiding topics
     // TODO simplify interaction with VIS.ready
-    if (view.dirty("model/yearly")) {
-        this.yearly.data = view.model.stacked_series({
-            keys: p.yearly_totals.keys().sort(),
-            xs: p.yearly_totals.keys().sort().map(p.invert_key),
-            totals: p.yearly_totals,
+    if (view.dirty("model/conditional")) {
+        this.conditional.data = view.model.stacked_series({
+            keys: p.conditional_totals.keys().sort(),
+            xs: p.conditional_totals.keys().sort().map(p.invert_key),
+            totals: p.conditional_totals,
             topics: p.topics
         });
-        view.dirty("model/yearly", false);
+        view.dirty("model/conditional", false);
     }
-    view.model.conditional({
+    view.model.conditional_plot({
         condition: p.condition,
-        data: this.yearly.data[raw ? "raw" : "frac"],
-        domain_x: this.yearly.data.domain_x,
-        domain_y: this.yearly.data[raw ? "domain_raw" : "domain_frac"],
-        order: this.yearly.data.order,
-        spec: VIS.model_view.yearly,
+        data: this.conditional.data[raw ? "raw" : "frac"],
+        domain_x: this.conditional.data.domain_x,
+        domain_y: this.conditional.data[raw ? "domain_raw" : "domain_frac"],
+        order: this.conditional.data.order,
+        spec: VIS.model_view.conditional,
         raw: raw,
-        selector: "#model_view_yearly"
+        selector: "#model_view_conditional"
     });
 
-    d3.selectAll("#yearly_choice li").classed("active", false);
-    d3.select(raw ? "#nav_model_yearly_raw" : "#nav_model_yearly_frac")
+    d3.selectAll("#conditional_choice li").classed("active", false);
+    d3.select(raw ? "#nav_model_conditional_raw"
+            : "#nav_model_conditional_frac")
         .classed("active", true);
 };
 
-view.model.conditional = function (p) {
+view.model.conditional_plot = function (p) {
     var spec = p.spec, svg,
         scale_x, scale_y, axis_x, g_axis, area,
         scale_color,

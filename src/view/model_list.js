@@ -1,22 +1,26 @@
-/*global view, VIS, d3 */
+/*global view, VIS, d3, utils */
 "use strict";
 
 view.model.list = function (p) {
     var trs, divs, token_max,
         total = d3.sum(p.sums),
         keys, sorter, sort_choice, sort_dir,
-        spec = VIS.model_view.list.spark;
+        spec;
 
     trs = d3.select("#model_view_list table tbody")
         .selectAll("tr");
 
     if (!VIS.ready.model_list) {
+        // set up spark spec
+        spec = utils.clone(VIS.model_view.list.spark);
+        spec.time.step = VIS.condition.spec;
+
         // label sparkplots column
-        d3.select("th#model_view_list_year a")
+        d3.select("th#model_view_list_condition a")
             .text((p.condition === "time") ? "over time"
                     : "by " + p.condition);
 
-        trs = trs.data(d3.range(p.yearly.length))
+        trs = trs.data(d3.range(p.data.length))
             .enter().append("tr");
 
         trs.on("click", function (t) {
@@ -34,14 +38,13 @@ view.model.list = function (p) {
             });
 
         divs = trs.append("td").append("div").classed("spark", true);
-        spec.time.step = VIS.condition.spec;
         view.append_svg(divs, spec)
             .each(function (t) {
                 view.topic.conditional_barplot({ 
                     t: t,
-                    conditional: p.yearly[t],
+                    data: p.data[t],
                     invert_key: p.invert_key,
-                    type: "time",
+                    type: p.type,
                     axes: false,
                     clickable: false,
                     svg: d3.select(this),
@@ -93,12 +96,12 @@ view.model.list = function (p) {
         // default ordering should be largest frac to least,
         // so the sort keys are negative proportions
         keys = p.sums.map(function (x) { return -x / total; });
-    } else if (sort_choice === "year") {
-        keys = p.yearly.map(function (series) {
+    } else if (sort_choice === "condition") {
+        keys = p.data.map(function (series) {
             var result, max_weight = 0;
-            series.forEach(function (year, weight) {
+            series.forEach(function (cond, weight) {
                 if (weight > max_weight) {
-                    result = year;
+                    result = cond;
                     max_weight = weight;
                 }
             });

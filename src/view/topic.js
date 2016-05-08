@@ -56,14 +56,15 @@ view.topic.docs = function (p) {
     var header_text, trs_d,
         docs = p.docs;
 
-    if (p.year !== undefined) {
-        header_text = " in " + p.year;
+    if (p.condition !== undefined) {
+        header_text = ": " + p.condition;
 
-        // the clear-selected-year button
-        d3.select("#topic_year_clear")
+        // the clear-selected-condition button
+        d3.select("#topic_condition_clear")
             .classed("disabled", false)
             .on("click", function () {
-                d3.select(".selected_year").classed("selected_year", false);
+                d3.select(".selected_condition")
+                    .classed("selected_condition", false);
                 view.updating(true);
                 view.dfb().set_view(view.topic.hash(p.t));
             })
@@ -71,12 +72,12 @@ view.topic.docs = function (p) {
 
     } else {
         header_text = "";
-        d3.select("#topic_year_clear")
+        d3.select("#topic_condition_clear")
             .classed("disabled", true);
     }
 
 
-    d3.selectAll("#topic_docs span.topic_year")
+    d3.selectAll("#topic_docs span.topic_condition")
         .text(header_text);
 
     if (docs === undefined || docs.length === 0) {
@@ -129,9 +130,9 @@ view.topic.docs = function (p) {
     view.dirty("topic/docs", false);
 };
 
-view.topic.yearly = function (p) {
-    var spec = VIS.topic_view;
-    spec.w = d3.select("#topic_yearly").node().clientWidth || spec.w;
+view.topic.conditional = function (p) {
+    var spec = utils.clone(VIS.topic_view);
+    spec.w = d3.select("#topic_conditional").node().clientWidth || spec.w;
     spec.w = Math.max(spec.w, VIS.topic_view.w); // set a min. width
     spec.w -= spec.m.left + spec.m.right;
     spec.h = Math.floor(spec.w / VIS.topic_view.aspect)
@@ -139,19 +140,13 @@ view.topic.yearly = function (p) {
 
     // copy over conditional variable information to bar-step spec
     spec.time.step = VIS.condition.spec;
-    view.topic.conditional_barplot({
-        t: p.t,
-        conditional: p.yearly,
-        condition: p.year,
-        invert_key: p.invert_key,
-        type: "time",
-        svg: view.plot_svg("div#topic_plot", spec),
-        axes: true,
-        clickable: true,
-        dirty: view.dirty("topic/yearly"),
-        spec: spec
-    });
-    view.dirty("topic/yearly", false);
+    p.svg = view.plot_svg("div#topic_plot", spec);
+    p.axes = true;
+    p.clickable = true;
+    p.dirty = view.dirty("topic/conditional");
+    p.spec = spec;
+    view.topic.conditional_barplot(p);
+    view.dirty("topic/conditional", false);
 };
 
 view.topic.conditional_barplot = function (param) {
@@ -167,11 +162,11 @@ view.topic.conditional_barplot = function (param) {
         svg = param.svg,
         spec = param.spec;
 
-    series = param.conditional.keys().sort().map(function (y) {
+    series = param.data.keys().sort().map(function (y) {
         return {
             key: y,
             x: param.invert_key(y),
-            y: param.conditional.get(y)
+            y: param.data.get(y)
         };
     });
 
@@ -386,7 +381,7 @@ view.topic.conditional_barplot = function (param) {
                     view.updating(true);
                     view.dfb().set_view(view.topic.hash(param.t));
                 } else {
-                    // TODO selection of multiple years
+                    // TODO selection of multiple conditions
                     // should use a brush http://bl.ocks.org/mbostock/6232537
                     d3.selectAll(".selected_condition")
                         .classed("selected_condition", false);

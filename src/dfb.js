@@ -7,7 +7,7 @@ var dfb = function (spec) {
         settings_modal,
         model_view_list, // helper functions for model subviews
         model_view_plot,
-        model_view_yearly,
+        model_view_conditional,
         refresh,
         set_view,
         hide_topics,
@@ -96,26 +96,24 @@ my.views.set("topic", function (t_user, y) {
     // topic word subview
     view.topic.words(words);
 
-    // topic yearly barplot subview
+    // topic conditional barplot subview
 
     // if the last view was also a topic view, we'll decree this a qualified
     // redraw and allow a nice transition to happen
     if (VIS.cur_view && VIS.cur_view.attr("id") === "topic_view") {
-        view.dirty("topic/yearly", true);
+        view.dirty("topic/conditional", true);
     }
 
-    if (!view.updating() && !view.dirty("topic/yearly")) {
+    if (!view.updating() && !view.dirty("topic/conditional")) {
         d3.select("#topic_plot").classed("invisible", true);
     }
 
-    my.m.topic_conditional(t, my.condition, function (yearly) {
-        // check that the year is valid
-        var year = yearly.has(y) ? y : undefined;
-
-        view.topic.yearly({
+    my.m.topic_conditional(t, my.condition, function (data) {
+        view.topic.conditional({
             t: t,
-            year: year,
-            yearly: yearly,
+            condition: data.has(y) ? y : undefined, // validate condition y
+            type: VIS.condition.type,
+            data: data,
             invert_key: my.m.meta_condition(my.condition).invert
         });
         d3.select("#topic_plot").classed("invisible", false);
@@ -132,16 +130,16 @@ my.views.set("topic", function (t_user, y) {
             citations: docs.map(function (d) {
                 return my.bib.citation(my.m.meta(d.doc));
             }),
-            year: y
+            condition: y
         });
     };
 
-    // if no year given, show unconditional top docs
+    // if no condition given, show unconditional top docs
     if (y === undefined) {
         my.m.topic_docs(t, VIS.topic_view.docs, view_top_docs);
     } else {
-        // otherwise, ask for list conditional on year
-        // N.B. an invalid year will yield no docs
+        // otherwise, ask for list conditional on y
+        // N.B. an invalid condition will yield no docs
         // (and a message will show to that effect)
         my.m.topic_docs_conditional(t, my.condition, y, VIS.topic_view.docs,
             view_top_docs);
@@ -399,12 +397,12 @@ my.views.set("model", function (type, p1, p2) {
     // hide all subviews and controls; we'll reveal the chosen one
     d3.select("#model_view_plot").classed("hidden", true);
     d3.select("#model_view_list").classed("hidden", true);
-    d3.select("#model_view_yearly").classed("hidden", true);
+    d3.select("#model_view_conditional").classed("hidden", true);
 
     d3.selectAll(".model_view_grid").classed("hidden", true);
     d3.selectAll(".model_view_scaled").classed("hidden", true);
     d3.selectAll(".model_view_list").classed("hidden", true);
-    d3.selectAll(".model_view_yearly").classed("hidden", true);
+    d3.selectAll(".model_view_conditional").classed("hidden", true);
 
     // reveal navbar
     d3.select("#model_view nav").classed("hidden", false);
@@ -417,14 +415,14 @@ my.views.set("model", function (type, p1, p2) {
 
         model_view_list(p1, p2);
         d3.select("#model_view_list").classed("hidden", false);
-    } else if (type_chosen === "yearly") {
+    } else if (type_chosen === "conditional") {
         if (!my.m.meta() || !my.m.has_dt()) {
             view.loading(true);
             return true;
         }
 
-        model_view_yearly(p1);
-        d3.select("#model_view_yearly").classed("hidden", false);
+        model_view_conditional(p1);
+        d3.select("#model_view_conditional").classed("hidden", false);
     } else { // grid or scaled
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
@@ -454,11 +452,12 @@ model_view_list = function (sort, dir) {
     view.calculating("#model_view_list", true);
 
     my.m.topic_total(undefined, function (sums) {
-        my.m.topic_conditional(undefined, my.condition, function (yearly) {
+        my.m.topic_conditional(undefined, my.condition, function (data) {
             view.calculating("#model_view_list", false);
             view.model.list({
-                yearly: yearly,
+                data: data,
                 condition: my.condition,
+                type: VIS.condition.type,
                 invert_key: my.m.meta_condition(my.condition).invert,
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),
@@ -499,30 +498,31 @@ model_view_plot = function (type) {
     return true;
 };
 
-model_view_yearly = function (type) {
+model_view_conditional = function (type) {
     var p = {
         type: type,
         invert_key: my.m.meta_condition(my.condition).invert,
         condition: my.condition
     };
 
-    if (VIS.ready.model_yearly) {
-        view.model.yearly(p);
+    if (VIS.ready.model_conditional) {
+        view.model.conditional(p);
         return true;
     }
     // TODO simplify interaction with VIS.ready
-    view.dirty("model/yearly", true);
+    view.dirty("model/conditional", true);
 
     // otherwise:
-    view.calculating("#model_view_yearly", true);
+    view.calculating("#model_view_conditional", true);
     my.m.conditional_total(my.condition, undefined, function (totals) {
-        my.m.topic_conditional(undefined, my.condition, function (yearly) {
-            p.yearly_totals = totals;
-            p.topics = yearly.map(function (wts, t) {
+        my.m.topic_conditional(undefined, my.condition, function (data) {
+            p.conditional_totals = totals;
+            p.topics = data.map(function (wts, t) {
                 return {
                     t: t,
                     wts: wts,
-                    words: my.m.topic_words(t, VIS.model_view.yearly.words),
+                    words: my.m.topic_words(t,
+                            VIS.model_view.conditional.words),
                     label: my.m.topic_label(t)
                 };
             })
@@ -531,8 +531,8 @@ model_view_yearly = function (type) {
                         || !VIS.topic_hidden[topic.t];
                 });
 
-            view.model.yearly(p);
-            view.calculating("#model_view_yearly", false);
+            view.model.conditional(p);
+            view.calculating("#model_view_conditional", false);
         });
     });
 
@@ -646,7 +646,7 @@ setup_listeners = function () {
         }
         VIS.resize_timer = window.setTimeout(function () {
             view.updating(true);
-            view.dirty("topic/yearly", true);
+            view.dirty("topic/conditional", true);
             refresh();
             VIS.resize_timer = undefined; // ha ha
         }, VIS.resize_refresh_delay);

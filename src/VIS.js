@@ -31,7 +31,7 @@ var VIS = {
         size_range: [7, 18], // points. may need adjustment
         name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness
-        yearly: {
+        conditional: {
             w: 500,         // px: the minimum svg width
             aspect: 1.333,
             m: {

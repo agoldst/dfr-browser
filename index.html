@@ -112,8 +112,8 @@
           <li id="nav_model_list">
             <a href="#/model/list">List</a>
           </li>
-          <li id="nav_model_yearly">
-            <a href="#/model/yearly">Years</a>
+          <li id="nav_model_conditional">
+            <a href="#/model/conditional">Stacked</a>
           </li>
         </ul>
         <div class="navbar-right">
@@ -121,26 +121,26 @@
             click a circle for more about a topic
           </p>
           <p id="model_view_help"
-          class="navbar-text help model_view_scaled model_view_yearly hidden">
+          class="navbar-text help model_view_scaled model_view_conditional hidden">
           scroll to zoom; shift-drag to pan; click for more about a topic</p>
           <p id="list_view_help"
           class="navbar-text help model_view_list hidden">
           click a column label to sort; click a row for more about a topic</p>
-          <p id="yearly_view_help" class="navbar-text help model_view_yearly">
+          <p id="conditional_view_help" class="navbar-text help model_view_conditional">
             y-axis:
           </p>
-          <ul id="yearly_choice"
-            class="nav navbar-nav nav-pills model_view_yearly hidden">
-            <li id="nav_model_yearly_frac" class="active">
-              <a href="#/model/yearly/frac">yearly %</a>
+          <ul id="conditional_choice"
+            class="nav navbar-nav nav-pills model_view_conditional hidden">
+            <li id="nav_model_conditional_frac" class="active">
+              <a href="#/model/conditional/frac">%</a>
             </li>
-            <li id="nav_model_yearly_raw">
-              <a href="#/model/yearly/raw">word counts</a>
+            <li id="nav_model_conditional_raw">
+              <a href="#/model/conditional/raw">word counts</a>
             </li>
           </ul>
           <button id="reset_zoom" type="button"
             class="btn btn-default navbar-btn
-              model_view_scaled model_view_yearly hidden">
+              model_view_scaled model_view_conditional hidden">
             Reset zoom
           </button>
         </div>
@@ -155,8 +155,8 @@
                 topic
               </a><span class="glyphicon glyphicon-sort"></span>
             </th>
-            <th id="model_view_list_year" class="sort">
-              <a href="#/model/list/year"
+            <th id="model_view_list_condition" class="sort">
+              <a href="#/model/list/condition"
                   title="click to sort by location of peak">
                 variation
               </a><span class="glyphicon glyphicon-sort"></span>
@@ -179,7 +179,7 @@
     </div>
     <div id="model_view_plot" class="hidden">
     </div>
-    <div id="model_view_yearly" class="hidden">
+    <div id="model_view_conditional" class="hidden">
     </div>
   </div>
 
@@ -221,21 +221,21 @@
           </table>
         </div>
         <div class="col-md-9">
-          <div id="topic_yearly">
-            <h3 class="h-small">Yearly proportion of words in topic</h3>
+          <div id="topic_conditional">
+            <h3 class="h-small">Conditional proportion of words in topic</h3>
             <p class="pull-left help">
-              Click a bar to limit documents to that year
+              Click a bar to limit to the documents it represents
             </p>
             <div class="pull-right">
               <button class="btn btn-default disabled" type="button"
-                id="topic_year_clear">clear selected year</button>
+                id="topic_condition_clear">clear selected</button>
             </div>
             <div id="topic_plot">
             </div>
           </div>
           <div id="topic_docs">
-            <h3 id="topic_docs_header" class="h-small">Top documents<span class="topic_year"></span></h3>
-            <p class="help none">There are no documents containing this topic<span class="topic_year"></span>.</p>
+            <h3 id="topic_docs_header" class="h-small">Top documents<span class="topic_condition"></span></h3>
+            <p class="help none">There are no documents containing this topic<span class="topic_condition"></span>.</p>
             <table class="table table-condensed hidden calc-done">
               <thead>
                 <tr>

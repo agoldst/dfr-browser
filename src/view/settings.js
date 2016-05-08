@@ -36,7 +36,7 @@ view.settings = function (p) {
             .property("checked", VIS.show_hidden_topics === true)
             .on("change", function () {
                 VIS.show_hidden_topics = !VIS.show_hidden_topics;
-                view.dirty("model/yearly", true);
+                view.dirty("model/conditional", true);
             });
 
     VIS.ready.settings = true;
