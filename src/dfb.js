@@ -540,12 +540,18 @@ model_view_conditional = function (type) {
 };
 
 refresh = function () {
-    var view_parsed, v_chosen, param,
+    var hash = window.location.hash,
+        view_parsed, v_chosen, param,
         success = false,
         j;
 
-    view_parsed = window.location.hash.split("/");
+    if (my.aliases) {
+        my.aliases.forEach(function (pat, repl) {
+            hash = hash.split(pat).join(repl);
+        });
+    }
 
+    view_parsed = hash.split("/");
     if (VIS.cur_view !== undefined && !view.updating()) {
         VIS.cur_view.classed("hidden", true);
     }
@@ -748,6 +754,9 @@ load = function () {
                 my.default_view = [ "", "model"];
             }
             my.views.set("default", my.views.get(my.default_view[1]));
+
+            // and set up view aliases by validating them
+            my.aliases = d3.map(VIS.aliases);
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }

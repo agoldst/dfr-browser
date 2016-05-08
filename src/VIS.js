@@ -14,6 +14,9 @@ var VIS = {
         tw: "data/tw.json",
         topic_scaled: "data/topic_scaled.csv"
     },
+    aliases: {                  // simple aliasing in URLs:
+        yearly: "conditional"   // #/model/yearly/... -> #/model/conditional/...
+    },
     default_view: "/model", // specify the part after the #
     condition: {            // metadata variable to condition topics on
         type: "time",       // alternatives: "category" and "continuous"
