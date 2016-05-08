@@ -469,6 +469,7 @@ model_view_list = function (sort, dir) {
             view.calculating("#model_view_list", false);
             view.model.list({
                 yearly: yearly,
+                condition: my.conditional,
                 invert_key: my.m.meta_condition(my.conditional).invert,
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),

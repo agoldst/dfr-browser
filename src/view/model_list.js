@@ -5,15 +5,16 @@ view.model.list = function (p) {
     var trs, divs, token_max,
         total = d3.sum(p.sums),
         keys, sorter, sort_choice, sort_dir,
-        years = p.yearly[0].keys(), // TODO don't assume year keys here
         spec = VIS.model_view.list.spark;
 
     trs = d3.select("#model_view_list table tbody")
         .selectAll("tr");
 
     if (!VIS.ready.model_list) {
+        // label sparkplots column
         d3.select("th#model_view_list_year a")
-            .text(d3.min(years) + "—" + d3.max(years));
+            .text((p.condition === "time") ? "over time"
+                    : "by " + p.condition);
 
         trs = trs.data(d3.range(p.yearly.length))
             .enter().append("tr");
