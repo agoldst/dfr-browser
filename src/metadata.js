@@ -31,6 +31,11 @@ var metadata = function (spec) {
             return;
         }
         my.docs = d3.csv.parse(s);
+        if (my.date_field && my.docs[0].hasOwnProperty(my.date_field)) {
+            my.docs.forEach(function (d) {
+                d[my.date_field] = new Date(d[my.date_field]);
+            });
+        }
     };
     that.from_string = from_string;
 
