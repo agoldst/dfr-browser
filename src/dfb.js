@@ -1,18 +1,11 @@
-/*global d3, $, JSZip, utils, model, view, bib, metadata, VIS, window */
+/*global d3, $, JSZip, utils, model, view, bib, metadata, VIS, window, document */
 "use strict";
 
 var dfb = function (spec) {
     var my = spec || { },
         that = { },
-        topic_view, // view generation
-        word_view,
-        words_view,
-        doc_view,
-        bib_view,
-        about_view,
         settings_modal,
-        model_view,
-        model_view_list,
+        model_view_list, // helper functions for model subviews
         model_view_plot,
         model_view_yearly,
         refresh,
@@ -53,10 +46,13 @@ var dfb = function (spec) {
         );
     }
 
+    // set up view routing table
+    my.views = d3.map();
+
 // Principal view-generating functions
 // -----------------------------------
 
-topic_view = function (t_user, y) {
+my.views.set("topic", function (t_user, y) {
     var words,
         t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
         view_top_docs;
@@ -154,10 +150,9 @@ topic_view = function (t_user, y) {
     view.loading(false);
     return true;
     // (later: nearby topics by J-S div or cor on log probs)
-};
-that.topic_view = topic_view;
+});
 
-word_view = function (w) {
+my.views.set("word", function (w) {
     var div = d3.select("div#word_view"),
         word = w,
         topics, n = 0;
@@ -217,10 +212,9 @@ word_view = function (w) {
         })
     });
     return true;
-};
-that.word_view = word_view;
+});
 
-words_view = function () {
+my.views.set("words", function () {
     var ts;
     if (!my.m.tw()) {
         view.loading(true);
@@ -236,10 +230,9 @@ words_view = function () {
     // and m.vocab(ts) will return the full vocab.
 
     return view.words(my.m.vocab(ts));
-};
-that.words_view = words_view;
+});
 
-doc_view = function (d) {
+my.views.set("doc", function (d) {
     var div = d3.select("div#doc_view"),
         doc = +d;
 
@@ -298,10 +291,9 @@ doc_view = function (d) {
     return true;
 
     // TODO nearby documents list
-};
-that.doc_view = doc_view;
+});
 
-bib_view = function (maj, min, dir) {
+my.views.set("bib", function (maj, min, dir) {
     var sorting = {
             major: maj,
             minor: min,
@@ -364,16 +356,14 @@ bib_view = function (maj, min, dir) {
     VIS.ready.bib = true;
 
     return true;
-};
-that.bib_view = bib_view;
+});
 
-about_view = function () {
+my.views.set("about", function () {
     view.about(my.m.info());
     view.loading(false);
     d3.select("#about_view").classed("hidden", false);
     return true;
-};
-that.about_view = about_view;
+});
 
 settings_modal = function () {
     var p = {
@@ -391,7 +381,7 @@ settings_modal = function () {
 };
 that.settings_modal = settings_modal;
 
-model_view = function (type, p1, p2) {
+my.views.set("model", function (type, p1, p2) {
     var type_chosen = type || VIS.last.model || "grid";
 
     // if loading scaled coordinates failed,
@@ -458,8 +448,7 @@ model_view = function (type, p1, p2) {
 
     view.loading(false);
     return true;
-};
-that.model_view = model_view;
+});
 
 model_view_list = function (sort, dir) {
     view.calculating("#model_view_list", true);
@@ -485,7 +474,6 @@ model_view_list = function (sort, dir) {
 
     return true;
 };
-that.model_view_list = model_view_list;
 
 model_view_plot = function (type) {
     my.m.topic_total(undefined, function (totals) {
@@ -510,7 +498,6 @@ model_view_plot = function (type) {
 
     return true;
 };
-that.model_view_plot = model_view_plot;
 
 model_view_yearly = function (type) {
     var p = {
@@ -551,10 +538,11 @@ model_view_yearly = function (type) {
 
     return true;
 };
-that.model_view_yearly = model_view_yearly;
 
 refresh = function () {
-    var view_parsed, v_chosen, param, success, j;
+    var view_parsed, v_chosen, param,
+        success = false,
+        j;
 
     view_parsed = window.location.hash.split("/");
 
@@ -564,41 +552,14 @@ refresh = function () {
 
     // well-formed view must begin #/
     if (view_parsed[0] !== "#") {
-        view_parsed = VIS.default_view.split("/");
+        view_parsed = my.default_view;
     }
 
     v_chosen = view_parsed[1];
 
     param = view_parsed.slice(2, view_parsed.length);
-    switch (v_chosen) {
-        case "model":
-            success = model_view.apply(undefined, param);
-            break;
-        case "about":
-            success = about_view.apply(undefined, param);
-            break;
-        case "bib":
-            success = bib_view.apply(undefined, param);
-            break;
-        case "topic":
-            success = topic_view.apply(undefined, param);
-            break;
-        case "word":
-            success = word_view.apply(undefined, param);
-            break;
-        case "doc":
-            success = doc_view.apply(undefined, param);
-            break;
-        case "words":
-            success = words_view.apply(undefined, param);
-            break;
-        case "settings":
-            settings_modal();
-            success = false;
-            break;
-        default:
-            success = false;
-            break;
+    if (my.views.has(v_chosen)) {
+        success = my.views.get(v_chosen).apply(that, param);
     }
 
     if (success) {
@@ -621,10 +582,9 @@ refresh = function () {
         });
     } else {
         if (VIS.cur_view === undefined) {
-            // fall back on model_view
-            // TODO make this go to default_view instead
-            VIS.cur_view = d3.select("div#model_view");
-            model_view();
+            // fall back on default view
+            VIS.cur_view = d3.select("div#" + my.default_view[1] + "_view");
+            my.views.get("default")();
         }
         // TODO and register the correct annotations
     }
@@ -779,6 +739,15 @@ load = function () {
             // now we can load the model title
             d3.selectAll(".model_title")
                 .html(my.m.info().title);
+
+            // and set the default view
+            my.default_view = VIS.default_view.split("/");
+            if (!my.views.has(my.default_view[1])) {
+                view.warning("Invalid VIS.default_view setting.");
+                // invalid default view; hard-code fallback
+                my.default_view = [ "", "model"];
+            }
+            my.views.set("default", my.views.get(my.default_view[1]));
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
