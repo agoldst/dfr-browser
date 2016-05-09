@@ -41,12 +41,12 @@ bib.dfr = function (spec) {
 
     // major: journal title
     that.keys.journal = function (doc) {
-        return doc.journaltitle;
+        return doc.journal;
     };
 
     // major: journal issue (use journalcontents for minor)
     that.keys.issue = function (doc) {
-        var k = doc.journaltitle;
+        var k = doc.journal;
         k += "_" + d3.format("05d")(doc.volume);
         if (doc.issue) {
             k += "_" + doc.issue;
@@ -72,7 +72,7 @@ bib.dfr = function (spec) {
 
     // minor: journal + volume + issue + page order
     that.keys.journalcontents = function (doc) {
-        var result = doc.journaltitle;
+        var result = doc.journal;
 
         result += d3.format("05d")(doc.volume);
         result += d3.format("05d")((doc.issue === "") ? 0
@@ -182,7 +182,7 @@ bib.dfr = function (spec) {
         s += '“' + title + '.”';
         s = s.replace(/’\./g,".’"); // fix up ’.” situations
 
-        s += " <em>" + doc.journaltitle + "</em> ";
+        s += " <em>" + doc.journal + "</em> ";
         s += doc.volume;
         if (doc.issue) {
             s += ", no. " + doc.issue;

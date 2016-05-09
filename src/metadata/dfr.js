@@ -29,14 +29,14 @@ metadata.dfr = function (spec) {
             var result;
 
             // assume these columns:
-            // 0  1     2      3            4      5     6       7
-            // id,title,author,journaltitle,volume,issue,pubdate,pagerange
+            // 0  1     2      3       4      5     6       7
+            // id,title,author,journal,volume,issue,pubdate,pagerange
 
             result = {
                 doi: d[0].trim(), // id
                 title: d[1].trim(),
                 authors: d[2].trim(),
-                journaltitle: d[3].trim(),
+                journal: d[3].trim(),
                 volume: d[4].trim(),
                 issue: d[5].trim(),
                 date: new Date(d[6].trim()), // pubdate (UTC)
