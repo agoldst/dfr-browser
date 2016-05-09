@@ -155,8 +155,6 @@ bin/server
 
 The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, but again altering the setup for other implementations of LDA would not be too challenging. Adapting to other kinds of latent topic models would require more changes.
 
-Modifying the display to allow users to emphasize metadata other than publication dates is a larger project that I may undertake eventually.
-
 Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. Though some modifications to the program are necessary in such cases, they should normally be limited to the `metadata` and `bib` objects. Let me first 
 explain a little more about the design of the program.
 
@@ -166,15 +164,23 @@ The whole browser is a single webpage, whose source is [index.html](index.html).
 
 The browser follows (scrappily) the model-view-controller paradigm. The main controller is created by `dfb()`, which has the job of loading all the data and responding to user interaction. The data is stored in a `model()`, which encapsulates the details of storing the model and of aggregating its information in various ways. The details of parsing metadata are handled by separate `metadata` and `bib` objects. The controller then passes the necessary data from the model to the various `view` objects that configure the different views of the model. These view objects do all their work by accessing parts of `index.html` using CSS selectors and transforming them with d3. (This means that the JavaScript makes many assumptions about the elements that are present in [index.html](index.html).)
 
-As an example of a simple modification, suppose you wanted to eliminate one of the views, say the word index. You could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The main dispatch to views is the `refresh` method of `dfb()`. The lines
+As an example of a simple modification, suppose you wanted to eliminate one of the views, say the word index. You could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The controller's method for dispatching to this view are set up by the lines reading
 
 ```js
-case "words":
-    success = words_view.apply(undefined, param);
-    break;
+my.views.set("words", function (...) {
+...
+});
 ```
 
-are the whole story of this dispatch. Delete them and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
+Remove the statement and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
+The other views are set up analogously (`my.views.set("topic", ...)`, etc.). These anonymous functions are subsequently invoked in the `refresh` method of `dfb()`. To create a new view, you would add another statement within the definition of `dfb()`:
+
+```js
+my.views.set("newview", function (...) {
+});
+```
+
+URLs of the form `#/newview/x/y/z` would cause the function to be invoked with parameters `x`, `y`, and `z`. The model data is available within the function as `my.m` (`my` is a local variable to the enclosing function `dfb()` which stores the controller's private member data.) This function should extract the model data needed for the view and then call an external function to actually render it.
 
 In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
 
@@ -190,7 +196,7 @@ The parameters in `{ ... }` are optional, since the values here are the defaults
 
 Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` passes the `metadata` object the incoming data from the metadata file and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to the `bib` object for formatting or sorting.
 
-First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here. Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata.js#L63). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
+First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here.  Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata/dfr.js#L17). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
 
 ```js
 title: d[1].trim(),
@@ -204,14 +210,16 @@ title: d[2].trim(),
 authors: d[1].trim(),
 ```
 
-Or, of course, you may wish to store additional metadata and use it elsewhere. Let's imagine that the publisher is found in the ninth column. Then one might simply have
+Or, of course, you may wish to store additional metadata and use it elsewhere. 
+
+Let's imagine that the publisher is found in the ninth column. Then one might simply have
 
 ```js
 issue: d[5].trim(),
 publisher: d[8].trim(),
 ```
 
-Now the publisher will be stored for each dcoument, but to display it, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
+Now the publisher will be stored for each document, but to display it, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
 
 ```js
 s += "Published by " + doc.publisher + "."
@@ -219,8 +227,11 @@ s += "Published by " + doc.publisher + "."
 
 Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215).
 
-Comments in these source files should indicate where other modifications could be made. Note that the main logic of bibliographic sorting is implemented in [bib.js](src/bib.js), with the derived object in [bib_dfr.js](src/bib_dfr.js) only adding additional sorting options. If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
+If you use `metadata()` instead of `metadata.dfb()` in the `dfb({...})` set-up, the metadata will be parsed using `d3.csv.parse` (which assumes, unlike `metadata.dfb`, that the metadata has a header naming the columns).
 
+The functions that determine how documents are grouped for the topic proportions over time (or other conditional distribution) are the `metadata.key` properties, also defined in [metadata.js](src/metadata.js#L90).
+
+To modify the bibliographic sorting, see [bib.js](src/bib.js) (the derived `bib.dfr` object in [bib/dfr.js](src/bib/dfr.js) only adds additional sorting options). If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib` or `metadata` and supply those to `dfb()`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
 
 ### The "build" process
 
