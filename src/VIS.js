@@ -131,9 +131,6 @@ var VIS = {
         minor: "authortitle",
         dir: "up"
     },
-    float_format: function (x) {
-        return d3.round(x, 3);
-    },
     tooltip: {              // tooltip div parameters
         offset: {
             x: 10,          // px
