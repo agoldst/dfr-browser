@@ -111,7 +111,7 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
-`VIS.condition`: So far dfr-browser has always had a display of topics per year. But this is just a special case of the more general relation between some metadata variable and the marginal topic distribution over that variable (that is, the total proportion of topic weight assigned to documents at each level of the variable). I am working to make dfr-browser capable of displaying other relations of this kind. For now, the only functional extension is the generalization from topics-per-year to topics-per-other-time-unit. To display topics per units of 2 months, try:
+`VIS.condition`: So far dfr-browser has always had a display of topics per year. But this is just a special case of something more general, a topic distribution conditional on a metadata variable, that is, the probability of a topic within a given metadata category. I am working to make dfr-browser capable of displaying other relations of this kind. (What is displayed is really only a naive estimate of the conditional distribution, or, if you prefer, a naive posterior predictive check of the topic model. Ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.) For now, the only functional extension is the generalization from topics-per-year to topics-per-other-time-unit. To display topics per units of 2 months, try:
 
 ```json
 "condition": {
