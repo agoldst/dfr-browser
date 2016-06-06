@@ -28,8 +28,9 @@ var VIS = {
     condition: {            // metadata variable to condition topics on
         type: "time",       // alternatives: "category" and "continuous"
         spec: {
+            field: "date",  // name of metadata field
             unit: "month",  // unit of time bins
-            n: 1           // width of time bins
+            n: 1            // width of time bins
             // format: "%Y-%m" // can optionally specify key format (strftime)
         }
     },

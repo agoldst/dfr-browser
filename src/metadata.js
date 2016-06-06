@@ -102,7 +102,7 @@ metadata.key = {
     // Basic conditional key translator: subscript doc, "invert" is identity
     category: function (p) {
         var result = function (doc) {
-            return doc[p.key];
+            return doc[p.field];
         };
         result.invert = function (key) {
             return key;
@@ -112,11 +112,11 @@ metadata.key = {
 
     // TODO but be careful about numeric -> string & alphabetic sort later on
     continuous: function (p, docs) {
-        var start = d3.min(docs, function (d) { return d[p.key]; }),
+        var start = d3.min(docs, function (d) { return d[p.field]; }),
             result;
         result = function (doc) {
                 return start +
-                    Math.floor((doc[p.key] - start) / p.step) * p.step;
+                    Math.floor((doc[p.field] - start) / p.step) * p.step;
             };
         result.invert = function (key) {
             return +key;
@@ -135,7 +135,7 @@ metadata.key = {
     // used.
 
     time: function (p, docs) {
-        var start = d3.min(docs, function (d) { return d.date; }),
+        var start = d3.min(docs, function (d) { return d[p.field]; }),
             rounder, formatter, result,
             fmt = p.format,
             n = p.n || 1,
@@ -214,12 +214,12 @@ metadata.key = {
             // then never mind all the palaver about rounding, we can just
             // use d3's formatting as our step function
             result = function (doc) {
-                return formatter(doc.date);
+                return formatter(doc[p.field]);
             };
         } else {
             // Okay, palaver away
             result = function (doc) {
-                return formatter(rounder(doc.date));
+                return formatter(rounder(doc[p.field]));
             };
         }
         result.invert = function (key) {

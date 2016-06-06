@@ -774,7 +774,7 @@ load = function () {
             if (typeof meta_s === 'string') {
                 // and get the metadata object ready
                 my.metadata.from_string(meta_s);
-                my.condition = VIS.condition.type; // TODO spec separately?
+                my.condition = VIS.condition.spec.field;
 
                 my.metadata.condition(
                     my.condition,
