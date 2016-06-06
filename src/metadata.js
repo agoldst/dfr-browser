@@ -16,6 +16,7 @@ var metadata = function (spec) {
     var my = spec || { },
         that = { },
         from_string,
+        date_field,
         doc,
         n_docs,
         condition,
@@ -38,6 +39,16 @@ var metadata = function (spec) {
         }
     };
     that.from_string = from_string;
+
+    date_field = function (key) {
+        if (typeof key === "string") {
+            my.date_field = key;
+            return this;
+        }
+
+        return my.date_field;
+    };
+    that.date_field = date_field;
 
     doc = function (i) {
         if (isFinite(i)) {
