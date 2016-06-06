@@ -22,21 +22,6 @@ var dfb = function (spec) {
     // VIS.m = my.m;
     // __END_DEV_ONLY__
 
-    // default to DfR subclasses if no other specified
-    if (spec.metadata === undefined) {
-        my.metadata = metadata.dfr();
-    } else {
-        my.metadata = spec.metadata;
-    }
-
-    // we can adjust parameters using VIS.bib only after we have loaded
-    // info.json, so we'll do that in load()
-    if (spec.bib === undefined) {
-        my.bib = bib.dfr();
-    } else {
-        my.bib = spec.bib;
-    }
-
     // and tell view who we are
     if (view.dfb() === undefined) {
         view.dfb(that);
@@ -739,9 +724,6 @@ load = function () {
 
             VIS.update(my.m.info().VIS);
 
-            // now we store any specified options for bib
-            my.bib.options(VIS.bib);
-
             // now we can load the model title
             d3.selectAll(".model_title")
                 .html(my.m.info().title);
@@ -761,7 +743,29 @@ load = function () {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
 
-        // either way, now we can install the main event listeners
+        // now we can set up metadata and bib objects, but we won't overwrite
+        // any custom metadata or bib objects passed in at dfb() invocation;
+        // this does mean, however, that such custom objects can only look in
+        // at VIS parameters by directly accessing the global
+
+        if (my.metadata === undefined) {
+            if (VIS.metadata.type === "base") {
+                my.metadata = metadata(VIS.metadata.spec);
+            } else if (VIS.metadata.type === "dfr") {
+                my.metadata = metadata.dfr(VIS.metadata.spec);
+            } else {
+                // default to DfR subclass if no other specified
+                my.metadata = metadata.dfr();
+                view.warning("Unknown metadata.type; defaulting to dfr.");
+            }
+        }
+
+        if (my.bib === undefined) {
+            // VIS.bib gives bib options like the Anon. string
+            my.bib = bib.dfr(VIS.bib);
+        }
+
+        // now we can install the main event listeners
         // TODO can we do this even earlier?
         setup_listeners();
 

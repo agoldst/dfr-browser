@@ -3,7 +3,8 @@
 
 // Bibliography processing specialized for DfR.
 bib.dfr = function (spec) {
-    var that = bib(spec),
+    var my = spec || { },
+        that = bib(my),
         doc_author;
 
     // Construction: override inherited sorting()
@@ -123,13 +124,13 @@ bib.dfr = function (spec) {
         var lead,
             lead_trail,
             result,
-            authors = auths.split(that.options().author_delimiter)
+            authors = auths.split(my.author_delimiter)
                 // ensure an empty or white-space author is not counted
                 .filter(function (a) { return (/\S/).test(a); }),
             n_auth = authors.length;
 
         if (n_auth === 0) {
-            return that.options().anon;
+            return my.anon;
         }
 
         lead = authors[0].replace(/,/g, "").split(" ");
@@ -146,9 +147,9 @@ bib.dfr = function (spec) {
         }
         result += ", " + lead.join(" ") + lead_trail;
         if (n_auth > 1) {
-            if (n_auth >= that.options().et_al) {
+            if (n_auth >= my.et_al) {
                 result += ", ";
-                result += authors.slice(1, that.options().et_al).join(", ");
+                result += authors.slice(1, my.et_al).join(", ");
                 result += "et al.";
             } else {
                 if (n_auth > 2) {

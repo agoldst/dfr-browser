@@ -18,6 +18,13 @@ var VIS = {
         yearly: "conditional"   // #/model/yearly/... -> #/model/conditional/...
     },
     default_view: "/model", // specify the part after the #
+    metadata: {
+        type: "dfr",        // use "base" if meta.csv has a header
+        spec: {
+            extra_fields: [ ],// (dfr type only) names for extra columns
+            date_field: "date"// (base type only) name of date field
+        }
+    },
     condition: {            // metadata variable to condition topics on
         type: "time",       // alternatives: "category" and "continuous"
         spec: {

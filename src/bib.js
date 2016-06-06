@@ -18,7 +18,6 @@
 var bib = function (spec) {
     var my = spec || { },
         that = { },
-        options,
         sorting,
         sort,
         citation,
@@ -28,15 +27,6 @@ var bib = function (spec) {
     if (!my.sorting) {
         my.sorting = [["all_raw", "by raw entry"]];
     }
-
-    // supplementary options (to be used by subclasses)
-    options = function (spec) {
-        if (spec !== undefined) {
-            options = utils.deep_replace(options, spec);
-        }
-        return options;
-    };
-    that.options = options;
 
     // Gets or sets the description of sorting methods.
     //
