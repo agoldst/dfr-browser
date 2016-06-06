@@ -3,8 +3,13 @@
 
 // ---- metadata specification: DfR ----
 //
-// Metadata storage specialized for DfR. from_string() expects the DfR
-// metadata columns (trimmed as by dfrtopics::export_browser_data)
+// Metadata storage specialized for DfR. from_string() expects eight DfR
+// metadata columns (trimmed as by dfrtopics::export_browser_data). For
+// additional columns, names may be specified at construction time with
+//
+// metadata.dfr({ extra_fields: [ "genre", "sparkliness" ] })
+//
+// otherwise the default is to name them X1, X2, ...
 
 metadata.dfr = function (spec) {
     var my = spec || { },
@@ -13,6 +18,9 @@ metadata.dfr = function (spec) {
 
     // constructor: build from parent
     that = metadata(my);
+    if (!Array.isArray(my.extra_fields)) {    // validate extra_fields
+        my.extra_fields = [ ];
+    }
 
     from_string = function (meta_s) {
         var s;
@@ -44,6 +52,10 @@ metadata.dfr = function (spec) {
                     .replace(/^p?p\. /, "")
                     .replace(/-/g, "–")
             };
+            // now add extra columns
+            d.slice(8, d.length).forEach(function (x, i) {
+                result[my.extra_fields[i] || "X" + String(i)] = x.trim();
+            });
 
             return result;
         });
