@@ -37,8 +37,7 @@ var utils = (function () {
 
     // replace the non-method properties of one object with those of
     // another without overwriting any properties in the original not
-    // specified in the replacement OR adding any properties in the
-    // replacement not specified in the original
+    // specified in the replacement
     //
     // x: the original
     // repl: the source of replacements
@@ -53,7 +52,15 @@ var utils = (function () {
             return repl;
         }
 
+        // we get errors if we treat arrays like ordinary objects
+        if (Array.isArray(x) || Array.isArray(repl)) {
+            return repl;
+        }
+
         if (typeof repl === "object") {
+            if (typeof x !== "object") {
+                result = { };
+            }
             for (prop in repl) {
                 if (repl.hasOwnProperty(prop)
                         && typeof repl[prop] !== 'function') {
