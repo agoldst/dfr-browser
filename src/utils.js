@@ -72,7 +72,7 @@ var utils = (function () {
     // functions) is not cloned but simply returned. The maximum recursion
     // depth is MAX_CLONE_DEPTH to prevent infinite recursion if at some
     // depth an object holds a reference to itself.
-    clone = function (x) {
+    clone = function (X) {
         var cloner;
         cloner = function (x, depth) {
             var prop, result;
@@ -104,7 +104,7 @@ var utils = (function () {
             // otherwise
             return x;
         };
-        return cloner(x, 0);
+        return cloner(X, 0);
     };
     that.clone = clone;
 
