@@ -59,7 +59,7 @@ In case you wish to edit the exported files or create them another way, here are
     1. publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601))
     1. page range
 
-Additional columns after these are ignored (but will not cause errors). Naturally if your documents are not journal articles this format may not quite fit, and some modification of the metadata parsing code may be necessary. See "Adapting this project" below.
+Additional columns after these are loaded with the default names `X1`, `X2`, and so on, and ignored by the display. (The names can be changed with the `VIS.metadata.spec.extra_fields` array  in `info.json`.) If your documents are not journal articles, this format may not quite fit, and some modification of the metadata parsing or document-display code may be necessary. See "Adapting this project" below.
 
 - the topic weights for each document (`data/dt.json.zip`): a zipped text file giving a JSON object specifying the document-topic matrix in [sparse compressed-column format](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_.28CSC_or_CCS.29) in terms of three arrays `i`, `p`, and `x`. specified as follows. The documents `d` with non-zero weights for topic `t` are given by `i[p[t]], i[p[t] + 1], ... i[p[t + 1] - 1]`, and the corresponding unnormalized topic weights for those documents are given by `x[p[t]], x[p[t] + 1], ..., x[p[t + 1] - 1]`.
 
@@ -182,19 +182,15 @@ my.views.set("newview", function (...) {
 
 URLs of the form `#/newview/x/y/z` would cause the function to be invoked with parameters `x`, `y`, and `z`. The model data is available within the function as `my.m` (`my` is a local variable to the enclosing function `dfb()` which stores the controller's private member data.) This function should extract the model data needed for the view and then call an external function to actually render it.
 
-In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
+In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following line must be executed after all the libraries and scripts have been loaded in `index.html`:
 
 ```js
-dfb({
-    metadata: metadata.dfr(),
-    bib: bib.dfr()
-})
-    .load();
+dfb().load();
 ```
 
-The parameters in `{ ... }` are optional, since the values here are the defaults, but this design is meant to facilitate modifying the browser by giving you a hint about what to change.
-
 Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` passes the `metadata` object the incoming data from the metadata file and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to the `bib` object for formatting or sorting.
+
+There are various ways to customize these.
 
 First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here.  Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata/dfr.js#L17). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
 
@@ -210,28 +206,28 @@ title: d[2].trim(),
 authors: d[1].trim(),
 ```
 
-Or, of course, you may wish to store additional metadata and use it elsewhere. 
-
-Let's imagine that the publisher is found in the ninth column. Then one might simply have
-
-```js
-issue: d[5].trim(),
-publisher: d[8].trim(),
-```
-
-Now the publisher will be stored for each document, but to display it, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
+Let's imagine that the publisher is found in the ninth metadata column, and `VIS.metadata.spec.extra_fields = [ "publisher" ]`. Documents will now have a `publisher` field, but to display this information, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
 
 ```js
 s += "Published by " + doc.publisher + "."
 ```
 
-Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215).
+Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215), so if the URL should not lead to JSTOR, change that method.
 
-If you use `metadata()` instead of `metadata.dfb()` in the `dfb({...})` set-up, the metadata will be parsed using `d3.csv.parse` (which assumes, unlike `metadata.dfb`, that the metadata has a header naming the columns).
+If you specify `VIS.metadata.type: "base"` in `info.json`, the base class `metadata()` (defined in [src/metadata.js](src/metadata.js)) will be used instead of `metadata.dfb()`. This class parses the metadata file using `d3.csv.parse` (which assumes, unlike `metadata.dfb`, that it has a header naming the columns).
 
 The functions that determine how documents are grouped for the topic proportions over time (or other conditional distribution) are the `metadata.key` properties, also defined in [metadata.js](src/metadata.js#L90).
 
-To modify the bibliographic sorting, see [bib.js](src/bib.js) (the derived `bib.dfr` object in [bib/dfr.js](src/bib/dfr.js) only adds additional sorting options). If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib` or `metadata` and supply those to `dfb()`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
+To modify the bibliographic sorting, see [bib.js](src/bib.js) (the derived `bib.dfr` object in [bib/dfr.js](src/bib/dfr.js) only adds additional sorting options). If you want to be elaborate about it, you can also derive further objects from `bib.dfr` or `bib` or `metadata` and supply those to the constructor `dfb()` as follows:
+
+```js
+dfb({
+    metadata: my_meta(),
+    bib: my_bib()
+}).load();
+```
+
+I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*. The source for [metadata.dfr](metadata/dfr.js) illustrates how to write a derived object.
 
 ### The "build" process
 
