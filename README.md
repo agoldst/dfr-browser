@@ -185,7 +185,7 @@ export_browser_data(m, out_dir="browser")
 
 Whether topic proportions have any interesting relation to document page length depends on the kinds of documents you are studying.
 
-It may also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#102) for documentation), the corresponding parameters in `model_view.list.spark`, and related parameters in `model_view.conditional`. In particular, the width of the bars in bar charts, as well as the margin left for y-axis labels (`topic_view.m.left`), often requires manual tuning.
+It may also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#102) for documentation), the corresponding parameters in `model_view.list.spark`, and related parameters in `model_view.conditional`. In particular, the width of the bars in bar charts, as well as the margin left for y-axis labels (`topic_view.m.left`), often requires manual tuning. Tuning parameters are keyed to variable types, so that, for example, the topic bar chart for a time covariate has settings in `VIS.topic_view.time` whereas the settings for a categorical covariate are `VIS.topic_view.ordinal`.
 
 (What is displayed is only a naive estimate, formed by marginalizing the topic distribution over levels or bins of the metadata covariate. Or, if you prefer, the display constitutes a visual [posterior predictive check](http://www.cs.princeton.edu/~blei/papers/MimnoBlei2011.pdf) of the topic model: ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.)
 
