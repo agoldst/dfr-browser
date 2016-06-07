@@ -371,7 +371,7 @@ view.model.stacked_series = function (p) {
             values: s.values.map(function (d) {
                 return {
                     x: d.x,
-                    y: d.y * p.totals.get(d.key)
+                    y: d.y * (p.totals.get(d.key) || 0)
                 };
             })
         };
