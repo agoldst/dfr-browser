@@ -59,7 +59,7 @@ In case you wish to edit the exported files or create them another way, here are
     1. publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601))
     1. page range
 
-Additional columns after these are loaded with the default names `X1`, `X2`, and so on, and ignored by the display. (The names can be changed with the `VIS.metadata.spec.extra_fields` array  in `info.json`.) If your documents are not journal articles, this format may not quite fit, and some modification of the metadata parsing or document-display code may be necessary. See "Adapting this project" below.
+    Additional columns after these are loaded with the default names `X1`, `X2`, and so on, and ignored by the display. (The names can be changed with the `VIS.metadata.spec.extra_fields` array  in `info.json`.) If your documents are not journal articles, this format may not quite fit, and some modification of the metadata parsing or document-display code may be necessary. See "Adapting this project" below.
 
 - the topic weights for each document (`data/dt.json.zip`): a zipped text file giving a JSON object specifying the document-topic matrix in [sparse compressed-column format](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_.28CSC_or_CCS.29) in terms of three arrays `i`, `p`, and `x`. specified as follows. The documents `d` with non-zero weights for topic `t` are given by `i[p[t]], i[p[t] + 1], ... i[p[t + 1] - 1]`, and the corresponding unnormalized topic weights for those documents are given by `x[p[t]], x[p[t] + 1], ..., x[p[t + 1] - 1]`.
 
@@ -111,19 +111,85 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
-`VIS.condition`: So far dfr-browser has always had a display of topics per year. But this is just a special case of something more general, a topic distribution conditional on a metadata variable, that is, the probability of a topic within a given metadata category. I am working to make dfr-browser capable of displaying other relations of this kind. (What is displayed is really only a naive estimate of the conditional distribution, or, if you prefer, a naive posterior predictive check of the topic model. Ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.) For now, the only functional extension is the generalization from topics-per-year to topics-per-other-time-unit. To display topics per units of 2 months, try:
+### Conditioning on metadata
+
+So far dfr-browser has always had a display of topic proportions per year. But this is just a special case of something more general, a topic distribution conditional on a metadata variable, that is, the probability of a topic within a given metadata category. In addition to topics over time, dfr-browser can display other relations of this kind. 
+
+The `VIS.condition` parameters govern this display. It specifies what kind of variable the covariate is, and how to categorize documents into discrete categories using it. This is simplest to explain by example.
+
+For publication date, the setting might be
 
 ```json
 "condition": {
     "type": "time",
     "spec": {
+      "field": "date"
       "unit": "month",
       "n": 2
     }
 }
 ```
 
-It will also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#77) for documentation) as well as the corresponding parameters in `model_view.list.spark`.
+This indicates that the display of topics over time should use the `date` field of the document metadata (loaded by default) and should group documents into intervals of two months.
+
+For a categorical variable, the setting might be
+
+```json
+"condition": {
+    "type": "ordinal",
+    "name": "journal",
+    "spec": {
+        "field": "journal"
+    }
+}
+```
+
+The topic displays will now show the total proportion of each journal's words assigned to that topic. ("Ordinal" is the d3 name for such variables, a reminder that an ordering is imposed on the category by alphabetization.) The optional `name` field gives a name to be used on axis labels. The `field` is used if it is missing, so it's superfluous in this case.
+
+Finally (*very experimental feature*), a continuous variable can be specified with
+
+```json
+"condition": {
+    "type": "continuous",
+    "name": "page length",
+    "spec": {
+        "field": "pagelen",
+        "step": 10
+    }
+}
+```
+
+Which says that the `pagelen` field should be divided into bins of width 10 and topic proportions should be marginalized over those bins. This is a little more complex, because the `field` named here must exist in the metadata. In order to ensure that the ninth metadata column in the `meta.csv[.zip]` file has the name `pagelen` rather than `X1`, we also need this setting:
+
+```json
+"metadata": {
+    "spec": {
+        "extra_fields": [ "pagelen" ]
+    }
+}
+```
+
+And of course the metadata column has to actually *exist*. For page lengths from JSTOR metadata, one could calculate them with something like the following fashion:
+
+```R
+library(stringr)
+# doesn't handle roman numeral pages; see `?as.roman`
+metadata(m) <- metadata(m) %>%
+    mutate(pp=str_extract_all(pagerange, "\\d+")) %>%
+    mutate(pagelen=sapply(pp,
+        function (x) if (length(x) <= 1) 1 else diff(as.numeric(x)))) %>%
+    select(id, title, author, journaltitle, volume, issue,
+           pubdate, pagerange, pagelen)
+export_browser_data(m, out_dir="browser")
+```
+
+Whether topic proportions have any interesting relation to document page length depends on the kinds of documents you are studying.
+
+It may also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#102) for documentation), the corresponding parameters in `model_view.list.spark`, and related parameters in `model_view.conditional`. In particular, the width of the bars in bar charts, as well as the margin left for y-axis labels (`topic_view.m.left`), often requires manual tuning.
+
+(What is displayed is only a naive estimate, formed by marginalizing the topic distribution over levels or bins of the metadata covariate. Or, if you prefer, the display constitutes a visual [posterior predictive check](http://www.cs.princeton.edu/~blei/papers/MimnoBlei2011.pdf) of the topic model: ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.)
+
+### Hiding topics
 
 If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The topics identified by numbers (indexed from 1) in this array will, by default, not be shown in any view, including aggregate views. Hidden topics can be revealed using the Settings dialog box. Hiding topics can be misleading and should be done cautiously.
 
