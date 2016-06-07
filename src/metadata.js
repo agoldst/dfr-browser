@@ -117,19 +117,44 @@ metadata.key = {
         return result;
     },
 
-    // TODO but be careful about numeric -> string & alphabetic sort later on
     continuous: function (p, docs) {
-        var start = d3.min(docs, function (d) { return d[p.field]; }),
-            result;
+        var ext = d3.extent(docs, function (d) { return +d[p.field]; }),
+            f, z, fmt, result;
+
+        // start at a step value <= data minimum
+        ext[0] = Math.floor(ext[0] / p.step) * p.step;
+
+        // To get keys from continuous values, we apply a step function
+        // and then an ORDER-PRESERVING string conversion.
+
+        // Choose decimal precision for string conversion
+        f = Math.floor(Math.log10(p.step));
+        // Choose number of leading zeroes for ditto
+        z = Math.ceil(Math.log10(d3.max(ext, Math.abs)));
+        if (z >= 1) {
+            if (f <= 0) {
+                fmt = d3.format(
+                    "0" + String(z + Math.abs(f) + 1) +
+                    "." + String(Math.abs(f)) + "f"
+                );
+            } else {
+                fmt = d3.format("0" + String(z) + ".0f");
+            }
+        } else {
+            // f better be <= 0, then
+            fmt = d3.format("." + String(Math.abs(f)) + "f");
+        }
+
         result = function (doc) {
-                return start +
-                    Math.floor((doc[p.field] - start) / p.step) * p.step;
-            };
+            var stp = ext[0] +
+                Math.floor((+doc[p.field] - ext[0]) / p.step) * p.step;
+            return fmt(stp);
+        };
         result.invert = function (key) {
             return +key;
         };
         result.display = function (key) {
-            return key + "–" + String(+key + p.step);
+            return String(+key) + "–" + String(+key + p.step);
         };
         return result;
     },
