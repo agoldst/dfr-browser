@@ -9,8 +9,8 @@ view.model.conditional = function (p) {
     // TODO simplify interaction with VIS.ready
     if (view.dirty("model/conditional")) {
         this.conditional.data = view.model.stacked_series({
-            keys: p.conditional_totals.keys().sort(),
-            xs: p.conditional_totals.keys().sort().map(p.key.invert),
+            keys: p.key.range,
+            xs: p.key.range.map(p.key.invert),
             totals: p.conditional_totals,
             topics: p.topics,
             streamgraph: p.condition_type !== "ordinal"

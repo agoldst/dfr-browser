@@ -94,7 +94,7 @@ var metadata = function (spec) {
     return that;
 };
 
-// Metadata category key translators. A translator t should do three things:
+// Metadata category key translators. A translator t does the following things:
 //
 // t(doc) should return a "key" string designating the level of the metadata
 // variable (e.g. year of publication) for doc.
@@ -103,10 +103,14 @@ var metadata = function (spec) {
 // (e.g. a Date).
 //
 // t.display(key) should turn a key string into a human-readable value.
+//
+// t.range should be a sorted array representing the range of keys. For
+// continuously-valued variables, this might include keys that do not
+// correspond to any items in the actual dataset but lie between keys that do.
 
 metadata.key = {
     // Basic conditional key translator: subscript doc
-    ordinal: function (p) {
+    ordinal: function (p, docs) {
         var result = function (doc) {
             return doc[p.field].replace(/\s/g, "_");
         };
@@ -114,6 +118,8 @@ metadata.key = {
             return key.replace(/_/g, " ");
         };
         result.display = result.invert;
+        result.range = d3.set(docs.map(result)).values();
+        result.range.sort();
         return result;
     },
 
@@ -156,6 +162,8 @@ metadata.key = {
         result.display = function (key) {
             return String(+key) + "–" + String(+key + p.step);
         };
+        result.range = d3.range(Math.floor((ext[1] - ext[0]) / p.step))
+            .map(function (x) { return fmt(ext[0] + x * p.step); });
         return result;
     },
 
@@ -170,39 +178,33 @@ metadata.key = {
     // used.
 
     time: function (p, docs) {
-        var start = d3.min(docs, function (d) { return d[p.field]; }),
-            rounder, formatter, result,
+        var ext = d3.extent(docs, function (d) { return d[p.field]; }),
+            steps, tail, rounder,
+            formatter, result,
             fmt = p.format,
             n = p.n || 1,
             unit = d3.time[p.unit].utc;
 
-        // rounder: overridden for ms units at default: below
-        // also overriden if n = 1 below
-        rounder = (function () {
-            // Brute force: step function as a table lookup.  Needed because
-            // of the nightmare of leap days, DST, etc.  The strategy is to
-            // store an array of steps which we'll grow as needed, then find
-            // the argument's place in the array using bisection.  The array
-            // persists because this is a closure.  This is overkill for
-            // years and months, which could be implemented more simply, but
-            // for code simplicity we'll just write the generic solution.
-            var steps = [start], tail = start;
+        // Brute force: step function as a table lookup. Needed because of the
+        // nightmare of leap days, DST, etc. The strategy is to store an array
+        // of steps which we'll grow as needed, then find the argument's place
+        // in the array using bisection. The array persists because this is a
+        // closure. This is overkill for years and months, which could be
+        // implemented more simply, but for code simplicity we'll just write
+        // the generic solution.  We'll override this for ms units at default:
+        // in the switch below; we'll ignore it if n = 1 below.
+        steps = [ext[0]];
+        tail = unit.offset(ext[0], n);
 
-            return function (dt) {
-                if (dt > tail) {
-                    // can't use unit.range because that has different
-                    // behavior (clamping at segment boundaries)
-                    tail = unit.offset(tail, n);
-                    while (tail < dt) {
-                        steps.push(tail);
-                        tail = unit.offset(tail, n);
-                    }
-                    return tail;
-                }
-
-                return steps[d3.bisect(steps, dt) - 1];
-            };
-        }());
+        // can't use unit.range because that has different behavior (clamping
+        // at segment boundaries)
+        while (tail < ext[1]) {
+            steps.push(tail);
+            tail = unit.offset(tail, n);
+        }
+        rounder = function (dt) {
+            return steps[d3.bisect(steps, dt) - 1];
+        };
 
         // choose key format, and possibly override rounder
         switch (p.unit) {
@@ -238,8 +240,8 @@ metadata.key = {
                 // numerical rounding instead
                 // n taken to be in the native time unit (ms)
                 rounder = function (dt) {
-                    return new Date(+start +
-                        Math.floor((+dt - +start) / n) * n);
+                    return new Date(+ext[0] +
+                        Math.floor((+dt - +ext[0]) / n) * n);
                 };
                 fmt = fmt || "%Y-%m-%dT%H:%M:%S.%LZ";
                 break;
@@ -264,6 +266,7 @@ metadata.key = {
             return key + "–"
                 + formatter(unit.offset(formatter.parse(key), n));
         };
+        result.range = steps.map(rounder).map(formatter);
         return result;
     }
 };
