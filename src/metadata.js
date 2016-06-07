@@ -181,7 +181,7 @@ metadata.key = {
         var ext = d3.extent(docs, function (d) { return d[p.field]; }),
             steps, tail, rounder,
             formatter, result,
-            fmt = p.format,
+            fmt, fmt_display,
             n = p.n || 1,
             unit = d3.time[p.unit].utc;
 
@@ -209,31 +209,27 @@ metadata.key = {
         // choose key format, and possibly override rounder
         switch (p.unit) {
             case "year":
-                fmt = fmt || "%Y";
+                fmt = "%Y";
                 break;
 
             case "month":
-                fmt = fmt || "%Y-%m";
+                fmt = "%Y-%m";
                 break;
 
             case "day":
-                // default rounder
-                fmt = fmt || "%Y-%m-%d";
+                fmt = "%Y-%m-%d";
                 break;
 
             case "hour":
-                // default rounder
-                fmt = fmt || "%Y-%m-%d %H:00";
+                fmt = "%Y-%m-%d %H:00";
                 break;
 
             case "minute":
-                // default rounder
-                fmt = fmt || "%Y-%m-%d %H:%M";
+                fmt = "%Y-%m-%d %H:%M";
                 break;
 
             case "second":
-                // default rounder
-                fmt = fmt || "%Y-%m-%d %H:%M:%S";
+                fmt = "%Y-%m-%d %H:%M:%S";
                 break;
 
             default:
@@ -243,7 +239,7 @@ metadata.key = {
                     return new Date(+ext[0] +
                         Math.floor((+dt - +ext[0]) / n) * n);
                 };
-                fmt = fmt || "%Y-%m-%dT%H:%M:%S.%LZ";
+                fmt = "%Y-%m-%dT%H:%M:%S.%LZ";
                 break;
         }
         formatter = d3.time.format.utc(fmt);
@@ -262,10 +258,27 @@ metadata.key = {
         result.invert = function (key) {
             return formatter.parse(key);
         };
-        result.display = function (key) {
-            return key + "–"
-                + formatter(unit.offset(formatter.parse(key), n));
-        };
+
+        // display of keys (for #/topic)
+        if (p.format) {
+            fmt_display = function (key) {
+                return d3.time.format.utc(p.format)(formatter.parse(key));
+            };
+        } else {
+            fmt_display = function (key) { return key; };
+        }
+        if (n === 1) {
+            result.display = function (key) {
+                return fmt_display(key);
+            };
+        } else {
+            result.display = function (key) {
+                return fmt_display(key) + "–" +
+                    fmt_display(
+                        formatter(unit.offset(formatter.parse(key), n))
+                    );
+            };
+        }
         result.range = steps.map(rounder).map(formatter);
         return result;
     }

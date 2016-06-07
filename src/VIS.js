@@ -31,7 +31,7 @@ var VIS = {
             field: "date",  // name of metadata field
             unit: "year",   // unit of time bins
             n: 1            // width of time bins
-            // format: "%Y-%m" // can optionally specify key format (strftime)
+            // format: "%Y-%m" // optional display format (strftime)
         }
     },
     overview_words: 15,     // may need adjustment
