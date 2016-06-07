@@ -71,13 +71,9 @@ var metadata = function (spec) {
     };
     that.n_docs = n_docs;
 
-    // Which variables can we condition topic distributions on?
-    // condition() gets/sets key translators, one for each variable. A
-    // translator t should do two things: t(doc) should return a "key"
-    // string designating the level of the metadata variable (e.g. year
-    // of publication) for doc; t.invert(key) should turn a key string
-    // into a value suitable for plotting (e.g. a Date). It might just
-    // be the identity. See metadata.key and metadata.key.time below.
+    // Which variables can we condition topic distributions on?  condition()
+    // gets/sets key translators, one for each variable. See metadata.key and
+    // metadata.key.time below.
     //
     // conditionals() returns the d3.map of all the pairings.
 
@@ -98,15 +94,26 @@ var metadata = function (spec) {
     return that;
 };
 
+// Metadata category key translators. A translator t should do three things:
+//
+// t(doc) should return a "key" string designating the level of the metadata
+// variable (e.g. year of publication) for doc.
+//
+// t.invert(key) should turn a key string into a value suitable for plotting
+// (e.g. a Date).
+//
+// t.display(key) should turn a key string into a human-readable value.
+
 metadata.key = {
-    // Basic conditional key translator: subscript doc, "invert" is identity
-    category: function (p) {
+    // Basic conditional key translator: subscript doc
+    ordinal: function (p) {
         var result = function (doc) {
-            return doc[p.field];
+            return doc[p.field].replace(/\s/g, "_");
         };
         result.invert = function (key) {
-            return key;
+            return key.replace(/_/g, " ");
         };
+        result.display = result.invert;
         return result;
     },
 
@@ -120,6 +127,9 @@ metadata.key = {
             };
         result.invert = function (key) {
             return +key;
+        };
+        result.display = function (key) {
+            return key + "–" + String(+key + p.step);
         };
         return result;
     },
@@ -166,7 +176,7 @@ metadata.key = {
                 }
 
                 return steps[d3.bisect(steps, dt) - 1];
-            }; 
+            };
         }());
 
         // choose key format, and possibly override rounder
@@ -179,22 +189,22 @@ metadata.key = {
                 fmt = fmt || "%Y-%m";
                 break;
 
-            case "day": 
+            case "day":
                 // default rounder
                 fmt = fmt || "%Y-%m-%d";
                 break;
 
-            case "hour": 
+            case "hour":
                 // default rounder
                 fmt = fmt || "%Y-%m-%d %H:00";
                 break;
 
-            case "minute": 
+            case "minute":
                 // default rounder
                 fmt = fmt || "%Y-%m-%d %H:%M";
                 break;
 
-            case "second": 
+            case "second":
                 // default rounder
                 fmt = fmt || "%Y-%m-%d %H:%M:%S";
                 break;
@@ -202,7 +212,7 @@ metadata.key = {
             default:
                 // numerical rounding instead
                 // n taken to be in the native time unit (ms)
-                rounder = function (dt) { 
+                rounder = function (dt) {
                     return new Date(+start +
                         Math.floor((+dt - +start) / n) * n);
                 };
@@ -224,6 +234,10 @@ metadata.key = {
         }
         result.invert = function (key) {
             return formatter.parse(key);
+        };
+        result.display = function (key) {
+            return key + "–"
+                + formatter(unit.offset(formatter.parse(key), n));
         };
         return result;
     }

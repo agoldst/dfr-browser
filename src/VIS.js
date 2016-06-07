@@ -53,7 +53,10 @@ var VIS = {
             },
             label_threshold: 40, // px
             words: 4,
-            label_words: 2 // should be <= words
+            label_words: 2, // should be <= words
+            ordinal: {
+                bar: 0.4
+            }
         },
         list: {
             spark: { // same form as topic_view plot parameters below
@@ -69,6 +72,16 @@ var VIS = {
                     bar: {
                         unit: "day",
                         w: 300
+                    }
+                },
+                ordinal: {
+                    bar: {
+                        w: 0.25
+                    }
+                },
+                continuous: {
+                    bar: {
+                        w: 0.25
                     }
                 }
             }

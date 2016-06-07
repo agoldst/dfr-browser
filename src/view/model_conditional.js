@@ -10,14 +10,15 @@ view.model.conditional = function (p) {
     if (view.dirty("model/conditional")) {
         this.conditional.data = view.model.stacked_series({
             keys: p.conditional_totals.keys().sort(),
-            xs: p.conditional_totals.keys().sort().map(p.invert_key),
+            xs: p.conditional_totals.keys().sort().map(p.key.invert),
             totals: p.conditional_totals,
-            topics: p.topics
+            topics: p.topics,
+            streamgraph: p.condition_type !== "ordinal"
         });
         view.dirty("model/conditional", false);
     }
     view.model.conditional_plot({
-        condition: p.condition,
+        condition_type: p.condition_type,
         data: this.conditional.data[raw ? "raw" : "frac"],
         domain_x: this.conditional.data.domain_x,
         domain_y: this.conditional.data[raw ? "domain_raw" : "domain_frac"],
@@ -38,8 +39,9 @@ view.model.conditional_plot = function (p) {
         scale_x, scale_y, axis_x, g_axis, area,
         scale_color,
         bg, clip,
-        paths, labels, render_labels,
-        areas, zoom;
+        mark, marks, render_marks,
+        labels, render_labels,
+        zoom;
 
     spec.w = d3.select(p.selector).node().clientWidth
         || spec.w;
@@ -88,15 +90,20 @@ view.model.conditional_plot = function (p) {
         };
     }());
 
-    if (p.condition === "time") {
-        scale_x = d3.time.scale.utc();
+    if (p.condition_type === "ordinal") {
+        // default: ordinal
+        scale_x = d3.scale.ordinal()
+            .domain(p.domain_x)
+            .rangeRoundBands([0, spec.w], spec.ordinal.bar);
+        mark = "g"; // groups of rects
     } else {
-        // default: continuous
-        scale_x = d3.scale.linear();
+        // default is continuous scale, areas as marks
+        scale_x = (p.condition_type === "time") ?
+            d3.time.scale.utc() : d3.scale.linear();
+        scale_x.domain(p.domain_x)
+            .range([0, spec.w]);
+        mark = "path"; // areas
     }
-
-    scale_x.domain(p.domain_x)
-        .range([0, spec.w]);
 
     scale_y = d3.scale.linear()
         .domain(p.domain_y)
@@ -120,13 +127,13 @@ view.model.conditional_plot = function (p) {
         .call(axis_x);
 
     // the actual streams
-    paths = svg.selectAll("path.topic_area")
+    marks = svg.selectAll(mark + ".topic_area")
         .data(p.data, function (d) {
             return d.t;
         });
 
-    paths.enter()
-        .append("path")
+    marks.enter()
+        .append(mark)
         .classed("topic_area", true)
         .attr("clip-path", "url(#model_conditional_clip)")
         .style("fill", function (d) {
@@ -158,25 +165,51 @@ view.model.conditional_plot = function (p) {
             }
         });
 
-    paths.exit().remove();
+    marks.exit().remove();
 
-    area = d3.svg.area()
-        .x(function (d) { return scale_x(d.x); })
-        .y0(function (d) { return scale_y(d.y0); })
-        .y1(function (d) { return scale_y(d.y0 + d.y); });
+    if (mark === "path") {
+        area = d3.svg.area()
+            .x(function (d) { return scale_x(d.x); })
+            .y0(function (d) { return scale_y(d.y0); })
+            .y1(function (d) { return scale_y(d.y0 + d.y); });
 
-    // purely geometric smoothing is possible with
-    // area.interpolate("basis");
-    // or
-    // area.interpolate("monotone");
-    // These are quite slow.
+        // purely geometric smoothing is possible with
+        // area.interpolate("basis");
+        // or
+        // area.interpolate("monotone");
+        // These are quite slow.
 
-    areas = function (d) { return area(d.values); };
+        render_marks = function (tx) {
+            return function (sel) {
+                var paths = tx ? sel.transition().duration(2000) : sel;
+                paths.attr("d", function (d) { return area(d.values); });
+            };
+        };
+    } else {
+        render_marks = function (tx) {
+            return function (sel) {
+                var rects = sel.selectAll("rect")
+                    .data(function (d) { return d.values; });
+                rects.enter()
+                    .append("rect");
+                rects.exit().remove();
+                if (tx) {
+                    rects = rects.transition().duration(2000);
+                }
+                rects.attr("x", function (d) { return scale_x(d.x); })
+                    .attr("y", function (d) {
+                        return scale_y(d.y0 + d.y);
+                    })
+                    .attr("width", scale_x.rangeBand())
+                    .attr("height", function (d) {
+                        return scale_y(d.y0) - scale_y(d.y0 + d.y);
+                    });
+            };
+        };
+    }
 
     // draw the streams: ensure transition for raw/frac swap
-    paths.transition()
-        .duration(2000)
-        .attr("d", areas);
+    marks.call(render_marks(true));
 
     // the stream labels
     labels = svg.selectAll("text.layer_label")
@@ -235,26 +268,29 @@ view.model.conditional_plot = function (p) {
             });
     };
 
-    render_labels(labels.transition().duration(2000));
+    labels.transition()
+        .duration(2000)
+        .call(render_labels);
 
     // set up zoom
-    zoom = d3.behavior.zoom()
-        .x(scale_x)
-        .y(scale_y)
+    zoom = d3.behavior.zoom();
+    if (p.condition_type !== "ordinal") {
+        zoom.x(scale_x);
+    }
+    zoom.y(scale_y)
         .scaleExtent([1, 5])
         .on("zoom", function () {
+            marks.call(render_marks(VIS.zoom_transition));
             if (VIS.zoom_transition) {
-                paths.transition()
-                    .duration(2000)
-                    .attr("d", areas);
                 svg.select("g.x.axis").transition()
                     .duration(2000)
                     .call(axis_x);
-                render_labels(labels.transition().duration(2000));
+                labels.transition()
+                    .duration(2000)
+                    .call(render_labels);
                 VIS.zoom_transition = false;
             } else {
-                paths.attr("d", areas);
-                render_labels(labels);
+                labels.call(render_labels);
                 svg.select("g.x.axis").call(axis_x);
             }
         });
@@ -307,9 +343,12 @@ view.model.stacked_series = function (p) {
     stack = d3.layout.stack()
         .values(function (d) {
             return d.values;
-        })
-        .offset("wiggle") // streamgraph
-        .order("inside-out"); // pick a "good" layer order
+        });
+
+    if (p.streamgraph) {
+        stack.offset("wiggle") // streamgraph
+            .order("inside-out"); // pick a "good" layer order
+    }
 
     result.frac = stack(all_series);
 

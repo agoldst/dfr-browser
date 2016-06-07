@@ -43,7 +43,7 @@ view.model.list = function (p) {
                 view.topic.conditional_barplot({ 
                     t: t,
                     data: p.data[t],
-                    invert_key: p.invert_key,
+                    key: p.key,
                     type: p.type,
                     axes: false,
                     clickable: false,

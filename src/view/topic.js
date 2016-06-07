@@ -57,7 +57,7 @@ view.topic.docs = function (p) {
         docs = p.docs;
 
     if (p.condition !== undefined) {
-        header_text = ": " + p.condition;
+        header_text = ": " + p.key.display(p.condition);
 
         // the clear-selected-condition button
         d3.select("#topic_condition_clear")
@@ -152,11 +152,12 @@ view.topic.conditional = function (p) {
 view.topic.conditional_barplot = function (param) {
     var series,
         step, w, w_click,
+        bar_offset, bar_offset_click,
         scale_x,
         scale_y,
         bars, bars_enter,
         bars_click,
-        axes,
+        axes, tick_padding,
         tip_text,
         tx_duration = param.dirty ? param.spec.tx_duration : 0,
         svg = param.svg,
@@ -165,7 +166,7 @@ view.topic.conditional_barplot = function (param) {
     series = param.data.keys().sort().map(function (y) {
         return {
             key: y,
-            x: param.invert_key(y),
+            x: param.key.invert(y),
             y: param.data.get(y)
         };
     });
@@ -190,7 +191,10 @@ view.topic.conditional_barplot = function (param) {
 
         w = scale_x(series[0].x + step * spec.continuous.bar.w)
             - scale_x(series[0].x);
+        bar_offset = -w / 2;
         w_click = scale_x(series[0].x + step) - scale_x(series[0].x);
+        bar_offset_click = -w_click / 2;
+        tick_padding = w_click / 2;
     } else if (param.type === "time") {
         scale_x = d3.time.scale.utc()
             .domain([series[0].x,
@@ -203,10 +207,13 @@ view.topic.conditional_barplot = function (param) {
         w = scale_x(d3.time[spec.time.bar.unit].utc.offset(
                     series[0].x, spec.time.bar.w))
             - scale_x(series[0].x);
+        bar_offset = -w / 2;
         w_click = scale_x(
                 d3.time[spec.time.step.unit].utc.offset(
                     series[0].x, spec.time.step.n))
             - scale_x(series[0].x);
+        bar_offset_click = -w_click / 2;
+        tick_padding = w_click / 2;
     } else {
         // assume ordinal
         scale_x = d3.scale.ordinal()
@@ -214,7 +221,10 @@ view.topic.conditional_barplot = function (param) {
             .rangeRoundBands([0, spec.w], spec.ordinal.bar.w,
                     spec.ordinal.bar.w);
         w = scale_x.rangeBand();
+        bar_offset = 0;
         w_click = scale_x(series[1].x) - scale_x(series[0].x);
+        bar_offset_click = (w - w_click) / 2;
+        tick_padding = 3; // the d3 default
     }
 
     scale_y = d3.scale.linear()
@@ -260,13 +270,13 @@ view.topic.conditional_barplot = function (param) {
                         ax.ticks(d3.time[spec.time.ticks.unit].utc,
                                 spec.time.ticks.n);
                     } else {
-                        ax.ticks(spec[spec.type].ticks);
+                        ax.ticks(spec[param.type].ticks);
                     }
                 } else { // y axis
                     ax.tickSize(-spec.w)
                         .outerTickSize(0)
                         .tickFormat(VIS.percent_format)
-                        .tickPadding(w_click / 2)
+                        .tickPadding(tick_padding)
                         .ticks(spec.ticks_y);
                 }
 
@@ -311,7 +321,7 @@ view.topic.conditional_barplot = function (param) {
 
         bars_click.transition()
             .duration(tx_duration)
-            .attr("x", -w_click / 2.0)
+            .attr("x", bar_offset_click)
             .attr("y", 0)
             .attr("width", w_click)
             .attr("height", spec.h);
@@ -334,7 +344,7 @@ view.topic.conditional_barplot = function (param) {
             return "translate(" + scale_x(d.x) + ",0)";
         })
         .select("rect.display")
-        .attr("x", -w / 2.0)
+        .attr("x", bar_offset)
         .attr("y", function (d) {
             return scale_y(d.y);
         })
@@ -354,7 +364,7 @@ view.topic.conditional_barplot = function (param) {
         // interactivity for the bars
 
         // tooltip text
-        tip_text = function (d) { return d.key; };
+        tip_text = function (d) { return param.key.display(d.key); };
 
         // now set mouse event handlers
 

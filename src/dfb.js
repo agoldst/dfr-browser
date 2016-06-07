@@ -99,7 +99,7 @@ my.views.set("topic", function (t_user, y) {
             condition: data.has(y) ? y : undefined, // validate condition y
             type: VIS.condition.type,
             data: data,
-            invert_key: my.m.meta_condition(my.condition).invert
+            key: my.m.meta_condition(my.condition)
         });
         d3.select("#topic_plot").classed("invisible", false);
 
@@ -115,7 +115,8 @@ my.views.set("topic", function (t_user, y) {
             citations: docs.map(function (d) {
                 return my.bib.citation(my.m.meta(d.doc));
             }),
-            condition: y
+            condition: y,
+            key: my.m.meta_condition(my.condition)
         });
     };
 
@@ -443,7 +444,7 @@ model_view_list = function (sort, dir) {
                 data: data,
                 condition: my.condition,
                 type: VIS.condition.type,
-                invert_key: my.m.meta_condition(my.condition).invert,
+                key: my.m.meta_condition(my.condition),
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),
                 sort: sort,
@@ -486,8 +487,8 @@ model_view_plot = function (type) {
 model_view_conditional = function (type) {
     var p = {
         type: type,
-        invert_key: my.m.meta_condition(my.condition).invert,
-        condition: my.condition
+        key: my.m.meta_condition(my.condition),
+        condition_type: VIS.condition.type
     };
 
     if (VIS.ready.model_conditional) {
