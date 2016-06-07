@@ -13,7 +13,7 @@ view.model.conditional = function (p) {
             xs: p.key.range.map(p.key.invert),
             totals: p.conditional_totals,
             topics: p.topics,
-            streamgraph: p.condition_type !== "ordinal"
+            streamgraph: p.streamgraph && p.condition_type !== "ordinal"
         });
         view.dirty("model/conditional", false);
     }

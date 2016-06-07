@@ -54,8 +54,9 @@ var VIS = {
             label_threshold: 40, // px
             words: 4,
             label_words: 2, // should be <= words
-            ordinal: {
-                bar: 0.4
+            streamgraph: true,   // streamgraph or stack areas from x-axis?
+            ordinal: {          // ordinal variable: stacked bars, not areas
+                bar: 0.4        // bar width as proportion
             }
         },
         list: {

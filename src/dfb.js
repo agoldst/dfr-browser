@@ -488,7 +488,8 @@ model_view_conditional = function (type) {
     var p = {
         type: type,
         key: my.m.meta_condition(my.condition),
-        condition_type: VIS.condition.type
+        condition_type: VIS.condition.type,
+        streamgraph: VIS.model_view.conditional.streamgraph
     };
 
     if (VIS.ready.model_conditional) {
