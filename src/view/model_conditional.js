@@ -346,9 +346,10 @@ view.model.stacked_series = function (p) {
         });
 
     if (p.streamgraph) {
-        stack.offset("wiggle") // streamgraph
-            .order("inside-out"); // pick a "good" layer order
+        stack.offset("wiggle"); // streamgraph
     }
+
+    stack.order("inside-out"); // pick a "good" layer order
 
     result.frac = stack(all_series);
 
