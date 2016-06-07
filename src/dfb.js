@@ -98,6 +98,7 @@ my.views.set("topic", function (t_user, y) {
             t: t,
             condition: data.has(y) ? y : undefined, // validate condition y
             type: VIS.condition.type,
+            condition_name: my.condition_name,
             data: data,
             key: my.m.meta_condition(my.condition)
         });
@@ -116,6 +117,8 @@ my.views.set("topic", function (t_user, y) {
                 return my.bib.citation(my.m.meta(d.doc));
             }),
             condition: y,
+            type: VIS.condition.type,
+            condition_name: my.condition_name,
             key: my.m.meta_condition(my.condition)
         });
     };
@@ -442,7 +445,7 @@ model_view_list = function (sort, dir) {
             view.calculating("#model_view_list", false);
             view.model.list({
                 data: data,
-                condition: my.condition,
+                condition_name: my.condition_name,
                 type: VIS.condition.type,
                 key: my.m.meta_condition(my.condition),
                 sums: sums,
@@ -489,6 +492,7 @@ model_view_conditional = function (type) {
         type: type,
         key: my.m.meta_condition(my.condition),
         condition_type: VIS.condition.type,
+        condition_name: my.condition_name,
         streamgraph: VIS.model_view.conditional.streamgraph
     };
 
@@ -777,6 +781,7 @@ load = function () {
                 // and get the metadata object ready
                 my.metadata.from_string(meta_s);
                 my.condition = VIS.condition.spec.field;
+                my.condition_name = VIS.condition.name || my.condition;
 
                 my.metadata.condition(
                     my.condition,

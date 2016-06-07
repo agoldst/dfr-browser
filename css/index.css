@@ -362,6 +362,12 @@ a:hover {
     font-size: 11px;
 }
 
+.axis_label {
+    font-family: sans-serif;
+    font-size: 12px;
+    transform: translate(0px,-4px);
+}
+
 /* hide line on y axis */
 .axis.y path.domain {
     display: none;

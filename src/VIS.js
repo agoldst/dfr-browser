@@ -49,7 +49,7 @@ var VIS = {
                 left: 20,
                 right: 20,
                 top: 20,
-                bottom: 20
+                bottom: 30
             },
             label_threshold: 40, // px
             words: 4,
@@ -97,7 +97,7 @@ var VIS = {
             left: 40,
             right: 20,
             top: 20,
-            bottom: 20
+            bottom: 30
         },
         time: { // conditional plot x-axis settings: time variable
             bar: { // width of bars

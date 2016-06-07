@@ -19,6 +19,7 @@ view.model.conditional = function (p) {
     }
     view.model.conditional_plot({
         condition_type: p.condition_type,
+        condition_name: p.condition_name,
         data: this.conditional.data[raw ? "raw" : "frac"],
         domain_x: this.conditional.data.domain_x,
         domain_y: this.conditional.data[raw ? "domain_raw" : "domain_frac"],
@@ -36,7 +37,7 @@ view.model.conditional = function (p) {
 
 view.model.conditional_plot = function (p) {
     var spec = p.spec, svg,
-        scale_x, scale_y, axis_x, g_axis, area,
+        scale_x, scale_y, axis_x, ax_label, g_axis, area,
         scale_color,
         bg, clip,
         mark, marks, render_marks,
@@ -125,6 +126,17 @@ view.model.conditional_plot = function (p) {
         .duration(2000)
         .attr("transform", "translate(0," + spec.h + ")")
         .call(axis_x);
+
+    if (p.condition_type !== "time") {
+        ax_label = svg.selectAll("text.axis_label")
+            .data([1]);
+        ax_label.enter().append("text");
+        ax_label.classed("axis_label", true)
+            .attr("x", spec.w / 2)
+            .attr("y", spec.h + spec.m.bottom)
+            .attr("text-anchor", "middle")
+            .text(p.condition_name);
+    }
 
     // the actual streams
     marks = svg.selectAll(mark + ".topic_area")

@@ -57,7 +57,11 @@ view.topic.docs = function (p) {
         docs = p.docs;
 
     if (p.condition !== undefined) {
-        header_text = ": " + p.key.display(p.condition);
+        header_text = ": ";
+        if (p.type !== "time") {
+            header_text += p.condition_name + " ";
+        }
+        header_text += p.key.display(p.condition);
 
         // the clear-selected-condition button
         d3.select("#topic_condition_clear")
@@ -157,7 +161,7 @@ view.topic.conditional_barplot = function (param) {
         scale_y,
         bars, bars_enter,
         bars_click,
-        axes, tick_padding,
+        axes, ax_label, tick_padding,
         tip_text,
         tx_duration = param.dirty ? param.spec.tx_duration : 0,
         svg = param.svg,
@@ -291,6 +295,14 @@ view.topic.conditional_barplot = function (param) {
                 }
 
             });
+        ax_label = svg.selectAll("text.axis_label")
+            .data([1]);
+        ax_label.enter().append("text");
+        ax_label.classed("axis_label", true)
+            .attr("x", spec.w / 2)
+            .attr("y", spec.h + spec.m.bottom)
+            .attr("text-anchor", "middle")
+            .text(param.condition_name);
     }
 
     // bars

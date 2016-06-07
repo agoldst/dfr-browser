@@ -17,8 +17,8 @@ view.model.list = function (p) {
 
         // label sparkplots column
         d3.select("th#model_view_list_condition a")
-            .text((p.condition === "time") ? "over time"
-                    : "by " + p.condition);
+            .text((p.type === "time") ? "over time"
+                    : "by " + p.condition_name);
 
         trs = trs.data(d3.range(p.data.length))
             .enter().append("tr");
