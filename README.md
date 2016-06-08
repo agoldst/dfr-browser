@@ -111,13 +111,13 @@ Many properties are nested. There are parameter settings for most of the model v
 }
 ```
 
-Five words will be shown in each circle, at font sizes between 6 and 14 points. The default values of other `model_view.plot` parameters, like `aspect`, will be conserved. (The layout of the Grid view can be changed by specifying `rows` and `indents` arrys in `model_view.plot`.)
+Five words will be shown in each circle, at font sizes between 6 and 14 points. The default values of other `model_view.plot` parameters, like `aspect`, will be conserved. (The layout of the Grid view can be changed by specifying `rows` and `indents` arrays in `model_view.plot`.)
 
 ### Conditioning on metadata
 
 So far dfr-browser has always had a display of topic proportions per year. But this is just a special case of something more general, a topic distribution conditional on a metadata variable, that is, the probability of a topic within a given metadata category. In addition to topics over time, dfr-browser can display other relations of this kind. 
 
-The `VIS.condition` parameters govern this display. It specifies what kind of variable the covariate is, and how to categorize documents into discrete categories using it. This is simplest to explain by example.
+The `VIS.condition` parameter governs this display. It specifies what kind of variable the covariate is, and how to categorize documents into discrete categories using it. This is simplest to explain by example.
 
 For publication date, the setting might be
 
