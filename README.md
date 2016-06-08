@@ -146,7 +146,7 @@ For a categorical variable, the setting might be
 
 The topic displays will now show the total proportion of each journal's words assigned to that topic. ("Ordinal" is the d3 name for such variables, a reminder that an ordering is imposed on the category by alphabetization.) The optional `name` field gives a name to be used on axis labels. The `field` is used if it is missing, so it's superfluous in this case.
 
-Finally (*very experimental feature*), a continuous variable can be specified with
+Finally, a continuous variable can be specified as follows. Let's imagine the data include a variable `pagelen` giving document page lengths. Topic distributions conditional on page length are probably uninteresting, though possibly of some diagnostic use, so this example is purely to illustrate the software mechanism:
 
 ```json
 "condition": {
@@ -159,6 +159,7 @@ Finally (*very experimental feature*), a continuous variable can be specified wi
 }
 ```
 
+
 Which says that the `pagelen` field should be divided into bins of width 10 and topic proportions should be marginalized over those bins. This is a little more complex, because the `field` named here must exist in the metadata. In order to ensure that the ninth metadata column in the `meta.csv[.zip]` file has the name `pagelen` rather than `X1`, we also need this setting:
 
 ```json
@@ -169,25 +170,11 @@ Which says that the `pagelen` field should be divided into bins of width 10 and 
 }
 ```
 
-And of course the metadata column has to actually *exist*. For page lengths from JSTOR metadata, one could calculate them with something like the following fashion:
-
-```R
-library(stringr)
-# doesn't handle roman numeral pages; see `?as.roman`
-metadata(m) <- metadata(m) %>%
-    mutate(pp=str_extract_all(pagerange, "\\d+")) %>%
-    mutate(pagelen=sapply(pp,
-        function (x) if (length(x) <= 1) 1 else diff(as.numeric(x)))) %>%
-    select(id, title, author, journaltitle, volume, issue,
-           pubdate, pagerange, pagelen)
-export_browser_data(m, out_dir="browser")
-```
-
-Whether topic proportions have any interesting relation to document page length depends on the kinds of documents you are studying.
+And of course the metadata column has to actually exist. Page length is not supplied in JSTOR metadata, but it is not difficult to calculate from the `pagerange` field.
 
 It may also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#102) for documentation), the corresponding parameters in `model_view.list.spark`, and related parameters in `model_view.conditional`. In particular, the width of the bars in bar charts, as well as the margin left for y-axis labels (`topic_view.m.left`), often requires manual tuning. Tuning parameters are keyed to variable types, so that, for example, the topic bar chart for a time covariate has settings in `VIS.topic_view.time` whereas the settings for a categorical covariate are `VIS.topic_view.ordinal`.
 
-(What is displayed is only a naive estimate, formed by marginalizing the topic distribution over levels or bins of the metadata covariate. Or, if you prefer, the display constitutes a visual [posterior predictive check](http://www.cs.princeton.edu/~blei/papers/MimnoBlei2011.pdf) of the topic model: ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.)
+(What is displayed is only a naive estimate of the conditional probabilities, formed by marginalizing the topic distribution over levels or bins of the metadata covariate. Or, if you prefer, the display constitutes a visual [posterior predictive check](http://www.cs.princeton.edu/~blei/papers/MimnoBlei2011.pdf) of the topic model: ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.)
 
 ### Hiding topics
 
