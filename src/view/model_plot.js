@@ -58,7 +58,8 @@ view.model.plot = function (param) {
             n: n,
             cols: VIS.model_view.plot.cols
                 || Math.floor(Math.sqrt(VIS.model_view.plot.aspect * n)),
-            rows: VIS.model_view.plot.rows
+            rows: VIS.model_view.plot.rows,
+            indents: VIS.model_view.plot.indents
         })
             .forEach(function (p, j) {
                 topics[j].x = p.x;
@@ -281,7 +282,7 @@ view.model.grid_coords = function (p) {
         n_row = Math.round(p.n / n_col),
         remain = p.n - n_row * n_col,
         sgn = d3.ascending(remain, 0),
-        rows,
+        rows, indents,
         vskip,
         i, j,
         result = [];
@@ -291,14 +292,14 @@ view.model.grid_coords = function (p) {
     // Alternate rows are displaced 1/2 unit on horizontal.
     vskip = Math.sqrt(3.0) / 2.0;
 
-    if (p.rows && d3.sum(p.rows) === p.m) {
+    if (p.rows && d3.sum(p.rows) === p.n) {
         rows = p.rows; // manually specified grid rows
-    } else {
-        if (p.rows) {
-        // then the spec was invalid and we'll fall through to manual
-            view.warning("Invalid model grid specification.");
-        }
+        n_row = p.rows.length;
+        // If the spec was invalid, we'll fall through to manual. Can happen
+        // without user error if topics are hidden/shown
+    }
 
+    if (rows === undefined) {
         rows = [ ];
 
         // if n is not exactly n_row * n_col, we'll do our best sticking
@@ -327,11 +328,22 @@ view.model.grid_coords = function (p) {
         }
     }
 
+    // manual indents if specified; same validation behavior as for rows
+    if (p.indents && p.indents.length === n_row) {
+        indents = p.indents;
+    }
+
+    if (indents === undefined) {
+        indents = d3.range(n_row).map(function (i) {
+            return (i % 2 === 0) ? 0 : 0.5;
+        });
+    }
+
     // generate coordinates
     for (i = 0; i < n_row; i += 1) {
         for (j = 0; j < rows[i]; j += 1) {
             result.push({
-                x: j + 0.5 + ((i % 2 === 0) ? 0 : 0.5),
+                x: j + 0.5 + indents[i],
                 y: (n_row - i) * vskip + 0.5 });
         }
     }

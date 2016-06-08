@@ -42,10 +42,11 @@ var VIS = {
             words: 6,           // maximum: may need adjustment
             size_range: [7, 18], // points. may need adjustment
             name_size: 18,      // points
-            stroke_range: 6,    // max. perimeter thickness
+            stroke_range: 6     // max. perimeter thickness
             // cols: 8          // can explicitly specify # of grid columns
             // rows: [4, 5, 4]  // OR just list how many circles in each row
             //                  // (must sum to # of topics)
+            // indents: [ 0.5, 0, 0.5 ] // AND/OR: x origin of each row
         },
         conditional: {
             w: 500,         // px: the minimum svg width
