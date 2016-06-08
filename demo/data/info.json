@@ -6,7 +6,7 @@
             "type": "time",
             "spec": {
                 "unit": "year",
-                "n": 2
+                "n": 1
             }
         },
         "bib_sort": {
