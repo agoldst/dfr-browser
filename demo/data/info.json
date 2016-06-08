@@ -1,15 +1,23 @@
 {
     "title": "Topics in <em>PMLA<\/em>",
-    "meta_info": "This site is the working demo for <a href=\"http://agoldst.github.io/dfr-browser\">dfr-browser</a>, a browsing interface for topic models of journal articles.",
+    "meta_info": "This site is the working demo for <a href=\"http://agoldst.github.io/dfr-browser\">dfr-browser</a>, a browsing interface for topic models of journal articles or other text.",
     "VIS": {
+        "condition": {
+            "type": "time",
+            "spec": {
+                "unit": "year",
+                "n": 2
+            }
+        },
         "bib_sort": {
             "major": "year",
             "minor": "alpha"
         },
         "model_view": {
-            "aspect": 1.333,
-            "words": 6,
-            "size_range": [6, 14]
-        } 
+            "plot": {
+                "words": 6,
+                "size_range": [6, 14]
+            } 
+        }
     }
 }
