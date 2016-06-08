@@ -123,7 +123,7 @@ For publication date, the setting might be
 "condition": {
     "type": "time",
     "spec": {
-      "field": "date"
+      "field": "date",
       "unit": "month",
       "n": 2
     }
