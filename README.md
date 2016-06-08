@@ -96,20 +96,22 @@ The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*P
 
 ## Tune the visualization parameters
 
-In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [VIS.js](src/VIS.js) for the fields of the `VIS` object and their default values. Many properties are nested. Some possibilities of note:
+In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [VIS.js](src/VIS.js) for the fields of the `VIS` object and their default values. Specifying `VIS` properties in `info.json` changes these defaults.
 
-`VIS.overview_words`: how many words to use as the "titles" for topics in the List view, and the topics menu.
-
-`VIS.model_view`: a collection of properties. Specify the overview's number of words in the Little Circles and type-size range in points:
+Many properties are nested. There are parameter settings for most of the model views as well as for metadata categories and bibliographic display. For example, to change the font size and number of words shown in the little circles representing topics in the Grid and Scaled overviews, modify some fields of `VIS.model_view.plot`:
 
 ```json
-"model_view": {
-  "words": 6,
-  "size_range": [8, 10]
+"VIS": {
+    "model_view": {
+        "plot": {
+            "words": 5,
+            "size_range": [6, 14]
+        }
+    }
 }
 ```
 
-`model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
+Five words will be shown in each circle, at font sizes between 6 and 14 points. The default values of other `model_view.plot` parameters, like `aspect`, will be conserved. (The layout of the Grid view can be changed by specifying `rows` and `indents` arrys in `model_view.plot`.)
 
 ### Conditioning on metadata
 
