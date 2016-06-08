@@ -475,7 +475,7 @@ model_view_plot = function (type) {
             topics: topics.map(function (t) {
                 return {
                     t: t,
-                    words: my.m.topic_words(t, VIS.model_view.words),
+                    words: my.m.topic_words(t, VIS.model_view.plot.words),
                     scaled: my.m.topic_scaled(t),
                     total: totals[t],
                     label: my.m.topic_label(t)

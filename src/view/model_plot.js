@@ -13,9 +13,10 @@ view.model.plot = function (param) {
         n = param.topics.length,
         spec = { };
 
-    spec.w = d3.select("#model_view").node().clientWidth || VIS.model_view.w;
-    spec.w = Math.max(spec.w, VIS.model_view.w); // set a min. width
-    spec.h = Math.floor(spec.w / VIS.model_view.aspect);
+    spec.w = d3.select("#model_view").node().clientWidth
+        || VIS.model_view.plot.w;
+    spec.w = Math.max(spec.w, VIS.model_view.plot.w); // set a min. width
+    spec.h = Math.floor(spec.w / VIS.model_view.plot.aspect);
     spec.m = {
         left: 0,
         right: 0,
@@ -25,10 +26,9 @@ view.model.plot = function (param) {
 
     svg = view.plot_svg("#model_view_plot", spec);
 
-    // N.B. ignoring VIS.model_view.radius and calculating instead
     circle_radius = Math.floor(
         spec.w /
-        (2.1 * Math.sqrt(VIS.model_view.aspect * n))
+        (2.1 * Math.sqrt(VIS.model_view.plot.aspect * n))
     );
     cloud_size = circle_radius * 1.8; // a little less than the full diameter
     range_padding = 1.1 * circle_radius;
@@ -54,8 +54,12 @@ view.model.plot = function (param) {
         topics = topics.sort(function (a, b) {
             return d3.ascending(a.sort_key, b.sort_key);
         });
-        view.model.grid_coords(n, VIS.model_view.cols
-                || Math.floor(Math.sqrt(VIS.model_view.aspect * n)))
+        view.model.grid_coords({
+            n: n,
+            cols: VIS.model_view.plot.cols
+                || Math.floor(Math.sqrt(VIS.model_view.plot.aspect * n)),
+            rows: VIS.model_view.plot.rows
+        })
             .forEach(function (p, j) {
                 topics[j].x = p.x;
                 topics[j].y = p.y;
@@ -75,11 +79,11 @@ view.model.plot = function (param) {
 
     scale_size = d3.scale.sqrt()
         .domain([0, 1])
-        .range(VIS.model_view.size_range);
+        .range(VIS.model_view.plot.size_range);
 
     scale_stroke = d3.scale.linear()
         .domain([0,d3.max(topics, function (p) { return p.total; })])
-        .range([0,VIS.model_view.stroke_range]);
+        .range([0,VIS.model_view.plot.stroke_range]);
 
     gs = svg.selectAll("g")
         .data(topics, function (p) { return p.t; });
@@ -184,7 +188,8 @@ view.model.plot = function (param) {
             return ws.map(function (w, j) {
                 return {
                     w: w,
-                    y: VIS.model_view.name_size * (j - (ws.length - 1) / 2)
+                    y: VIS.model_view.plot.name_size
+                        * (j - (ws.length - 1) / 2)
                 };
             });
         })
@@ -192,7 +197,7 @@ view.model.plot = function (param) {
         .attr("x", 0)
         .attr("y", function (w) { return w.y; })
         .text(function (w) { return w.w; })
-        .style("font-size", VIS.model_view.name_size + "px")
+        .style("font-size", VIS.model_view.plot.name_size + "px")
         .classed("merged_topic_sep", function (w) {
             return w.w === "or";
         });
@@ -271,12 +276,12 @@ view.model.plot = function (param) {
     }
 };
 
-view.model.grid_coords = function (n, cols) {
-    var n_col = cols || Math.floor(Math.sqrt(n)),
-        n_row = Math.round(n / n_col),
-        remain = n - n_row * n_col,
+view.model.grid_coords = function (p) {
+    var n_col = p.cols || Math.floor(Math.sqrt(p.n)),
+        n_row = Math.round(p.n / n_col),
+        remain = p.n - n_row * n_col,
         sgn = d3.ascending(remain, 0),
-        rows = [],
+        rows,
         vskip,
         i, j,
         result = [];
@@ -286,34 +291,40 @@ view.model.grid_coords = function (n, cols) {
     // Alternate rows are displaced 1/2 unit on horizontal.
     vskip = Math.sqrt(3.0) / 2.0;
 
-    // if n is not exactly n_row * n_col, we'll do our best sticking
-    // things on the right-side margin. Since we indent odd rows, we
-    // stick extra entries on even rows first before going to odd rows,
-    // but we stick extra holes on odd rows first.
-
-    for (i = (sgn === 1) ? 0 : 1; i < n_row; i += 2) {
-        rows[i] = n_col;
-        if (Math.abs(remain) > 0) {
-            rows[i] += sgn;
-            remain -= sgn;
+    if (p.rows && d3.sum(p.rows) === p.m) {
+        rows = p.rows; // manually specified grid rows
+    } else {
+        if (p.rows) {
+        // then the spec was invalid and we'll fall through to manual
+            view.warning("Invalid model grid specification.");
         }
-    }
-    for (i = (sgn === 1) ? 1 : 0; i < n_row; i += 2) {
-        rows[i] = n_col;
-        if (Math.abs(remain) > 0) {
-            rows[i] += sgn;
-            remain -= sgn;
+
+        rows = [ ];
+
+        // if n is not exactly n_row * n_col, we'll do our best sticking
+        // things on the right-side margin. Since we indent odd rows, we
+        // stick extra entries on even rows first before going to odd rows,
+        // but we stick extra holes on odd rows first.
+
+        for (i = (sgn === 1) ? 0 : 1; i < n_row; i += 2) {
+            rows[i] = n_col;
+            if (Math.abs(remain) > 0) {
+                rows[i] += sgn;
+                remain -= sgn;
+            }
         }
-    }
+        for (i = (sgn === 1) ? 1 : 0; i < n_row; i += 2) {
+            rows[i] = n_col;
+            if (Math.abs(remain) > 0) {
+                rows[i] += sgn;
+                remain -= sgn;
+            }
+        }
 
-    // if we've doing holes, we want the longer rows on top, not on bottom
-    if (sgn === -1) {
-        rows.reverse();
-    }
-
-    // "validation"
-    if (d3.sum(rows) !== n) {
-        view.error("The topic grid has gone wrong. This is a bug.");
+        // if we've doing holes, we want the longer rows on top, not on bottom
+        if (sgn === -1) {
+            rows.reverse();
+        }
     }
 
     // generate coordinates

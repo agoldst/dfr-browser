@@ -36,12 +36,17 @@ var VIS = {
     },
     overview_words: 15,     // may need adjustment
     model_view: {
-        w: 500,            // px: the minimum svg width
-        aspect: 1.3333,     // for calculating height
-        words: 4,           // maximum: may need adjustment
-        size_range: [7, 18], // points. may need adjustment
-        name_size: 18,      // points
-        stroke_range: 6,    // max. perimeter thickness
+        plot: {
+            w: 500,            // px: the minimum svg width
+            aspect: 1.3333,     // for calculating height
+            words: 6,           // maximum: may need adjustment
+            size_range: [7, 18], // points. may need adjustment
+            name_size: 18,      // points
+            stroke_range: 6,    // max. perimeter thickness
+            // cols: 8          // can explicitly specify # of grid columns
+            // rows: [4, 5, 4]  // OR just list how many circles in each row
+            //                  // (must sum to # of topics)
+        },
         conditional: {
             w: 500,         // px: the minimum svg width
             aspect: 1.333,
