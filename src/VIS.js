@@ -104,10 +104,11 @@ var VIS = {
                 unit: "day", // unit is used as d3.time[unit].utc
                 w: 90
             },
-            ticks: {
-                unit: "year",
-                n: 10
-            }
+            ticks: 10   // number of x-axis ticks
+            // ticks: { // alternatively, can specify interval b/w ticks
+            //    unit: "year",
+            //    n: 10
+            //}
         },
         continuous: { // continuous variable: step is calculated automatically
             bar: {

@@ -271,8 +271,12 @@ view.topic.conditional_barplot = function (param) {
 
                 if (v === "x") { // x axis
                     if (param.type === "time") {
-                        ax.ticks(d3.time[spec.time.ticks.unit].utc,
-                                spec.time.ticks.n);
+                        if (spec.time.ticks.unit) {
+                            ax.ticks(d3.time[spec.time.ticks.unit].utc,
+                                    spec.time.ticks.n);
+                        } else if (typeof spec.time.ticks === "number") {
+                            ax.ticks(spec.time.ticks);
+                        }
                     } else {
                         ax.ticks(spec[param.type].ticks);
                     }
