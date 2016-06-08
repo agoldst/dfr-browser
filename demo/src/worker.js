@@ -2,15 +2,20 @@
 "use strict";
 importScripts("utils.min.js");
 
-var my = { },
+var my = {
+        conditional: { } ,
+        conditional_total: { },
+        doc_categories: { }
+    },
     doc_topics_matrix,
     total_tokens,
     topic_docs,
     doc_topics,
-    topic_yearly,
-    yearly_total;
+    topic_conditional,
+    conditional_total,
+    topic_docs_conditional;
 
-doc_topics_matrix = function (data) { 
+doc_topics_matrix = function (data) {
     var my = { },
         that = data;
 
@@ -120,6 +125,95 @@ total_tokens = function () {
 };
 
 topic_docs = function (t, n) {
+    return topic_docs_conditional(t, undefined, undefined, n);
+};
+
+
+doc_topics = function (d, n) {
+    var topics = [ ], t, x;
+
+    for (t = 0; t < my.dt.n; t += 1) {
+        x = my.dt.get(d, t);
+        if (x > 0) {
+            topics.push({ topic: t, weight: x });
+        }
+    }
+
+    topics.sort(function (a, b) {
+        return utils.desc(a.weight, b.weight) ||
+            utils.desc(a.t, b.t); // stabilize sort
+    });
+
+    return utils.shorten(topics, n, function (topics, i) {
+        return topics[i].weight;
+    });
+};
+
+topic_conditional = function (v, t) {
+    var result, j, key;
+
+    // cached?
+    if (!my.conditional[v]) {
+        my.conditional[v] = { };
+    }
+
+    if (t === undefined) {
+        result = [ ];
+        for (j = 0; j < my.dt.n; j += 1) {
+            result.push(topic_conditional(v, j));
+        }
+        return result;
+    }
+
+    if (my.conditional[v][t]) {
+        return my.conditional[v][t];
+    }
+
+    result = { };
+
+    for (j = my.dt.p[t]; j < my.dt.p[t + 1]; j += 1) {
+        key = my.doc_categories[v][my.dt.i[j]];
+        if (result[key]) {
+            result[key] += my.dt.x[j];
+        } else {
+            result[key] = my.dt.x[j];
+        }
+    }
+
+    // The spec says: only called on array elements that are defined
+    // Divide through
+    for (key in result) {
+        if (result.hasOwnProperty(key)) {
+            result[key] /= conditional_total(v, key);
+        }
+    }
+
+    // cache if this is the first time through
+    my.conditional[v][t] = result;
+    return result;
+};
+
+conditional_total = function (v, key) {
+    var tally, k, n;
+    // memoization
+    if (!my.conditional_total[v]) {
+        tally = { };
+        for (n = 0; n < my.dt.i.length; n += 1) {
+            k = my.doc_categories[v][my.dt.i[n]];
+            if (tally[k]) {
+                tally[k] += my.dt.x[n];
+            } else {
+                tally[k] = my.dt.x[n];
+            }
+        }
+        my.conditional_total[v] = tally;
+    }
+
+    return (key !== undefined) ? my.conditional_total[v][key]
+        : my.conditional_total[v];
+};
+
+topic_docs_conditional = function (t, v, key, n) {
     var p0 = my.dt.p[t],
         p1 = my.dt.p[t + 1],
         p,
@@ -133,11 +227,14 @@ topic_docs = function (t, n) {
     // TODO speed bottleneck: all that row-summing gets slooow
     // because row-slicing is slow on the col-compressed matrix
     for (p = p0; p < p1; p += 1) {
-        docs.push({
-            doc: my.dt.i[p],
-            frac: my.dt.x[p] / my.dt.row_sum(my.dt.i[p]),
-            weight: my.dt.x[p]
-        });
+        if (v === undefined // then: unconditional top docs
+                || my.doc_categories[v][my.dt.i[p]] === key) {
+            docs.push({
+                doc: my.dt.i[p],
+                frac: my.dt.x[p] / my.dt.row_sum(my.dt.i[p]),
+                weight: my.dt.x[p]
+            });
+        }
     }
 
     // return them all, sorted, if there are fewer than n hits
@@ -148,6 +245,7 @@ topic_docs = function (t, n) {
         });
         return docs;
     }
+
 
     // initial guess. simplifies the conditionals below to do it this way,
     // and sorting n elements is no biggie
@@ -176,92 +274,6 @@ topic_docs = function (t, n) {
     });
 };
 
-doc_topics = function (d, n) {
-    var topics = [ ], t, x;
-
-    for (t = 0; t < my.dt.n; t += 1) {
-        x = my.dt.get(d, t);
-        if (x > 0) {
-            topics.push({ topic: t, weight: x });
-        }
-    }
-        
-    topics.sort(function (a, b) {
-        return utils.desc(a.weight, b.weight) ||
-            utils.desc(a.t, b.t); // stabilize sort
-    });
-
-    return utils.shorten(topics, n, function (topics, i) {
-        return topics[i].weight;
-    });
-};
-
-
-// yearly proportions for topic t
-topic_yearly = function (t) {
-    var result, j, y;
-
-    // cached? 
-    if (!my.topic_yearly) {
-        my.topic_yearly = [];
-    }
-
-    if (t === undefined) {
-        result = [ ];
-        for (j = 0; j < my.dt.n; j += 1) {
-            result.push(topic_yearly(j));
-        }
-        return result;
-    }
-
-    if (my.topic_yearly[t]) {
-        return my.topic_yearly[t];
-    }
-
-    // Formally an array but we'll use it as a hash with numeric keys
-    result = [ ];
-
-    for (j = my.dt.p[t]; j < my.dt.p[t + 1]; j += 1) {
-        y = my.doc_years[my.dt.i[j]];
-        if (result[y]) {
-            result[y] += my.dt.x[j];
-        } else {
-            result[y] = my.dt.x[j];
-        }
-    }
-
-    // The spec says: only called on array elements that are defined
-    // Divide through
-    result.forEach(function (weight, year) {
-        result[year] /= yearly_total(year);
-    });
-
-    // cache if this is the first time through
-    my.topic_yearly[t] = result;
-    return result;
-};
-
-// get aggregate topic counts over years
-yearly_total = function (year) {
-    var tally, y, n;
-    // memoization
-    if (!my.yearly_total) {
-        // Formally an array, but we'll use it as a hash w/ numeric keys
-        tally = [ ];
-        for (n = 0; n < my.dt.i.length; n += 1) {
-            y = my.doc_years[my.dt.i[n]];
-            if (tally[y]) {
-                tally[y] += my.dt.x[n];
-            } else {
-                tally[y] = my.dt.x[n];
-            }
-        }
-        my.yearly_total = tally;
-    }
-
-    return isFinite(year) ? my.yearly_total[year] : my.yearly_total;
-};
-
 // main dispatch
 onmessage = function (e) {
     if (e.data.what === "set_dt") {
@@ -274,11 +286,11 @@ onmessage = function (e) {
             what: "set_dt",
             result: my.dt !== undefined
         });
-    } else if (e.data.what === "set_doc_years") {
-        my.doc_years = e.data.doc_years;
+    } else if (e.data.what === "set_doc_categories") {
+        my.doc_categories[e.data.v] = e.data.keys;
         postMessage({
-            what: "set_doc_years",
-            result: my.doc_years !== undefined
+            what: "set_doc_categories",
+            result: my.doc_categories[e.data.v] !== undefined
         });
     } else if (e.data.what === "total_tokens") {
         postMessage({
@@ -300,15 +312,24 @@ onmessage = function (e) {
             what: "topic_total/" + e.data.t,
             result: my.dt.col_sum(e.data.t === "all" ? undefined : e.data.t)
         });
-    } else if (e.data.what === "topic_yearly") {
+    } else if (e.data.what === "topic_conditional") {
         postMessage({
-            what: "topic_yearly/" + e.data.t,
-            result: topic_yearly(e.data.t === "all" ? undefined : e.data.t)
+            what: "topic_conditional/" + e.data.v + "/" + e.data.t,
+            result: topic_conditional(e.data.v,
+                e.data.t === "all" ? undefined : e.data.t)
         });
-    } else if (e.data.what === "yearly_total") {
+    } else if (e.data.what === "conditional_total") {
         postMessage({
-            what: "yearly_total/" + e.data.y,
-            result: yearly_total(e.data.y === "all" ? undefined : e.data.y)
+            what: "conditional_total/" + e.data.v + "/" + e.data.key,
+            result: conditional_total(e.data.v,
+                e.data.key === "all" ? undefined : e.data.key)
+        });
+    } else if (e.data.what === "topic_docs_conditional") {
+        postMessage({
+            what: "topic_docs_conditional/" + e.data.t + "/" + e.data.v + "/"
+                + e.data.key + "/" + e.data.n,
+            result: topic_docs_conditional(e.data.t, e.data.v,
+                    e.data.key, e.data.n)
         });
     } else {
         postMessage({ what: "error" });

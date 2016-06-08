@@ -294,7 +294,7 @@ a.topic_words span.name {
     font-style: italic;
 }
 
-/* model_view_yearly */
+/* model_view_conditional */
 
 text.layer_label {
     pointer-events: none;
@@ -362,6 +362,12 @@ a:hover {
     font-size: 11px;
 }
 
+.axis_label {
+    font-family: sans-serif;
+    font-size: 12px;
+    transform: translate(0px,-4px);
+}
+
 /* hide line on y axis */
 .axis.y path.domain {
     display: none;
@@ -378,7 +384,7 @@ a:hover {
     stroke: #ddd;*/
 }
 
-.selected_year rect.display {
+.selected_condition rect.display {
     fill: rgb(51,153,255);
     stroke: rgb(51,153,255);
 /*    fill: #ddd;

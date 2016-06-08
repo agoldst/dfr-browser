@@ -3,14 +3,16 @@ var utils = (function () {
     var that = {},
         shorten,
         deep_replace,
+        clone,
+        MAX_CLONE_DEPTH = 10, // "constant"
         asc,
         desc,
         bisector_left;
 
-    // shorten a sorted array to n elements, allowing more than n elements if 
+    // shorten a sorted array to n elements, allowing more than n elements if
     // there are ties at the end
     // xs: array to shorten
-    // n: desired length (result is shorter if xs is shorter, longer if there 
+    // n: desired length (result is shorter if xs is shorter, longer if there
     //    are ties at the end of xs
     // f: subscripting function: f(xs, i) = xs[i] by default
     shorten = function (xs, n, f) {
@@ -35,8 +37,7 @@ var utils = (function () {
 
     // replace the non-method properties of one object with those of
     // another without overwriting any properties in the original not
-    // specified in the replacement OR adding any properties in the
-    // replacement not specified in the original
+    // specified in the replacement
     //
     // x: the original
     // repl: the source of replacements
@@ -51,7 +52,15 @@ var utils = (function () {
             return repl;
         }
 
+        // we get errors if we treat arrays like ordinary objects
+        if (Array.isArray(x) || Array.isArray(repl)) {
+            return repl;
+        }
+
         if (typeof repl === "object") {
+            if (typeof x !== "object") {
+                result = { };
+            }
             for (prop in repl) {
                 if (repl.hasOwnProperty(prop)
                         && typeof repl[prop] !== 'function') {
@@ -64,6 +73,47 @@ var utils = (function () {
         return result;
     };
     that.deep_replace = deep_replace;
+
+    // clone an object's data properties (strings, numbers, and booleans),
+    // descending rescursively into arrays or objects. Anything else (e.g.
+    // functions) is not cloned but simply returned. The maximum recursion
+    // depth is MAX_CLONE_DEPTH to prevent infinite recursion if at some
+    // depth an object holds a reference to itself.
+    clone = function (X) {
+        var cloner;
+        cloner = function (x, depth) {
+            var prop, result;
+
+            if (typeof x === "string" || typeof x === "number"
+                    || typeof x === "boolean") {
+                return x;
+            }
+
+            if (depth > MAX_CLONE_DEPTH) {
+                return undefined;
+            }
+
+            if (Array.isArray(x)) {
+                return x.map(function (y) {
+                    return cloner(y, depth + 1);
+                });
+            }
+
+            if (typeof x === "object") {
+                result = { };
+                for (prop in x) {
+                    if (x.hasOwnProperty(prop)) {
+                        result[prop] = cloner(x[prop], depth + 1);
+                    }
+                }
+                return result;
+            }
+            // otherwise
+            return x;
+        };
+        return cloner(X, 0);
+    };
+    that.clone = clone;
 
     // These three functions are lifted straight from the d3 code so
     // that we can invoke them in a Worker that doesn't have a document
@@ -86,7 +136,7 @@ var utils = (function () {
         var compare = (typeof f === "function") ?
             function(d, x) { return asc(f(d), x); }
             : asc;
-        
+
         return function(a, x, lo, hi) {
             var mid;
             if (arguments.length < 3) {

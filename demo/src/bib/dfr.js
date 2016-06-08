@@ -3,7 +3,8 @@
 
 // Bibliography processing specialized for DfR.
 bib.dfr = function (spec) {
-    var that = bib(spec),
+    var my = spec || { },
+        that = bib(my),
         doc_author;
 
     // Construction: override inherited sorting()
@@ -41,12 +42,12 @@ bib.dfr = function (spec) {
 
     // major: journal title
     that.keys.journal = function (doc) {
-        return doc.journaltitle;
+        return doc.journal;
     };
 
     // major: journal issue (use journalcontents for minor)
     that.keys.issue = function (doc) {
-        var k = doc.journaltitle;
+        var k = doc.journal;
         k += "_" + d3.format("05d")(doc.volume);
         if (doc.issue) {
             k += "_" + doc.issue;
@@ -72,7 +73,7 @@ bib.dfr = function (spec) {
 
     // minor: journal + volume + issue + page order
     that.keys.journalcontents = function (doc) {
-        var result = doc.journaltitle;
+        var result = doc.journal;
 
         result += d3.format("05d")(doc.volume);
         result += d3.format("05d")((doc.issue === "") ? 0
@@ -123,13 +124,13 @@ bib.dfr = function (spec) {
         var lead,
             lead_trail,
             result,
-            authors = auths.split(that.options().author_delimiter)
+            authors = auths.split(my.author_delimiter)
                 // ensure an empty or white-space author is not counted
                 .filter(function (a) { return (/\S/).test(a); }),
             n_auth = authors.length;
 
         if (n_auth === 0) {
-            return that.options().anon;
+            return my.anon;
         }
 
         lead = authors[0].replace(/,/g, "").split(" ");
@@ -146,9 +147,9 @@ bib.dfr = function (spec) {
         }
         result += ", " + lead.join(" ") + lead_trail;
         if (n_auth > 1) {
-            if (n_auth >= that.options().et_al) {
+            if (n_auth >= my.et_al) {
                 result += ", ";
-                result += authors.slice(1, that.options().et_al).join(", ");
+                result += authors.slice(1, my.et_al).join(", ");
                 result += "et al.";
             } else {
                 if (n_auth > 2) {
@@ -182,7 +183,7 @@ bib.dfr = function (spec) {
         s += '“' + title + '.”';
         s = s.replace(/’\./g,".’"); // fix up ’.” situations
 
-        s += " <em>" + doc.journaltitle + "</em> ";
+        s += " <em>" + doc.journal + "</em> ";
         s += doc.volume;
         if (doc.issue) {
             s += ", no. " + doc.issue;
