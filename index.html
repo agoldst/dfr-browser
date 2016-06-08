@@ -35,7 +35,7 @@
 
       <p>Thanks to the easy availability of <a href="http://dfr.jstor.org">counts of words occurring in JSTOR articles</a>, humanists have grown interested in seeing what they can learn about those articles in the aggregate. How can we analyze this digital archive to learn about large-scale patterns in scholarly fields over the last century or more? Recently, one algorithmic approach to investigating patterns in a big set of documents has received quite a bit of attention in the humanities and social sciences: topic modeling with Latent Dirichlet Allocation (see <a href="http://www.sciencedirect.com/science/article/pii/S0304422X13000442">this overview article from the sociology journal <em>Poetics</em></a>, <a href="http://www.matthewjockers.net/2011/09/29/the-lda-buffet-is-now-open-or-latent-dirichlet-allocation-for-english-majors/">this explanation for &ldquo;English majors,&rdquo;</a>, the <a href="http://dl.acm.org/citation.cfm?id=944937">original paper about the algorithm</a>, or the essay I co-wrote with Ted Underwood, <a href="http://muse.jhu.edu/journals/new_literary_history/v045/45.3.goldstone.pdf">The Quiet Transformations of Literary Studies: What Thirteen Thousand Scholars Could Tell Us</a>).</p>
       
-      <p>So: take data from DfR, <a href="http://github.com/agoldst/dfrtopics">wrangle it a little</a>, feed it to <a href="http://mallet.cs.umass.edu">MALLET</a>, and poof! the algorithm yields a topic model. For example, a model of all the articles from the century-long run of <em>PMLA</em>. <em>So what is that?</em></p>
+      <p>So: take data from DfR—or another source of texts—<a href="http://github.com/agoldst/dfrtopics">wrangle it a little</a>, feed it to <a href="http://mallet.cs.umass.edu">MALLET</a>, and poof! the algorithm yields a topic model. For example, a model of all the articles from the century-long run of <em>PMLA</em>. <em>So what is that?</em></p>
 
 <h2><a href="demo">Try the demo &rarr;</a></h2>
 
@@ -63,11 +63,11 @@
 
 <p>The column to the left of the topic key words shows a miniature graph of the topic time-series (visible more fully in the topic view; see below). This gives a rough sense of the distribution of the topic over document years. Click the column header to sort by the year in which the topic attains its maximum proportion. Note that the y-axes of these miniature bar charts are not all on the same scale.</p>
 
-<h4>The yearly subview</h4>
+<h4>The stacked subview</h4>
 
-<p>One wants to have a sense of the shifting composition of the corpus in terms of topics over time. Seeing this as a whole is a challenging visualization problem, and I lack the graphical sense to solve it well. However, d3 offers some options which I am experimenting with. In the <a href="demo/#/model/yearly">yearly subview</a>, all the time series for the topics are stacked on top of one another in a streamgraph (see <a href="https://github.com/mbostock/d3/wiki/Stack-Layout">the d3 documentation</a>). The height of each topic's stream gives the proportion of the topic in a given year. The topics are reordered by a heuristic for making the visualization less jagged. Colors are used to distinguish topics from one another, but in this <em>alpha release</em> I have given up on trying to come up with a unique color for each topic. The program attempts to stick topic labels in reasonable places, with uneven success. Nonetheless, this view does allow a chance to pick out islands of prominence or topics with unusual spreading over the time space. To take exploration a little further, it is possible to pan and zoom the view (hold down shift while dragging).</p>
+<p>One wants to have a sense of the shifting composition of the corpus in terms of topics over time. Seeing this as a whole is a challenging visualization problem, and I lack the graphical sense to solve it well. However, d3 offers some options which I am experimenting with. In the <a href="demo/#/model/conditional">stacked or conditional overview</a>, all the time series for the topics are stacked on top of one another in a streamgraph (see <a href="https://github.com/mbostock/d3/wiki/Stack-Layout">the d3 documentation</a>). The height of each topic's stream gives the proportion of the topic in a given time interval. The topics are reordered by a heuristic for making the visualization less jagged. Colors are used to distinguish topics from one another, but in this <em>alpha release</em> I have given up on trying to come up with a unique color for each topic. The program attempts to stick topic labels in reasonable places, with uneven success. Nonetheless, this view does allow a chance to pick out islands of prominence or topics with unusual spreading over the time space. To take exploration a little further, it is possible to pan and zoom the view (hold down shift while dragging).</p>
 
-<p>Finally, by default the yearly subview stacks up the time series of <em>percentages of the year's words</em> accounted for by a topic. If the corpus has many more words in some years than others, this might be deceptive. So I have left on the option of shifting the yearly view to display <a href="demo/#/model/list/yearly/raw">raw counts of words assigned to topics</a> per year. In the demo here, one immediately notices the oddity of 1952, when <em>PMLA</em> published some extraordinarily long essays.</p>
+<p>By default the stacked subview stacks up the time series of <em>percentages of the year's words</em> accounted for by a topic. If the corpus has many more words in some years than others, this might be deceptive. So I have left on the option of shifting the view to display <a href="demo/#/model/conditional/raw">raw counts of words assigned to topics</a> per time unit. In the demo here, one immediately notices the oddity of 1952, when <em>PMLA</em> published some extraordinarily long essays.</p>
 
 <h3>The topic view</h3>
 
@@ -75,9 +75,10 @@
 
 <p>The choice of how to represent the relation of topics and documents is harder. I list the documents where the topic is at its largest proportion (the blue bars visualize this proportion), since these are typically in some sense more &ldquo;characteristic&rdquo; of the topic. But pay attention to the size of the proportions as well as the absolute weights, and remember that the document with largest proportion of topic <em>k</em> may nonetheless have an even larger proportion of another topic <em>k&#x0027;</em>.</p>
 
-<p>On the upper right is the tantalizing time-series: the yearly proportion of words in the corpus belonging to the topic. I have chosen bars to emphasize that the model does not assume a smooth evolution from year to year in topics, and neither should we. This does make it harder to see a time trend, however. To focus on prominent documents in the topic <em>for a given year</em>, click a bar on the chart (thus, compare the overall top documents for <a href="demo/#/topic/38"><em>novel story narrative</em></a> with the topic's top documents <a href="demo/#/topic/38/1980">in 1980</a>).
+<p>On the upper right is the tantalizing time-series, showing the changing proportion of words in the corpus assigned to the topic. I have chosen bars to emphasize that the model does not assume a smooth evolution in topics, and neither should we; this does make it harder to see a time trend, however. To focus on prominent documents in the topic <em>for a given time interval</em>, click a bar on the chart: thus, compare the overall top documents for <a href="demo/#/topic/38"><em>novel story narrative</em></a> with the topic's top documents <a href="demo/#/topic/38/1980">in 1980</a>. (In fact, the model assumes that knowing an article's date of publication gives no information about topics: all models are wrong, as the saying partly goes.)
 </p>
 
+<p>The time series in the demo groups documents in one-year intervals. This interval can be changed, or another metadata variable, rather than publication date, can be substituted in the graphs of topics’ conditional distribution. For details on the configuration of the visualization, which is managed with a JSON file, see the section on <a href="https://github.com/agoldst/dfr-browser#conditioning-on-metadata">conditioning on metadata</a> in the repository homepage.</p>
 
 <h3>The document view</h3>
 
@@ -102,8 +103,6 @@
 
 <p><em>Known issues:</em> the sorting seems to be glitchy for metadata about nineteenth-century articles; the generated citations are imperfectly formatted. Also, this view can take a couple of seconds to load.</p>
 
-<p><em>Possible future additions:</em> Eventually, I hope to add some ways to explore the abstract space of documents created by the topic breakdowns, on the model of the scaled topic-space visualization.</p>
-
 <h3>Settings</h3>
 
 <p>This very minimal dialog box lets you adjust the number of words and documents listed with each topic. There is also a setting to reveal hidden topics (if any).</p>
@@ -112,19 +111,21 @@
 
 <p>Thanks to <a href="https://digitalhumanities.stanford.edu/kindred-britain-techniques-1-permalinks-graph">this post by Elijah Meeks</a>, I learned how to give each view a permalink, which you can copy from your browser&rsquo;s URL bar. That link takes you directly to the topic, word, document, etc. view you are looking at. For example, the demo&rsquo;s view of the topic arbitrarily numbered 38 (<em>novel story narrative</em>) is at <a href="demo/#/topic/38">agoldst.github.io/dfr-browser/demo/#/topic/38</a>.</p>
 
-<p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>view_refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/src/main.js">controller source, main.js</a>. This function is set as the <code>hashchange</code> handler.</p>
+<p><em>Technical note:</em> The part of the URL after the <code>#/</code> describes the chosen view into the model. For the implementation, see the <code>refresh</code> function in the <a href="https://github.com/agoldst/dfr-browser/blob/master/src/dfb.js">controller source, dfb.js</a>. This function is set as the <code>hashchange</code> handler.</p>
 
 <h2>About the <a href="demo">demo</a></h2>
 
-<p>The <a href="demo">working example</a> explores a topic model of articles from the journal <em>PMLA</em>. More specifically, what it shows is the results of allowing <a href="http://mallet.cs.umass.edu">MALLET</a>'s Latent Dirichlet Allocation algorithm to categorize those articles into 64 "topics" or patterns of co-occurring words. The resulting model simultaneously gives some information about words that occur together in this corpus, about documents that are related by their shared patterns of language use, and about (approximately) the thematic make-up of the documents. It also visualizes trends in the proportions of a topic in all the documents in a given year.</p>
+<p>The <a href="demo">working example</a> explores a topic model of articles from the journal <em>PMLA</em>. More specifically, what it shows is the results of allowing <a href="http://mallet.cs.umass.edu">MALLET</a>'s Latent Dirichlet Allocation algorithm to categorize those articles into 64 "topics" or patterns of co-occurring words. The resulting model simultaneously gives some information about words that occur together in this corpus, about documents that are related by their shared patterns of language use, and about (approximately) the thematic make-up of the documents. The visualization also indicates trends in the proportions of a topic in all the documents in with a given publication year.</p>
 
-<p>This model was constructed with the help of my <a href="http://github.com/agoldst/dfrtopics">dfrtopics R package</a>, which gives an interface for topic-modeling JSTOR (or similar) data with MALLET and exploring the results; for a tutorial in using the package, see my <a href="http://agoldst.github.io/dfrtopics/introduction.html">introduction to dfrtopics</a>. There are of course many other ways to make topic models, with MALLET or other software.  The data for the demonstration model consists of all <em>PMLA</em> items from JSTOR's <a href="http://dfr.jstor.org">Data for Research</a> service, restricted to items categorized as "full-length articles" with more than 2000 words (this leaves 5605 articles out of the 9200 items from the years 1889–2007). All but the most ten thousand frequent words and a fairly large set of <a href="https://github.com/agoldst/dfr-analysis/blob/master/demo/stoplist.txt">stop words</a> are also removed. The model has 64 topics; having experimented with more and fewer topics, this seemed to produce a reasonable, though far from perfect, broad thematic classification.</p>
+<p>This model was constructed with the help of my <a href="http://github.com/agoldst/dfrtopics">dfrtopics R package</a>, which gives an interface for topic-modeling JSTOR (or similar) data with MALLET and exploring the results; for a tutorial in using the package, see my <a href="http://agoldst.github.io/dfrtopics/introduction.html">introduction to dfrtopics</a>. There are of course many other ways to make topic models, with MALLET or other software. The data for the demonstration model consists of all <em>PMLA</em> items from JSTOR's <a href="http://dfr.jstor.org">Data for Research</a> service, restricted to items categorized as “full-length articles” with more than 2000 words (this leaves 5605 articles out of the 9200 items from the years 1889–2007). All but the most ten thousand frequent words and a fairly large set of <a href="https://github.com/agoldst/dfr-analysis/blob/master/demo/stoplist.txt">stop words</a> are also removed. The model has 64 topics; having experimented with more and fewer topics, this seemed to produce a reasonable, though far from perfect, broad thematic classification.</p>
+
+<p>The data files used in the demo can be downloaded from this site if you wish to look at how they are formatted: <a href="demo/data/info.json">info.json</a>, <a href="demo/data/meta.csv.zip">meta.csv.zip</a>, <a href="demo/data/tw.json">tw.json</a>, <a href="demo/data/dt.json.zip">dt.json.zip</a>, <a href="demo/data/topic_scaled.csv">topic_scaled.csv</a>.</p>
 
 <p>For more on interpreting topic models of literary scholarship, see my <em>NLH</em> <a href="http://muse.jhu.edu/journals/new_literary_history/v045/45.3.goldstone.pdf">essay</a> with Ted Underwood (<a href="http://www.rci.rutgers.edu/~ag978/quiet/preprint.pdf">preprint</a>); dfr-browser is used for our <a href="http://www.rci.rutgers.edu/~ag978/quiet/">accompanying interactive site</a>. </p>
 
 <h2>Browsing your own models</h2>
 
-<p>To build your own browser using this code, grab the source on <a href="https://github.com/agoldst/dfr-browser">github</a>, drop the necessary data files in the <code>data</code> subdirectory, and launch a local webserver. The <a href="https://github.com/agoldst/dfr-browser">github project page</a> (which is the same as the repository README file) includes more details on how to create those data files and run dfr-browser, as well as some pointers on how to tune the visualization parameters and a couple of notes on adapting the source code to other uses. My <a href="http://github.com/agoldst/dfrtopics">dfrtopics</a> R package offers a convenient way to create dfr-browsers of topic models, as well as some more flexible ways to explore modeling results.</p>
+<p>To build your own browser using this code, grab the source on <a href="https://github.com/agoldst/dfr-browser">github</a>, drop the necessary data files in the <code>data</code> subdirectory, and launch a local webserver. The <a href="https://github.com/agoldst/dfr-browser">github repository homepage</a> includes more details on how to create those data files and run dfr-browser, as well as some pointers on how to tune the visualization parameters and a couple of notes on adapting the source code to other uses. My <a href="http://github.com/agoldst/dfrtopics">dfrtopics</a> R package offers a convenient way to create dfr-browsers of topic models, as well as some more flexible ways to explore modeling results.</p>
 
 <h2>dfr-browser in use</h2>
 
@@ -134,7 +135,7 @@
 
 <p>This browser was also <a href="https://github.com/signs40th/browser">adapted</a> for my work with <em>Signs</em> on their fortieth anniversary special, <em>Signs@40</em>, in <a href="https://github.com/signs40th/topic-model">An Interactive Topic Model of <em>Signs</em></a> (made in collaboration with Susana Galán, C. Laura Lovin, Andrew Mazzaschi, and Lindsey Whitmore).</p>
 
-<p>Jonathan Goodwin has adapted dfr-browser to produce a <a href="http://jgoodwin.net/htb/">topic-browser of fiction in HathiTrust from 1920–1922.</a></p>
+<p>Jonathan Goodwin has adapted dfr-browser to produce a <a href="http://jgoodwin.net/htb/">topic-browser of fiction in HathiTrust from 1920–1922</a> as well as a browser of <a href="http://jgoodwin.net/mm-browser">topics in <em>Modernism/modernity</em></a>.</p>
 
 <h3>License</h3>
 
@@ -167,6 +168,7 @@
 
 
 <h2>Version history</h2>
+<p>June 8, 2016. v0.8. Any metadata variable may be used for conditioning, not just year of publication.</p> 
 <p>April 7, 2016. v0.7. Further factoring of bibliography and metadata code, to make it easier to adapt this to non-JSTOR sources.</p>
 <p>April 5, 2016. v0.6.1. Somewhat more fluidity for varying window/screen sizes, plus topic hand-labels. (Not separately released.)</p>
 <p>(September 24, 2015. No code changes, but this page updated.)</p>
