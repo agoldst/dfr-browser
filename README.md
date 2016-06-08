@@ -59,7 +59,7 @@ In case you wish to edit the exported files or create them another way, here are
     1. publication date ([ISO 8601](https://en.wikipedia.org/wiki/ISO_8601))
     1. page range
 
-Additional columns after these are ignored (but will not cause errors). Naturally if your documents are not journal articles this format may not quite fit, and some modification of the metadata parsing code may be necessary. See "Adapting this project" below.
+    Additional columns after these are loaded with the default names `X1`, `X2`, and so on, and ignored by the display. (The names can be changed with the `VIS.metadata.spec.extra_fields` array  in `info.json`.) If your documents are not journal articles, this format may not quite fit, and some modification of the metadata parsing or document-display code may be necessary. See "Adapting this project" below.
 
 - the topic weights for each document (`data/dt.json.zip`): a zipped text file giving a JSON object specifying the document-topic matrix in [sparse compressed-column format](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_column_.28CSC_or_CCS.29) in terms of three arrays `i`, `p`, and `x`. specified as follows. The documents `d` with non-zero weights for topic `t` are given by `i[p[t]], i[p[t] + 1], ... i[p[t + 1] - 1]`, and the corresponding unnormalized topic weights for those documents are given by `x[p[t]], x[p[t] + 1], ..., x[p[t + 1] - 1]`.
 
@@ -111,6 +111,73 @@ In the model-info file `data/info.json`, you can also override some aspects of t
 
 `model_view` also has an `aspect` property which will, in this case, be left at its default value (4/3).
 
+### Conditioning on metadata
+
+So far dfr-browser has always had a display of topic proportions per year. But this is just a special case of something more general, a topic distribution conditional on a metadata variable, that is, the probability of a topic within a given metadata category. In addition to topics over time, dfr-browser can display other relations of this kind. 
+
+The `VIS.condition` parameters govern this display. It specifies what kind of variable the covariate is, and how to categorize documents into discrete categories using it. This is simplest to explain by example.
+
+For publication date, the setting might be
+
+```json
+"condition": {
+    "type": "time",
+    "spec": {
+      "field": "date"
+      "unit": "month",
+      "n": 2
+    }
+}
+```
+
+This indicates that the display of topics over time should use the `date` field of the document metadata (loaded by default) and should group documents into intervals of two months.
+
+For a categorical variable, the setting might be
+
+```json
+"condition": {
+    "type": "ordinal",
+    "name": "journal",
+    "spec": {
+        "field": "journal"
+    }
+}
+```
+
+The topic displays will now show the total proportion of each journal's words assigned to that topic. ("Ordinal" is the d3 name for such variables, a reminder that an ordering is imposed on the category by alphabetization.) The optional `name` field gives a name to be used on axis labels. The `field` is used if it is missing, so it's superfluous in this case.
+
+Finally, a continuous variable can be specified as follows. Let's imagine the data include a variable `pagelen` giving document page lengths. Topic distributions conditional on page length are probably uninteresting, though possibly of some diagnostic use, so this example is purely to illustrate the software mechanism:
+
+```json
+"condition": {
+    "type": "continuous",
+    "name": "page length",
+    "spec": {
+        "field": "pagelen",
+        "step": 10
+    }
+}
+```
+
+
+Which says that the `pagelen` field should be divided into bins of width 10 and topic proportions should be marginalized over those bins. This is a little more complex, because the `field` named here must exist in the metadata. In order to ensure that the ninth metadata column in the `meta.csv[.zip]` file has the name `pagelen` rather than `X1`, we also need this setting:
+
+```json
+"metadata": {
+    "spec": {
+        "extra_fields": [ "pagelen" ]
+    }
+}
+```
+
+And of course the metadata column has to actually exist. Page length is not supplied in JSTOR metadata, but it is not difficult to calculate from the `pagerange` field.
+
+It may also be necessary to adjust some of the graphical parameters specified in the `topic_view` property (see [VIS.js](src/VIS.js#102) for documentation), the corresponding parameters in `model_view.list.spark`, and related parameters in `model_view.conditional`. In particular, the width of the bars in bar charts, as well as the margin left for y-axis labels (`topic_view.m.left`), often requires manual tuning. Tuning parameters are keyed to variable types, so that, for example, the topic bar chart for a time covariate has settings in `VIS.topic_view.time` whereas the settings for a categorical covariate are `VIS.topic_view.ordinal`.
+
+(What is displayed is only a naive estimate of the conditional probabilities, formed by marginalizing the topic distribution over levels or bins of the metadata covariate. Or, if you prefer, the display constitutes a visual [posterior predictive check](http://www.cs.princeton.edu/~blei/papers/MimnoBlei2011.pdf) of the topic model: ordinary LDA assumes that documents are exchangeable and hence that metadata categories ought not to matter to topic probabilities.)
+
+### Hiding topics
+
 If certain topics are distractingly uninterpretable, they can be hidden from the display by specifying a `hidden_topics` array as a property of `VIS`. The topics identified by numbers (indexed from 1) in this array will, by default, not be shown in any view, including aggregate views. Hidden topics can be revealed using the Settings dialog box. Hiding topics can be misleading and should be done cautiously.
 
 ### Adding topic labels
@@ -141,8 +208,6 @@ bin/server
 
 The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, but again altering the setup for other implementations of LDA would not be too challenging. Adapting to other kinds of latent topic models would require more changes.
 
-Modifying the display to allow users to emphasize metadata other than publication dates is a larger project that I may undertake eventually.
-
 Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. Though some modifications to the program are necessary in such cases, they should normally be limited to the `metadata` and `bib` objects. Let me first 
 explain a little more about the design of the program.
 
@@ -152,31 +217,35 @@ The whole browser is a single webpage, whose source is [index.html](index.html).
 
 The browser follows (scrappily) the model-view-controller paradigm. The main controller is created by `dfb()`, which has the job of loading all the data and responding to user interaction. The data is stored in a `model()`, which encapsulates the details of storing the model and of aggregating its information in various ways. The details of parsing metadata are handled by separate `metadata` and `bib` objects. The controller then passes the necessary data from the model to the various `view` objects that configure the different views of the model. These view objects do all their work by accessing parts of `index.html` using CSS selectors and transforming them with d3. (This means that the JavaScript makes many assumptions about the elements that are present in [index.html](index.html).)
 
-As an example of a simple modification, suppose you wanted to eliminate one of the views, say the word index. You could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The main dispatch to views is the `refresh` method of `dfb()`. The lines
+As an example of a simple modification, suppose you wanted to eliminate one of the views, say the word index. You could simply delete the `<div id="words_view">` [element](index.html#L357). The view could, however, still be accessed directly by entering the URL `#/words` in the web browser. The controller's method for dispatching to this view are set up by the lines reading
 
 ```js
-case "words":
-    success = words_view.apply(undefined, param);
-    break;
+my.views.set("words", function (...) {
+...
+});
 ```
 
-are the whole story of this dispatch. Delete them and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
-
-In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following lines must be executed after all the libraries and scripts have been loaded in `index.html`:
+Remove the statement and the browser will no longer respond to `#/words`. You could now remove the file defining [view.words](src/view/words.js).
+The other views are set up analogously (`my.views.set("topic", ...)`, etc.). These anonymous functions are subsequently invoked in the `refresh` method of `dfb()`. To create a new view, you would add another statement within the definition of `dfb()`:
 
 ```js
-dfb({
-    metadata: metadata.dfr,
-    bib: bib.dfr
-})
-    .load();
+my.views.set("newview", function (...) {
+});
 ```
 
-The parameters in `{ ... }` are optional, since the values here are the defaults, but this design is meant to facilitate modifying the browser by giving you a hint about what to change.
+URLs of the form `#/newview/x/y/z` would cause the function to be invoked with parameters `x`, `y`, and `z`. The model data is available within the function as `my.m` (`my` is a local variable to the enclosing function `dfb()` which stores the controller's private member data.) This function should extract the model data needed for the view and then call an external function to actually render it.
 
-Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` constructs the `metadata` (passing it the incoming data from the metadata file) and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to `bib` for formatting or sorting.
+In any case: to run the program, initialize a `dfb()` object and call its `load()` method. This will trigger a series of requests for data files and set up the event listeners for user interaction (the main one is the `hashchange` handler). In short, the following line must be executed after all the libraries and scripts have been loaded in `index.html`:
 
-First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here. Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata.js#L63). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
+```js
+dfb().load();
+```
+
+Assumptions about the document metadata are restricted to two places: the `metadata` object and the `bib` object. A new `dfb` passes the `metadata` object the incoming data from the metadata file and then hands it off to the `model` for storage. When document metadata must be displayed or sorted, the `dfb` passes that data to the `bib` object for formatting or sorting.
+
+There are various ways to customize these.
+
+First, and most simply, suppose the metadata format is not quite the same as the DfR format assumed here.  Metadata parsing is governed by the `from_string` [method of metadata.dfr](src/metadata/dfr.js#L17). Modify this method to modify parsing. Suppose that in your data, the author column comes before the title column. Then the lines
 
 ```js
 title: d[1].trim(),
@@ -190,23 +259,28 @@ title: d[2].trim(),
 authors: d[1].trim(),
 ```
 
-Or, of course, you may wish to store additional metadata and use it elsewhere. Let's imagine that the publisher is found in the ninth column. Then one might simply have
-
-```js
-issue: d[5].trim(),
-publisher: d[8].trim(),
-```
-
-Now the publisher will be stored for each dcoument, but to display it, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
+Let's imagine that the publisher is found in the ninth metadata column, and `VIS.metadata.spec.extra_fields = [ "publisher" ]`. Documents will now have a `publisher` field, but to display this information, one must also change the methods of `bib`. The printing of document citations is governed by the `citation` [method of bib.dfr](src/bib_dfr.js#L168). Imagine simply adding, before the `return` at the end of the function:
 
 ```js
 s += "Published by " + doc.publisher + "."
 ```
 
-Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215).
+Similarly, the external document links are created by the `url` [method](src/bib_dfr.js#L215), so if the URL should not lead to JSTOR, change that method.
 
-Comments in these source files should indicate where other modifications could be made. Note that the main logic of bibliographic sorting is implemented in [bib.js](src/bib.js), with the derived object in [bib_dfr.js](src/bib_dfr.js) only adding additional sorting options. If you want to be elaborate about it, you can derive further objects from `bib.dfr` or `bib`. I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*.
+If you specify `VIS.metadata.type: "base"` in `info.json`, the base class `metadata()` (defined in [src/metadata.js](src/metadata.js)) will be used instead of `metadata.dfb()`. This class parses the metadata file using `d3.csv.parse` (which assumes, unlike `metadata.dfb`, that it has a header naming the columns).
 
+The functions that determine how documents are grouped for the topic proportions over time (or other conditional distribution) are the `metadata.key` properties, also defined in [metadata.js](src/metadata.js#L90).
+
+To modify the bibliographic sorting, see [bib.js](src/bib.js) (the derived `bib.dfr` object in [bib/dfr.js](src/bib/dfr.js) only adds additional sorting options). If you want to be elaborate about it, you can also derive further objects from `bib.dfr` or `bib` or `metadata` and supply those to the constructor `dfb()` as follows:
+
+```js
+dfb({
+    metadata: my_meta(),
+    bib: my_bib()
+}).load();
+```
+
+I haven't been as consistent as I should have been about my programming idioms, but in general I follow the "functional object" pattern described by Douglas Crockford's *Javascript: The Good Parts*. The source for [metadata.dfr](metadata/dfr.js) illustrates how to write a derived object.
 
 ### The "build" process
 

@@ -14,7 +14,26 @@ var VIS = {
         tw: "data/tw.json",
         topic_scaled: "data/topic_scaled.csv"
     },
+    aliases: {                  // simple aliasing in URLs:
+        yearly: "conditional"   // #/model/yearly/... -> #/model/conditional/...
+    },
     default_view: "/model", // specify the part after the #
+    metadata: {
+        type: "dfr",        // use "base" if meta.csv has a header
+        spec: {
+            extra_fields: [ ],// (dfr type only) names for extra columns
+            date_field: "date"// (base type only) name of date field
+        }
+    },
+    condition: {            // metadata variable to condition topics on
+        type: "time",       // alternatives: "category" and "continuous"
+        spec: {
+            field: "date",  // name of metadata field
+            unit: "year",   // unit of time bins
+            n: 1            // width of time bins
+            // format: "%Y-%m" // optional display format (strftime)
+        }
+    },
     overview_words: 15,     // may need adjustment
     model_view: {
         w: 500,            // px: the minimum svg width
@@ -23,21 +42,25 @@ var VIS = {
         size_range: [7, 18], // points. may need adjustment
         name_size: 18,      // points
         stroke_range: 6,    // max. perimeter thickness
-        yearly: {
+        conditional: {
             w: 500,         // px: the minimum svg width
             aspect: 1.333,
             m: {
                 left: 20,
                 right: 20,
                 top: 20,
-                bottom: 20
+                bottom: 30
             },
             label_threshold: 40, // px
             words: 4,
-            label_words: 2 // should be <= words
+            label_words: 2, // should be <= words
+            streamgraph: true,   // streamgraph or stack areas from x-axis?
+            ordinal: {          // ordinal variable: stacked bars, not areas
+                bar: 0.4        // bar width as proportion
+            }
         },
         list: {
-            spark: {
+            spark: { // same form as topic_view plot parameters below
                 w: 70,
                 h: 20,
                 m: {
@@ -46,7 +69,22 @@ var VIS = {
                     top: 2,
                     bottom: 2
                 },
-                bar_width: 300
+                time: {
+                    bar: {
+                        unit: "day",
+                        w: 300
+                    }
+                },
+                ordinal: {
+                    bar: {
+                        w: 0.25
+                    }
+                },
+                continuous: {
+                    bar: {
+                        w: 0.25
+                    }
+                }
             }
         }
     },
@@ -59,10 +97,32 @@ var VIS = {
             left: 40,
             right: 20,
             top: 20,
-            bottom: 20
+            bottom: 30
         },
-        bar_width: 90, // in days!
-        ticks: 10 // applied to both x and y axes
+        time: { // conditional plot x-axis settings: time variable
+            bar: { // width of bars
+                unit: "day", // unit is used as d3.time[unit].utc
+                w: 90
+            },
+            ticks: {
+                unit: "year",
+                n: 10
+            }
+        },
+        continuous: { // continuous variable: step is calculated automatically
+            bar: {
+                w: 0.25, // proportion: how much x-axis bar takes up
+            },
+            ticks: 10
+        },
+        ordinal: { // categorical variable: step is calculated automatically
+            bar: {
+                w: 0.25 // proportion
+            },
+            ticks: 10
+        },
+        ticks_y: 10, // y axis ticks
+        tx_duration: 1000 // animated transition time in ms (where applicable)
     },
     word_view: {
         n_min: 10, // words per topic
@@ -92,9 +152,6 @@ var VIS = {
         major: "year",
         minor: "authortitle",
         dir: "up"
-    },
-    float_format: function (x) {
-        return d3.round(x, 3);
     },
     tooltip: {              // tooltip div parameters
         offset: {

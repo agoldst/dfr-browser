@@ -9,7 +9,7 @@ minified := js/utils.min.js js/worker.min.js
 
 # locations of javascript source files
 # manual dependency tracking, because node-style require is for another day
-src_before := src/view/view.js
+src_before := src/view.js src/metadata.js src/bib.js
 src_after := src/dfb.js
 src_skip := src/utils.js src/worker.js
 src := $(wildcard src/*.js src/*/*.js)

@@ -7,7 +7,7 @@ var model;
 // data stored internally as follows:
 // tw: array of d3.map()s keyed to words as strings
 // alpha: alpha values for topics
-// meta: array of objects holding document citations
+// meta: object holding document citations
 
 model = function (spec) {
     var my = spec || { }, // private members
@@ -22,20 +22,21 @@ model = function (spec) {
         topic_total,
         alpha,
         meta,
+        meta_condition,
         vocab,
         topic_scaled,
-        topic_yearly, // time-slicing
-        valid_year,
-        yearly_total,
+        topic_conditional, // slicing by metadata variable
+        conditional_total,
         topic_docs, // most salient _ in _
+        topic_docs_conditional,
         topic_words,
         doc_topics,
         word_topics,
-        year_topics,
         topic_label,
         set_dt, // methods for loading model data from strings 
         set_tw,
         set_meta,
+        doc_category,
         set_topic_scaled;
 
     my.ready = { };
@@ -158,15 +159,11 @@ model = function (spec) {
     };
     that.meta = meta;
 
-
-    // validate dates
-    valid_year = function (y) {
-        if (!my.years) {
-            return undefined;
-        }
-        return my.years.has(y);
+    // expose metadata's conditional key/invert functions
+    meta_condition = function (key) {
+        return my.meta.condition(key);
     };
-    that.valid_year = valid_year;
+    that.meta_condition = meta_condition;
 
     // aggregate vocabulary of all top words for some or all topics
     vocab = function (t) {
@@ -216,67 +213,75 @@ model = function (spec) {
     };
     that.topic_scaled = topic_scaled;
 
-    // get aggregate topic counts over years
-    yearly_total = function (year, callback) {
-        var y = (year === undefined) ? "all" : year,
-            f = callback;
-        if (y === "all") {
-            f = function (yearly_total) {
-                callback(d3.map(yearly_total));
-            };
-        }
-        my.worker.callback("yearly_total/" + y, f);
+    // get aggregate topic counts over some metadata category v
+    conditional_total = function (v, key, callback) {
+        var k = (key === undefined) ? "all" : key,
+            f = (k !== "all") ? callback
+                : function (tot) {
+                    callback(d3.map(tot));
+                };
+
+        my.worker.callback("conditional_total/" + v + "/" + k, f);
         my.worker.postMessage({
-            what: "yearly_total",
-            y: y
+            what: "conditional_total",
+            v: v,
+            key: k
         });
     };
-    that.yearly_total = yearly_total;
+    that.conditional_total = conditional_total;
 
-    // yearly proportions for topic t
-    topic_yearly = function (t, callback) {
+    // conditional proportions for topic t
+    topic_conditional = function (t, v, callback) {
         var topic = (t === undefined) ? "all" : t,
             f;
         if (topic === "all") {
-            f = function (yearly) {
-                callback(yearly.map(d3.map));
+            f = function (cond) {
+                callback(cond.map(d3.map));
             };
         } else {
-            f = function (yearly) {
-                callback(d3.map(yearly));
+            f = function (cond) {
+                callback(d3.map(cond));
             };
         }
-        my.worker.callback("topic_yearly/" + topic, f);
+        my.worker.callback("topic_conditional/" + v + "/" + topic, f);
         my.worker.postMessage({
-            what: "topic_yearly",
-            t: topic
+            what: "topic_conditional",
+            t: topic,
+            v: v
         });
     };
-    that.topic_yearly = topic_yearly;
+    that.topic_conditional = topic_conditional;
 
     // Get n top documents for topic t. Uses a naive document ranking,
     // by the proportion of words assigned to t, which does *not*
     // necessarily give the docs where t is most salient
-    topic_docs = function (t, n, year, callback) {
-        var n_req = n, f = callback;
-        if (year !== undefined) {
-            n_req = this.n_docs();
-            f = function (docs) {
-                var year_docs = docs.filter(function (d) {
-                    return that.meta(d.doc).date.getUTCFullYear() === +year;
-                });
-                return callback(utils.shorten(year_docs, n));
-            };
-        }
+    topic_docs = function (t, n, callback) {
+        // brute force solution for top n docs within a category:
+        // rank all of them, then take the top n
 
-        my.worker.callback("topic_docs/" + t + "/" + n_req, f);
+        my.worker.callback("topic_docs/" + t + "/" + n, callback);
         my.worker.postMessage({
             what: "topic_docs",
             t: t,
-            n: n_req
+            n: n
         });
     };
     that.topic_docs = topic_docs;
+
+    // Like topic docs, but restrict to docs with v == key
+    topic_docs_conditional = function (t, v, key, n, callback) {
+        my.worker.callback(
+                ["topic_docs_conditional", t, v, key, n].join("/"),
+                callback);
+        my.worker.postMessage({
+            what: "topic_docs_conditional",
+            t: t,
+            v: v,
+            key: key,
+            n: n
+        });
+    };
+    that.topic_docs_conditional = topic_docs_conditional;
 
     // Get n top topics for document d. Unlike with docs, no reason to
     // go to lengths to avoid sorting n_topics entries, since
@@ -353,31 +358,6 @@ model = function (spec) {
     };
     that.word_topics = word_topics;
 
-    year_topics = function (year, n) {
-        // TODO DEPRECATED. Not used by the browser.
-        var t, series, result = [];
-
-        // *Could* calculate totals just for this year, but that still
-        // requires running over all the documents to find those that
-        // belong to the right year, and since we're comparing topics
-        // we're cursed to traverse all of the doc-topics matrix anyway.
-
-        for (t = 0; t < this.n(); t += 1) {
-            series = this.topic_yearly(t);
-            result.push({
-                topic: t,
-                weight: series.get(year) || 0 // TODO raw weighting or...?
-            });
-        }
-        result.sort(function (a, b) {
-            return d3.descending(a.weight, b.weight) ||
-                d3.ascending(a.topic, b.topic); // stabilize sort
-        });
-
-        return utils.shorten(result, n);
-    };
-    that.year_topics = year_topics;
-
     topic_label = function (t) {
         var t_s = String(t + 1);
         // expect names keyed to 1-indexed numbers (easier to edit)
@@ -432,27 +412,32 @@ model = function (spec) {
     };
     that.set_dt = set_dt;
 
-    // load meta from a string of CSV lines
     set_meta = function (meta) {
-        var doc_years;
-
         my.meta = meta;
 
-        // calculate and store document years
-        doc_years = meta.doc().map(function (d) {
-            return d.date.getUTCFullYear();
-        });
-
-        my.worker.callback("set_doc_years", function (result) {
-            my.ready.doc_years = result;
-        });
-        my.worker.postMessage({
-            what: "set_doc_years",
-            doc_years: doc_years
-        });
-        my.years = d3.set(doc_years);
+        // cache metadata variable information for each doc
+        meta.conditionals().forEach(doc_category);
     };
     that.set_meta = set_meta;
+
+    doc_category = function (v, f) {
+        var doc_keys;
+        // calculate and store document keys
+        doc_keys = my.meta.doc().map(f);
+
+        my.worker.callback("set_doc_categories/" + v, function (result) {
+            if (!my.ready.doc_categories) {
+                my.ready.doc_categories = { };
+            }
+            my.ready.doc_categories[v] = result;
+        });
+        my.worker.postMessage({
+            what: "set_doc_categories",
+            v: v,
+            keys: doc_keys
+        });
+    };
+    that.doc_category = doc_category;
 
     // load scaled topic coordinates from a string of CSV lines
     set_topic_scaled = function (ts_s) {
