@@ -320,28 +320,22 @@ my.views.set("bib", function (maj, min, dir) {
         docs: my.m.meta()
     });
 
-    if (!VIS.ready.bib) {
+    if (!my.citations) {
         // Cache the list of citations
-        // TODO better to do this on the model (in a thread?)
-        VIS.bib_citations = my.m.meta().map(my.bib.citation);
-        view.bib.dropdown(my.bib.sorting());
-        VIS.ready.bib = true;
+        my.citations = my.m.meta().map(my.bib.citation);
     }
+
+    view.bib.dropdown(my.bib.sorting());
 
     view.bib({
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
         dir: sorting.dir,
-        citations: VIS.bib_citations
+        citations: my.citations
     });
 
     view.loading(false);
-
-    // TODO smooth sliding-in / -out appearance of navbar would be nicer
-
-    VIS.ready.bib = true;
-
     return true;
 });
 
