@@ -55,6 +55,7 @@ view.model.list = function (p) {
                 type: p.type,
                 axes: false,
                 clickable: false,
+                transition: false,
                 svg: d3.select(this),
                 spec: spec
             });

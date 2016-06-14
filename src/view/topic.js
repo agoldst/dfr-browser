@@ -133,10 +133,8 @@ view.topic.conditional = function (p) {
     p.svg = view.plot_svg("div#topic_plot", spec);
     p.axes = true;
     p.clickable = true;
-    p.dirty = view.dirty("topic/conditional");
     p.spec = spec;
     view.topic.conditional_barplot(p);
-    view.dirty("topic/conditional", false);
 };
 
 view.topic.conditional_barplot = function (param) {
@@ -149,7 +147,7 @@ view.topic.conditional_barplot = function (param) {
         bars_click,
         axes, ax_label, tick_padding,
         tip_text,
-        tx_duration = param.dirty ? param.spec.tx_duration : 0,
+        tx_duration = param.transition ? param.spec.tx_duration: 0,
         svg = param.svg,
         spec = param.spec;
 

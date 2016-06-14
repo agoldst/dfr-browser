@@ -41,7 +41,8 @@ var dfb = function (spec) {
 my.views.set("topic", function (t_user, y) {
     var words,
         t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
-        view_top_docs;
+        view_top_docs,
+        tx;
 
     if (!my.m.meta() || !my.m.has_dt() || !my.m.tw()) {
         // not ready yet; show loading message
@@ -86,12 +87,8 @@ my.views.set("topic", function (t_user, y) {
 
     // if the last view was also a topic view, we'll decree this a qualified
     // redraw and allow a nice transition to happen
-    if (VIS.cur_view && VIS.cur_view.attr("id") === "topic_view") {
-        view.dirty("topic/conditional", true);
-    }
-
-    if (!view.updating() && !view.dirty("topic/conditional")) {
-        d3.select("#topic_plot").classed("invisible", true);
+    if (VIS.cur_view) {
+        tx = VIS.cur_view.attr("id") === "topic_view";
     }
 
     my.m.topic_conditional(t, my.condition, function (data) {
@@ -101,10 +98,9 @@ my.views.set("topic", function (t_user, y) {
             type: VIS.condition.type,
             condition_name: my.condition_name,
             data: data,
-            key: my.m.meta_condition(my.condition)
+            key: my.m.meta_condition(my.condition),
+            transition: tx
         });
-        d3.select("#topic_plot").classed("invisible", false);
-
     });
 
     view.calculating("#topic_docs", true);
