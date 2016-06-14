@@ -42,8 +42,7 @@ var dfb = function (spec) {
 my.views.set("topic", function (t_user, y) {
     var words,
         t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
-        view_top_docs,
-        tx;
+        view_top_docs;
 
     if (!my.m.meta() || !my.m.has_dt() || !my.m.tw()) {
         // not ready yet; show loading message
@@ -85,13 +84,6 @@ my.views.set("topic", function (t_user, y) {
     view.topic.words(words);
 
     // topic conditional barplot subview
-
-    // if the last view was also a topic view, we'll decree this a qualified
-    // redraw and allow a nice transition to happen
-    if (my.updating) {
-        tx = VIS.cur_view.attr("id") === "topic_view";
-    }
-
     my.m.topic_conditional(t, my.condition, function (data) {
         view.topic.conditional({
             t: t,
@@ -100,7 +92,9 @@ my.views.set("topic", function (t_user, y) {
             condition_name: my.condition_name,
             data: data,
             key: my.m.meta_condition(my.condition),
-            transition: tx
+            // if the last view was also a topic view,
+            // we allow an animated transition
+            transition: my.updating
         });
     });
 
@@ -542,10 +536,10 @@ refresh = function () {
     v_chosen = view_parsed[1];
     // are we updating a view or changing to a different one?
     my.updating = false;
-    if (VIS.cur_view) {
-        my.updating = VIS.cur_view.attr("id").search(v_chosen) >= 0;
+    if (my.cur_view) {
+        my.updating = v_chosen === my.cur_view;
         if (!my.updating) {
-            VIS.cur_view.classed("hidden", true);
+            d3.select("#" + my.cur_view + "_view").classed("hidden", true);
         }
     }
 
@@ -560,7 +554,7 @@ refresh = function () {
         if (typeof success === "string") {
             param = [undefined].concat(success.split("/"));
         }
-        VIS.cur_view = d3.select("div#" + v_chosen + "_view");
+        my.cur_view = v_chosen;
 
         VIS.annotes.forEach(function (c) {
             d3.selectAll(c).classed("hidden", true);
@@ -573,9 +567,9 @@ refresh = function () {
             d3.selectAll(c).classed("hidden", false);
         });
     } else {
-        if (VIS.cur_view === undefined) {
+        if (my.cur_view === undefined) {
             // fall back on default view
-            VIS.cur_view = d3.select("div#" + my.default_view[1] + "_view");
+            my.cur_view = my.default_view[1];
             my.views.get("default")();
         }
         // TODO and register the correct annotations
@@ -588,7 +582,7 @@ refresh = function () {
     // asynchronous rendering this isn't perfect)
     hide_topics();
 
-    VIS.cur_view.classed("hidden", false);
+    d3.select("#" + my.cur_view + "_view").classed("hidden", false);
 
     // ensure highlighting of nav link
     d3.selectAll("#nav_main > li.active").classed("active", false);
