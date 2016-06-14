@@ -10,7 +10,7 @@ view.word = function (p) {
         svg, clip,
         scale_x, scale_y, scale_bar,
         gs_t, gs_t_enter, gs_t_label, gs_w, gs_w_enter,
-        fade_in = !view.updating() && !view.dirty("word"),
+        fade_in = !p.updating,
         tx_w;
 
     // word form setup

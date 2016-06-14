@@ -87,7 +87,7 @@ my.views.set("topic", function (t_user, y) {
 
     // if the last view was also a topic view, we'll decree this a qualified
     // redraw and allow a nice transition to happen
-    if (VIS.cur_view) {
+    if (my.updating) {
         tx = VIS.cur_view.attr("id") === "topic_view";
     }
 
@@ -165,6 +165,7 @@ my.views.set("word", function (w) {
     }
     div.select("#word_view_main").classed("hidden", false);
 
+    my.updating = word === VIS.last.word;
     VIS.last.word = word;
 
     topics = my.m.word_topics(word).filter(function (t) {
@@ -193,7 +194,8 @@ my.views.set("word", function (w) {
         n_topics: my.m.n(),
         labels: topics.map(function (t) {
             return my.m.topic_label(t.topic);
-        })
+        }),
+        updating: my.updating
     });
     return true;
 });
@@ -526,9 +528,6 @@ refresh = function () {
     }
 
     view_parsed = hash.split("/");
-    if (VIS.cur_view !== undefined && !view.updating()) {
-        VIS.cur_view.classed("hidden", true);
-    }
 
     // well-formed view must begin #/
     if (view_parsed[0] !== "#") {
@@ -536,6 +535,14 @@ refresh = function () {
     }
 
     v_chosen = view_parsed[1];
+    // are we updating a view or changing to a different one?
+    my.updating = false;
+    if (VIS.cur_view) {
+        my.updating = VIS.cur_view.attr("id").search(v_chosen) >= 0;
+        if (!my.updating) {
+            VIS.cur_view.classed("hidden", true);
+        }
+    }
 
     param = view_parsed.slice(2, view_parsed.length);
     if (my.views.has(v_chosen)) {
@@ -569,10 +576,9 @@ refresh = function () {
         // TODO and register the correct annotations
     }
 
-    if (!view.updating()) {
+    if (!my.updating) {
         view.scroll_top();
     }
-    view.updating(false);
     // ensure hidden topics are shown/hidden (actually, with
     // asynchronous rendering this isn't perfect)
     hide_topics();
@@ -626,7 +632,6 @@ setup_listeners = function () {
         }
         VIS.resize_timer = window.setTimeout(function () {
             // TODO MAKE LESS KLUDGE
-            view.updating(true);
             view.dirty("topic/conditional", true);
             refresh();
             VIS.resize_timer = undefined; // ha ha
@@ -641,7 +646,6 @@ setup_listeners = function () {
     });
 
     $("#settings_modal").on("hide.bs.modal", function () {
-        view.updating(true);
         refresh();
     });
 
