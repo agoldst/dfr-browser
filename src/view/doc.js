@@ -5,7 +5,7 @@ view.doc = function (p) {
     var div = d3.select("div#doc_view"),
         total_tokens = p.total_tokens,
         topics = p.topics,
-        trs, as_t;
+        trs, trs_enter;
 
     d3.select("#doc_view_main").classed("hidden", false);
 
@@ -20,53 +20,57 @@ view.doc = function (p) {
 
     trs = div.select("table#doc_topics tbody")
         .selectAll("tr")
-        .data(topics);
+        .data(topics.map(function (d, j) {
+            return {
+                topic: d.topic,
+                weight: d.weight,
+                label: p.labels[j],
+                words: p.words[j]
+            };
+        }));
 
-    trs.enter().append("tr");
+    trs_enter = trs.enter().append("tr");
     trs.exit().remove();
-
-    // clear rows
-    trs.selectAll("td").remove();
-
-    as_t = trs.append("td").append("a")
-        .attr("href", function (t) {
-            return view.topic.link(t.topic);
-        })
-        .classed("topic_words", true);
-
-    as_t.append("span").classed("name", true)
-        .text(function (t, j) {
-            return p.labels[j];
-        });
-
-    trs.append("td").append("a")
-        .attr("href", function (t) {
-            return view.topic.link(t.topic);
-        })
-        .append("span").classed("words", true)
-        .text(function (t, j) {
-            return p.words[j].reduce(function (acc, x) {
-                return acc + " " + x.word;
-            }, "");
-        });
 
     trs.on("click", function (t) {
         view.dfb().set_view(view.topic.hash(t.topic));
     });
 
-    view.append_weight_tds(trs, function (t) {
-        return t.weight / total_tokens;
-    });
+    trs_enter.append("td").append("a")
+        .classed("topic_name", true)
+        .append("span")
+            .classed("name", true);
 
-    trs.append("td")
-        .classed("td-right", true)
-        .text(function (t) {
+    trs.select("a.topic_name")
+        .attr("href", function (t) {
+            return view.topic.link(t.topic);
+        })
+        .select("span.name")
+            .text(function (t) { return t.label; });
+
+    trs_enter.append("td").append("a")
+        .classed("topic_words", true)
+        .append("span")
+            .classed("words", true);
+    trs.select("a.topic_words")
+        .attr("href", function (t) {
+            return view.topic.link(t.topic);
+        })
+        .select("span.words") 
+            .text(function (t) {
+                return t.words.reduce(function (acc, x) {
+                    return acc + " " + x.word;
+                }, "");
+            });
+
+    view.weight_tds({
+        sel: trs,
+        enter: trs_enter,
+        w: function (t) { return t.weight / total_tokens; },
+        frac: function (t) {
             return VIS.percent_format(t.weight / total_tokens);
-        });
-    trs.append("td")
-        .classed("td-right", true)
-        .text(function (t) {
-            return t.weight;
-        });
+        },
+        raw: function (t) { return t.weight; } 
+    });
 };
 

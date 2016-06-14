@@ -2,80 +2,87 @@
 "use strict";
 
 view.model.list = function (p) {
-    var trs, divs, token_max,
+    var trs, trs_enter, divs, token_max,
         total = d3.sum(p.sums),
         keys, sorter, sort_choice, sort_dir,
         spec;
 
+    // set up spark spec
+    spec = utils.clone(VIS.model_view.list.spark);
+    spec.time.step = VIS.condition.spec;
+
+    // label sparkplots column
+    d3.select("th#model_view_list_condition a")
+        .text((p.type === "time") ? "over time"
+                : "by " + p.condition_name);
+
+    // create rows
     trs = d3.select("#model_view_list table tbody")
-        .selectAll("tr");
+        .selectAll("tr")
+        .data(p.data.map(function (x, t) {
+            return {
+                t: t,
+                data: x,
+                label: p.labels[t]
+            };
+        }));
 
-    if (!VIS.ready.model_list) {
-        // set up spark spec
-        spec = utils.clone(VIS.model_view.list.spark);
-        spec.time.step = VIS.condition.spec;
+    trs_enter = trs.enter().append("tr");
+    trs.exit().remove();
 
-        // label sparkplots column
-        d3.select("th#model_view_list_condition a")
-            .text((p.type === "time") ? "over time"
-                    : "by " + p.condition_name);
+    trs.on("click", function (t) {
+        view.dfb().set_view(view.topic.hash(t.t));
+    });
 
-        trs = trs.data(d3.range(p.data.length))
-            .enter().append("tr");
+    trs.classed("hidden_topic", function (t) {
+        return p.topic_hidden[t.t];
+    });
 
-        trs.on("click", function (t) {
-            view.dfb().set_view(view.topic.hash(t));
+    // create topic label column
+    trs_enter.append("td").append("a").classed("topic_name", true);
+    trs.select("a.topic_name")
+        .attr("href", function (t) { return view.topic.link(t.t); })
+        .text(function (t) { return t.label; });
+
+    // create conditional plot column
+    divs = trs_enter.append("td").append("div").classed("spark", true);
+    view.append_svg(divs, spec)
+        .each(function (t) {
+            view.topic.conditional_barplot({ 
+                t: t.t,
+                data: t.data,
+                key: p.key,
+                type: p.type,
+                axes: false,
+                clickable: false,
+                svg: d3.select(this),
+                spec: spec
+            });
         });
 
-        trs.classed("hidden_topic", function (t) {
-            return p.topic_hidden[t];
-        });
+    // create topic words column
+    trs_enter.append("td").append("a").classed("topic_words", true);
+    trs.select("a.topic_words")
+        .attr("href", function (t) { return view.topic.link(t.t); });
 
-        trs.append("td").append("a").classed("topic_name", true)
-            .attr("href", view.topic.link)
-            .text(function (t) {
-                return p.labels[t];
-            });
-
-        divs = trs.append("td").append("div").classed("spark", true);
-        view.append_svg(divs, spec)
-            .each(function (t) {
-                view.topic.conditional_barplot({ 
-                    t: t,
-                    data: p.data[t],
-                    key: p.key,
-                    type: p.type,
-                    axes: false,
-                    clickable: false,
-                    svg: d3.select(this),
-                    spec: spec
-                });
-            });
-
-        trs.append("td").append("a").classed("topic_words", true)
-            .attr("href", view.topic.link);
-
-        token_max = d3.max(p.sums);
-        view.append_weight_tds(trs, function (t) {
-            return p.sums[t] / token_max;
-        });
-        trs.append("td")
-            .text(function (t) {
-                return VIS.percent_format(p.sums[t] / total);
-            });
-
-        VIS.ready.model_list = true;
-    } // if (!VIS.ready.model_list)
-
-    // since the number of topic words can be changed, we need to
+    // since the number of topic words can be changed, we always need to
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
         .text(function (t) {
-            return p.words[t].reduce(function (acc, x) {
+            return p.words[t.t].reduce(function (acc, x) {
                 return acc + " " + x.word;
             }, "");
         });
 
+    // create topic weight bars and %ages
+    token_max = d3.max(p.sums);
+    view.weight_tds({
+        sel: trs,
+        enter: trs_enter,
+        w: function (t) { return p.sums[t.t] / token_max; },
+        frac: function (t) { return VIS.percent_format(p.sums[t.t] / total); }
+    });
+    
     // sorting
 
     if (!VIS.last.model_list) {
@@ -115,14 +122,14 @@ view.model.list = function (p) {
 
     if (sort_dir === "down") {
         sorter = function (a, b) {
-            return d3.descending(keys[a], keys[b]) ||
-                d3.descending(a, b); // stabilize sort
+            return d3.descending(keys[a.t], keys[b.t]) ||
+                d3.descending(a.t, b.t); // stabilize sort
         };
     } else {
         // default: up
         sorter = function (a, b) {
-            return d3.ascending(keys[a], keys[b]) ||
-                d3.ascending(a, b); // stabilize sort
+            return d3.ascending(keys[a.t], keys[b.t]) ||
+                d3.ascending(a.t, b.t); // stabilize sort
         };
     }
 

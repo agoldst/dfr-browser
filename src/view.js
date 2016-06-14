@@ -15,7 +15,7 @@ var view = (function () {
         warning,
         tooltip,
         frame,
-        append_weight_tds,
+        weight_tds,
         plot_svg,
         append_svg,
         scroll_top,
@@ -138,18 +138,46 @@ var view = (function () {
     };
     that.frame = frame;
 
-    append_weight_tds = function (sel, f) {
-        sel.append("td").classed("weight", true)
-            .append("div")
-                .classed("proportion", true)
-                .style("margin-left", function (w) {
-                    return d3.format(".1%")(1 - f(w));
-                })
-                .append("span")
+    // add columns to a table corresponding to weights
+    // p.sel: table row selection with data bound
+    // p.enter: entering table rows
+    // Three columns may be added if the appropriate function is supplied in
+    // the parameters:
+    // p.w: function giving proportional size of horizontal bar
+    // p.frac: function giving string for display of proportion
+    // p.raw: function giving string for display of raw weight
+    weight_tds = function (p) {
+        if (p.w) {
+            p.enter.append("td").classed("weight", true)
+                .append("div")
                     .classed("proportion", true)
-                    .html("&nbsp;");
+                    .append("span")
+                        .classed("proportion", true)
+                        .html("&nbsp;");
+
+            p.sel.select("td.weight div.proportion")
+                .style("margin-left", function (d) {
+                    return d3.format(".1%")(1 - p.w(d));
+                });
+        }
+
+        if (p.frac) { 
+            p.enter.append("td")
+                .classed("td-right", true)
+                .classed("weight-percent", true);
+            p.sel.select("td.weight-percent")
+                .text(p.frac);
+        }
+
+        if (p.raw) { 
+            p.enter.append("td")
+                .classed("td-right", true)
+                .classed("weight-raw", true);
+            p.sel.select("td.weight-raw")
+                .text(p.raw);
+        }
     };
-    that.append_weight_tds = append_weight_tds;
+    that.weight_tds = weight_tds;
 
     plot_svg = function (selector, spec) {
         var g;

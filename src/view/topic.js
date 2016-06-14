@@ -19,41 +19,43 @@ view.topic.remark = function (p) {
 };
 
 view.topic.words = function (words) {
-    var trs_w;
+    var trs, trs_enter;
 
     if (view.updating() && !view.dirty("topic/words")) {
         return;
     }
 
-    trs_w = d3.select("table#topic_words tbody")
+    trs = d3.select("table#topic_words tbody")
         .selectAll("tr")
         .data(words);
 
-    trs_w.enter().append("tr");
-    trs_w.exit().remove();
+    trs_enter = trs.enter().append("tr");
+    trs.exit().remove();
 
-    trs_w.on("click", function (w) {
+    trs.on("click", function (w) {
         view.dfb().set_view("/word/" + w.word);
     });
 
-    // clear rows
-    trs_w.selectAll("td").remove();
+    trs_enter.append("td").classed("topic_word", true)
+        .append("a");
 
-    trs_w.append("td").append("a")
+    trs.select("td.topic_word a")
         .attr("href", function (w) {
             return "#/word/" + w.word;
         })
         .text(function (w) { return w.word; });
 
-    view.append_weight_tds(trs_w, function (w) {
-        return w.weight / words[0].weight;
+    view.weight_tds({
+        sel: trs,
+        enter: trs_enter,
+        w: function (w) { return w.weight / words[0].weight; }
     });
 
     view.dirty("topic/words", false);
 };
 
 view.topic.docs = function (p) {
-    var header_text, trs_d,
+    var header_text, trs, trs_enter,
         docs = p.docs;
 
     if (p.condition !== undefined) {
@@ -96,40 +98,32 @@ view.topic.docs = function (p) {
     d3.select("#topic_docs table")
         .classed("hidden", false);
 
-    trs_d = d3.select("#topic_docs tbody")
+    trs = d3.select("#topic_docs tbody")
         .selectAll("tr")
         .data(docs);
 
-    trs_d.enter().append("tr");
-    trs_d.exit().remove();
+    trs_enter = trs.enter().append("tr");
+    trs.exit().remove();
 
-    // clear rows
-    trs_d.selectAll("td").remove();
-
-    trs_d
-        .append("td")
-        .append("a")
+    trs_enter.append("td")
+        .append("a").classed("citation", true);
+    trs.select("a.citation")
         .html(function (d, j) {
             return p.citations[j];
         });
 
-    trs_d.on("click", function (d) {
+    trs.on("click", function (d) {
         view.dfb().set_view("/doc/" + d.doc);
     });
 
-    view.append_weight_tds(trs_d, function (d) { return d.frac; });
-
-    trs_d.append("td")
-        .classed("td-right", true)
-        .text(function (d) {
-            return VIS.percent_format(d.frac);
-        });
-
-    trs_d.append("td")
-        .classed("td-right", true)
-        .text(function (d) {
-            return d.weight;
-        });
+    view.weight_tds({
+        sel: trs,
+        enter: trs_enter,
+        w: function (d) { return d.frac; },
+        frac: function (d) { return VIS.percent_format(d.frac); },
+        // TODO turn off raw where inapplicable
+        raw: function (d) { return d.weight; }
+    });
 
     view.dirty("topic/docs", false);
 };
