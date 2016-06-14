@@ -118,8 +118,6 @@ view.topic.docs = function (p) {
         // TODO turn off raw where inapplicable
         raw: function (d) { return d.weight; }
     });
-
-    view.dirty("topic/docs", false);
 };
 
 view.topic.conditional = function (p) {

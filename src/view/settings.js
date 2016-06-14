@@ -29,7 +29,6 @@ view.settings = function (p) {
         .property("value", VIS.topic_view.docs)
         .on("change", function () {
             VIS.topic_view.docs = this.valueAsNumber;
-            view.dirty("topic/docs", true);
         });
 
     stg.select("#reveal_hidden")
