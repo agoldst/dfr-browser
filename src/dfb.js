@@ -15,7 +15,7 @@ var dfb = function (spec) {
         load_data,
         load;
 
-    // Constructor: call constructors for model, metadata, bib
+    // Constructor: call constructors for model
     my.m = model();
     // no need to globally expose the model, but handy for debugging
     // __DEV_ONLY__
