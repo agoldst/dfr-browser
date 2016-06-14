@@ -3,9 +3,6 @@
 
 view.settings = function (p) {
     var stg;
-    if (!view.dirty("settings")) {
-        return;
-    }
 
     stg = d3.select("#settings_modal");
 
@@ -47,7 +44,4 @@ view.settings = function (p) {
                 VIS.model_view.conditional.streamgraph =
                     !VIS.model_view.conditional.streamgraph;
             });
-
-
-    view.dirty("settings", false);
 };

@@ -26,24 +26,6 @@ var view = (function () {
     };
     that.dfb = dfb;
 
-    dirty = function (key, flag) {
-        if (!my.dirty) {
-            my.dirty = d3.set();
-        }
-        if (flag === undefined) {
-            return my.dirty.has(key);
-        }
-
-        // otherwise
-        if (flag) {
-            my.dirty.add(key);
-        } else {
-            my.dirty.remove(key);
-        }
-        return flag;
-    };
-    that.dirty = dirty;
-
     loading = function (flag) {
         d3.select("#working_icon").classed("invisible", !flag);
     };

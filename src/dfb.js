@@ -671,13 +671,6 @@ setup_views = function () {
         title: i ? i.title : undefined
     });
 
-    my.views.forEach(function (v) {
-        view.dirty(v, true);
-    });
-    // TODO BE LESS KLUDGY
-    view.dirty("model/conditional", true);
-    view.dirty("settings", true);
-
     // and set the default view
     my.default_view = VIS.default_view.split("/");
     if (!my.views.has(my.default_view[1])) {
