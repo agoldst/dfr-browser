@@ -37,7 +37,6 @@ view.settings = function (p) {
             .property("checked", VIS.show_hidden_topics === true)
             .on("change", function () {
                 VIS.show_hidden_topics = !VIS.show_hidden_topics;
-                view.dirty("model/conditional", true);
             });
 
     stg.select("#conditional_streamgraph")
@@ -47,7 +46,6 @@ view.settings = function (p) {
             .on("change", function () {
                 VIS.model_view.conditional.streamgraph =
                     !VIS.model_view.conditional.streamgraph;
-                view.dirty("model/conditional", true);
             });
 
 

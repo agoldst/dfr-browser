@@ -11,6 +11,7 @@ var dfb = function (spec) {
         refresh,
         set_view,
         hide_topics,
+        data_signature,
         setup_listeners, // initialization
         setup_views,
         load_data,
@@ -354,7 +355,10 @@ settings_modal = function () {
         return false;
     }
 
-    view.settings(p);
+    if (!my.settings_ready) {
+        view.settings(p);
+        my.settings_ready = true;
+    }
 
     $("#settings_modal").modal();
     return true;
@@ -486,7 +490,8 @@ model_view_conditional = function (type) {
         key: my.m.meta_condition(my.condition),
         condition_type: VIS.condition.type,
         condition_name: my.condition_name,
-        streamgraph: VIS.model_view.conditional.streamgraph
+        streamgraph: VIS.model_view.conditional.streamgraph,
+        signature: data_signature()
     };
 
     view.calculating("#model_view_conditional", true);
@@ -613,6 +618,16 @@ hide_topics = function (flg) {
         });
 };
 that.hide_topics = hide_topics;
+
+// Method giving an identifier with a current state of the full data set.  The
+// only promise is that the data_signature will change if the data have changed
+// in a big way.  Right now the only use for this is for the model/conditional
+// view, which caches the result of the "stacking" calculation and needs to
+// know if we've hidden topics.
+// TODO this is what I'll use for supporting multiple models.
+data_signature = function () {
+    return VIS.show_hidden_topics;
+};
 
 // initialization
 // --------------

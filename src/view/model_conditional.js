@@ -2,27 +2,33 @@
 "use strict";
 
 view.model.conditional = function (p) {
-    var raw = p.type ? (p.type === "raw") : VIS.last.model_conditional;
+    var raw = p.type ? (p.type === "raw") : VIS.last.model_conditional,
+        streamgraph = p.streamgraph && p.condition_type !== "ordinal",
+        data = this.conditional.data;
+
     VIS.last.model_conditional = raw;
 
-    // can become dirty by showing/hiding topics
-    if (view.dirty("model/conditional")) {
-        this.conditional.data = view.model.stacked_series({
+    // recalculate and cache data if needed
+    if (!data || data.signature !== p.signature
+            || data.streamgraph !== p.streamgraph) {
+        data = view.model.stacked_series({
             keys: p.key.range,
             xs: p.key.range.map(p.key.invert),
             totals: p.conditional_totals,
             topics: p.topics,
-            streamgraph: p.streamgraph && p.condition_type !== "ordinal"
+            streamgraph: streamgraph
         });
-        view.dirty("model/conditional", false);
+        data.streamgraph = streamgraph;
+        data.signature = p.signature;
+        this.conditional.data = data;
     }
     view.model.conditional_plot({
         condition_type: p.condition_type,
         condition_name: p.condition_name,
-        data: this.conditional.data[raw ? "raw" : "frac"],
-        domain_x: this.conditional.data.domain_x,
-        domain_y: this.conditional.data[raw ? "domain_raw" : "domain_frac"],
-        order: this.conditional.data.order,
+        data: data[raw ? "raw" : "frac"],
+        domain_x: data.domain_x,
+        domain_y: data[raw ? "domain_raw" : "domain_frac"],
+        order: data.order,
         spec: VIS.model_view.conditional,
         raw: raw,
         selector: "#model_view_conditional"
