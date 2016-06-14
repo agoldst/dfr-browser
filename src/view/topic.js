@@ -65,7 +65,6 @@ view.topic.docs = function (p) {
             .on("click", function () {
                 d3.select(".selected_condition")
                     .classed("selected_condition", false);
-                view.updating(true);
                 view.dfb().set_view(view.topic.hash(p.t));
             })
             .classed("hidden", false);
@@ -388,7 +387,6 @@ view.topic.conditional_barplot = function (param) {
                     d3.select(this.parentNode)
                         .classed("selected_condition", false);
                     view.tooltip().text(tip_text(d));
-                    view.updating(true);
                     view.dfb().set_view(view.topic.hash(param.t));
                 } else {
                     // TODO selection of multiple conditions
@@ -398,7 +396,6 @@ view.topic.conditional_barplot = function (param) {
                     d3.select(this.parentNode)
                         .classed("selected_condition", true);
                     view.tooltip().text(tip_text(d));
-                    view.updating(true);
                     view.dfb().set_view(
                         view.topic.hash(param.t) + "/" + d.key
                     );
