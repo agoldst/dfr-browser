@@ -212,7 +212,6 @@ view.word = function (p) {
     // and move exit words out of the way
     gs_w.exit().transition().delay(1000).remove();
 
-    view.dirty("word", false);
     return true;
     // (later: time graph)
 };
