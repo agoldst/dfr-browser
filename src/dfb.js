@@ -490,14 +490,6 @@ model_view_conditional = function (type) {
         streamgraph: VIS.model_view.conditional.streamgraph
     };
 
-    if (VIS.ready.model_conditional) {
-        view.model.conditional(p);
-        return true;
-    }
-    // TODO simplify interaction with VIS.ready
-    view.dirty("model/conditional", true);
-
-    // otherwise:
     view.calculating("#model_view_conditional", true);
     my.m.conditional_total(my.condition, undefined, function (totals) {
         my.m.topic_conditional(undefined, my.condition, function (data) {
@@ -793,6 +785,8 @@ load = function () {
         load_data(VIS.files.dt, function (error, dt_s) {
             my.m.set_dt(dt_s, function (result) {
                 if (result) {
+                    // TODO BE LESS KLUDGY
+                    view.dirty("model/conditional", true);
                     refresh();
                 } else {
                     view.error("Unable to load document topics from "

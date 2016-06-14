@@ -6,7 +6,6 @@ view.model.conditional = function (p) {
     VIS.last.model_conditional = raw;
 
     // can become dirty by showing/hiding topics
-    // TODO simplify interaction with VIS.ready
     if (view.dirty("model/conditional")) {
         this.conditional.data = view.model.stacked_series({
             keys: p.key.range,
