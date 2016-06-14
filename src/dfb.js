@@ -631,8 +631,6 @@ setup_listeners = function () {
             window.clearTimeout(VIS.resize_timer);
         }
         VIS.resize_timer = window.setTimeout(function () {
-            // TODO MAKE LESS KLUDGE
-            view.dirty("topic/conditional", true);
             refresh();
             VIS.resize_timer = undefined; // ha ha
         }, VIS.resize_refresh_delay);
