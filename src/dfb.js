@@ -12,6 +12,7 @@ var dfb = function (spec) {
         set_view,
         hide_topics,
         setup_listeners, // initialization
+        setup_views,
         load_data,
         load;
 
@@ -650,6 +651,32 @@ setup_listeners = function () {
 };
 that.setup_listeners = setup_listeners;
 
+setup_views = function () {
+    var i = my.m.info();
+    view.frame({
+        title: i ? i.title : undefined
+    });
+
+    my.views.forEach(function (v) {
+        view.dirty(v, true);
+    });
+    // TODO BE LESS KLUDGY
+    view.dirty("model/conditional", true);
+
+    // and set the default view
+    my.default_view = VIS.default_view.split("/");
+    if (!my.views.has(my.default_view[1])) {
+        view.warning("Invalid VIS.default_view setting.");
+        // invalid default view; hard-code fallback
+        my.default_view = [ "", "model"];
+    }
+    my.views.set("default", my.views.get(my.default_view[1]));
+
+    // and set up view aliases by validating them
+    my.aliases = d3.map(VIS.aliases);
+};
+that.setup_views = setup_views;
+
 // data loading
 // ------------
 
@@ -717,21 +744,6 @@ load = function () {
 
             VIS.update(my.m.info().VIS);
 
-            // now we can load the model title
-            d3.selectAll(".model_title")
-                .html(my.m.info().title);
-
-            // and set the default view
-            my.default_view = VIS.default_view.split("/");
-            if (!my.views.has(my.default_view[1])) {
-                view.warning("Invalid VIS.default_view setting.");
-                // invalid default view; hard-code fallback
-                my.default_view = [ "", "model"];
-            }
-            my.views.set("default", my.views.get(my.default_view[1]));
-
-            // and set up view aliases by validating them
-            my.aliases = d3.map(VIS.aliases);
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
@@ -761,6 +773,7 @@ load = function () {
         // now we can install the main event listeners
         // TODO can we do this even earlier?
         setup_listeners();
+        setup_views();
 
         // now launch remaining data loading; ask for a refresh when done
         load_data(VIS.files.meta, function (error, meta_s) {
@@ -785,8 +798,6 @@ load = function () {
         load_data(VIS.files.dt, function (error, dt_s) {
             my.m.set_dt(dt_s, function (result) {
                 if (result) {
-                    // TODO BE LESS KLUDGY
-                    view.dirty("model/conditional", true);
                     refresh();
                 } else {
                     view.error("Unable to load document topics from "

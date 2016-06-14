@@ -2,12 +2,12 @@
 "use strict";
 
 view.about = function (info) {
-    if (!VIS.ready.about) {
+    if (view.dirty("about")) {
         if (info.meta_info) {
             d3.select("div#meta_info")
                 .html(info.meta_info);
         }
-        VIS.ready.about = true;
+        view.dirty("about", false);
     }
     return true;
 };

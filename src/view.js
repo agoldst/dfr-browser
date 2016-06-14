@@ -14,6 +14,7 @@ var view = (function () {
         error,
         warning,
         tooltip,
+        frame,
         append_weight_tds,
         plot_svg,
         append_svg,
@@ -127,6 +128,15 @@ var view = (function () {
         return tt;
     };
     that.tooltip = tooltip;
+
+    // render global framing elements of the view
+    frame = function (p) {
+        if (p.title) {
+            d3.selectAll(".model_title")
+                .html(p.title);
+        }
+    };
+    that.frame = frame;
 
     append_weight_tds = function (sel, f) {
         sel.append("td").classed("weight", true)
