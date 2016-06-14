@@ -65,7 +65,7 @@ In case you wish to edit the exported files or create them another way, here are
 
 - two-dimensional coordinates for each topic (`data/topic_scaled.csv`): a headerless two-column CSV. Row *t* gives the position of topic *t* in some space. dfrtopics generates this with its `topic_scaled_2d` function (q.v.). This file is optional; if it is available, the browser can draw the "scaled" overview plot, but if not, the rest of the browser will still work.
 
-Except for `data/info.json`, which is hard-coded, all of the filenames are configurable. They are properties of the `VIS.files` object and can be modified by adding a `files` property to `VIS` in [info.json](data/info.json). The property names for the last four listed above are `dt`, `tw`, `meta`, and `topic_scaled`. If a given filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. It is normally not worth compressing `tw.json` or `topic_scaled.csv`.
+Except for `data/info.json`, which is hard-coded, all of the filenames are configurable. They are properties of the `VIS.files` object and can be modified by adding a `files` property to `VIS` in [info.json](data/info.json). The configurable file names can be either local paths or URLs (they are passed straight on to [d3.xhr](https://github.com/d3/d3/wiki/Requests#d3_xhr)). The property names for the last four listed above are `dt`, `tw`, `meta`, and `topic_scaled`. If a given filename ends in `.zip`, the browser uses [JSZip](http://stuk.github.io/jszip/) to unzip the file. It is normally not worth compressing `tw.json` or `topic_scaled.csv`.
 
 ### Preparing data files entirely on the command line
 
