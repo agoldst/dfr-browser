@@ -3,7 +3,7 @@
 
 view.settings = function (p) {
     var stg;
-    if (VIS.ready.settings) {
+    if (!view.dirty("settings")) {
         return;
     }
 
@@ -53,5 +53,5 @@ view.settings = function (p) {
             });
 
 
-    VIS.ready.settings = true;
+    view.dirty("settings", false);
 };

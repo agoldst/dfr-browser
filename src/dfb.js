@@ -629,6 +629,7 @@ setup_listeners = function () {
             window.clearTimeout(VIS.resize_timer);
         }
         VIS.resize_timer = window.setTimeout(function () {
+            // TODO MAKE LESS KLUDGE
             view.updating(true);
             view.dirty("topic/conditional", true);
             refresh();
@@ -662,6 +663,7 @@ setup_views = function () {
     });
     // TODO BE LESS KLUDGY
     view.dirty("model/conditional", true);
+    view.dirty("settings", true);
 
     // and set the default view
     my.default_view = VIS.default_view.split("/");
