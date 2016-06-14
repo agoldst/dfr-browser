@@ -10,6 +10,7 @@ view.word = function (p) {
         svg, clip,
         scale_x, scale_y, scale_bar,
         gs_t, gs_t_enter, gs_t_label, gs_w, gs_w_enter,
+        fade_in = !view.updating() && !view.dirty("word"),
         tx_w;
 
     // word form setup
@@ -98,20 +99,13 @@ view.word = function (p) {
         .attr("transform", function (t, i) {
             return "translate(0," + scale_y(i) + ")";
         })
-        .style("opacity", 0);
+        .style("opacity", fade_in ? 1 : 0); // pre-empt fade in on refresh
 
-    // TODO refine transition timings
-
-    if (!VIS.ready.word || view.updating()) {
-        // if this is the first load or a refresh, we don't want a fade-in
-        d3.selectAll("g.topic").style("opacity", 1);
-    } else {
-        d3.transition().duration(1000)
-            .ease("linear")
-            .each("end", function () {
-                d3.selectAll("g.topic").style("opacity", 1);
-            });
-    }
+    d3.transition().duration(1000)
+        .ease("linear")
+        .each("end", function () {
+            gs_t.style("opacity", 1);
+        });
     
     // and move exit rows out of the way
     gs_t.exit().transition()
@@ -195,8 +189,8 @@ view.word = function (p) {
     gs_w_enter.attr("transform", function (d, j) {
         return "translate(" + scale_x(j) + ",-" + row_height / 2 + ")";
     })
-        .attr("opacity", (VIS.ready.word && !view.updating()) ? 0 : 1);
-    // pre-empting fade-in on first load or refresh
+        .attr("opacity", fade_in ? 0 : 1);
+        // pre-empting fade-in on first load or refresh
 
     // update g positions for word/bars
     tx_w = gs_w.transition()
@@ -218,7 +212,7 @@ view.word = function (p) {
     // and move exit words out of the way
     gs_w.exit().transition().delay(1000).remove();
 
-    VIS.ready.word = true;
+    view.dirty("word", false);
     return true;
     // (later: time graph)
 };
