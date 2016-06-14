@@ -3,11 +3,8 @@
 var view = (function () {
 
     var that = { },
-        my = {
-            updating: false
-        },
+        my = { },
         dfb,
-        updating,
         dirty,
         loading,
         calculating,
@@ -29,15 +26,6 @@ var view = (function () {
     };
     that.dfb = dfb;
 
-    updating = function (flag) {
-        if (typeof flag === "boolean") {
-            my.updating = flag;
-        }
-        return my.updating;
-    };
-    that.updating = updating;
-
-    // TODO get rid of updating(), use dirty() everywhere
     dirty = function (key, flag) {
         if (!my.dirty) {
             my.dirty = d3.set();
