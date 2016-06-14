@@ -3,7 +3,6 @@
 
 // declaration of global object (modified by browser().load())
 var VIS = {
-    ready: { }, // which viz already generated?
     last: { // which subviews last shown?
         bib: { }
     },
