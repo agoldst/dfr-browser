@@ -22,7 +22,6 @@ view.settings = function (p) {
         .property("value", VIS.topic_view.words)
         .on("change", function () {
             VIS.topic_view.words = this.valueAsNumber;
-            view.dirty("topic/words", true);
         });
     stg.select("#n_topic_docs input")
         .property("min", 1)

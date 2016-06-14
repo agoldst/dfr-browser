@@ -21,10 +21,6 @@ view.topic.remark = function (p) {
 view.topic.words = function (words) {
     var trs, trs_enter;
 
-    if (view.updating() && !view.dirty("topic/words")) {
-        return;
-    }
-
     trs = d3.select("table#topic_words tbody")
         .selectAll("tr")
         .data(words);
@@ -50,8 +46,6 @@ view.topic.words = function (words) {
         enter: trs_enter,
         w: function (w) { return w.weight / words[0].weight; }
     });
-
-    view.dirty("topic/words", false);
 };
 
 view.topic.docs = function (p) {
