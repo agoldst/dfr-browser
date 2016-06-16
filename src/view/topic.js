@@ -12,12 +12,6 @@ view.topic = function (p) {
     // (later: nearby topics by J-S div or cor on log probs)
 };
 
-view.topic.remark = function (p) {
-    d3.select("#topic_view #topic_remark")
-        .text(VIS.percent_format(p.col_sum / p.total_tokens)
-                + " of corpus");
-};
-
 view.topic.words = function (words) {
     var trs, trs_enter;
 

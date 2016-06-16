@@ -70,16 +70,6 @@ my.views.set("topic", function (t_user, y) {
     d3.select("#topic_view_help").classed("hidden", true);
     d3.select("#topic_view_main").classed("hidden", false);
 
-    my.m.total_tokens(function (total) {
-        my.m.topic_total(t, function (topic_total) {
-            view.topic.remark({
-                alpha: my.m.alpha(t),
-                col_sum: topic_total,
-                total_tokens: total
-            });
-        });
-    });
-
     // topic word subview
     view.topic.words(words);
 
