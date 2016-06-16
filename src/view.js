@@ -5,7 +5,6 @@ var view = (function () {
     var that = { },
         my = { },
         dfb,
-        dirty,
         loading,
         calculating,
         error,

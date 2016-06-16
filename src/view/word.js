@@ -42,6 +42,8 @@ view.word = function (p) {
                 max_weight = tw.weight;
             }
             // normalize weights relative to the weight of the word ranked 1
+            // TODO should be able to choose to put all weights from different
+            // topics on same scale
             return {
                 word: tw.word,
                 weight: tw.weight / max_weight

@@ -111,7 +111,8 @@ my.views.set("topic", function (t_user, y) {
             condition: y,
             type: VIS.condition.type,
             condition_name: my.condition_name,
-            key: my.m.meta_condition(my.condition)
+            key: my.m.meta_condition(my.condition),
+            proper: my.proper
         });
     };
 
@@ -263,7 +264,8 @@ my.views.set("doc", function (d) {
             }),
             labels: topics.map(function (t) {
                 return my.m.topic_label(t.topic);
-            })
+            }),
+            proper: my.proper
         });
 
         hide_topics();
@@ -799,7 +801,12 @@ load = function () {
         });
         load_data(VIS.files.dt, function (error, dt_s) {
             my.m.set_dt(dt_s, function (result) {
-                if (result) {
+                if (result.success) {
+                    my.proper = result.proper;
+                    d3.selectAll(".proper")
+                        .classed("hidden", !my.proper);
+                    d3.selectAll(".not-proper")
+                        .classed("hidden", my.proper);
                     refresh();
                 } else {
                     view.error("Unable to load document topics from "

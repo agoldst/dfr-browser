@@ -136,10 +136,16 @@
           <ul id="conditional_choice"
             class="nav navbar-nav nav-pills model_view_conditional hidden">
             <li id="nav_model_conditional_frac" class="active">
-              <a href="#/model/conditional/frac">%</a>
+              <a href="#/model/conditional/frac">
+                <span class="not-proper hidden">%</span>
+                <span class="proper hidden">conditional</span>
+              </a>
             </li>
             <li id="nav_model_conditional_raw">
-              <a href="#/model/conditional/raw">word counts</a>
+              <a href="#/model/conditional/raw">
+                <span class="not-proper hidden">word counts</span>
+                <span class="proper hidden">joint</span>
+              </a>
             </li>
           </ul>
           <button id="reset_zoom" type="button"
@@ -172,7 +178,8 @@
             </th>
             <th colspan="2" id="model_view_list_frac" class="sort text-right">
               <a href="#/model/list/frac" title="click to sort">
-                proportion of corpus
+                <span class="not-proper hidden">proportion of corpus</span>
+                <span class="proper hidden">average probability</span>
               </a><span class="glyphicon glyphicon-sort"></span>
             </th>
           </tr>
@@ -226,7 +233,10 @@
         </div>
         <div class="col-md-9">
           <div id="topic_conditional">
-            <h3 class="h-small">Conditional proportion of words in topic</h3>
+            <h3 class="h-small">Conditional probability
+              <span class="not-proper hidden">of words in topic</span>
+              <span class="proper hidden">of topic</span>
+            </h3>
             <p class="pull-left help">
               Click a bar to limit to the documents it represents
             </p>
@@ -246,7 +256,8 @@
                   <th id="topic_docs_doc">Document</th>
                   <th id="topic_docs_weight"></th>
                   <th id="topic_docs_frac" class="th-right">%</th>
-                  <th id="topic_docs_tokens" class="th-right">Tokens</th>
+                  <th id="topic_docs_tokens"
+                    class="th-right not-proper hidden">Tokens</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,7 +279,10 @@
     <div id="doc_view_main" class="calc-done">
       <h2 class="h-small" id="doc_header"></h2>
       <p id="doc_remark">
-        <span class="token_count"></span> tokens.
+      <span class="not-proper hidden">
+        <span class="token_count">...</span>
+        tokens.
+      </span>
         (<a class="url external">view on JSTOR</a>)
       </p>
       <table class="table table-condensed" id="doc_topics">
@@ -278,7 +292,7 @@
             <th id="doc_view_words">Top words</th>
             <th id="doc_view_weight"></th>
             <th id="doc_view_frac" class="th-right">%</th>
-            <th id="doc_view_tokens" class="th-right">Tokens</th>
+            <th id="doc_view_tokens" class="th-right not-proper hidden">Tokens</th>
           </tr>
         </thead>
         <tbody>

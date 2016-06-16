@@ -114,8 +114,7 @@ view.topic.docs = function (p) {
         enter: trs_enter,
         w: function (d) { return d.frac; },
         frac: function (d) { return VIS.percent_format(d.frac); },
-        // TODO turn off raw where inapplicable
-        raw: function (d) { return d.weight; }
+        raw: p.proper ? undefined : function (d) { return d.weight; }
     });
 };
 

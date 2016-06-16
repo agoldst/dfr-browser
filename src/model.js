@@ -402,7 +402,7 @@ model = function (spec) {
         }
 
         my.worker.callback("set_dt", function (result) {
-            my.ready.dt = result;
+            my.ready.dt = result.success;
             callback(result);
         });
         my.worker.postMessage({

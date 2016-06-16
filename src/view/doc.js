@@ -56,7 +56,7 @@ view.doc = function (p) {
         .attr("href", function (t) {
             return view.topic.link(t.topic);
         })
-        .select("span.words") 
+        .select("span.words")
             .text(function (t) {
                 return t.words.reduce(function (acc, x) {
                     return acc + " " + x.word;
@@ -70,7 +70,7 @@ view.doc = function (p) {
         frac: function (t) {
             return VIS.percent_format(t.weight / total_tokens);
         },
-        raw: function (t) { return t.weight; } 
+        raw: p.proper ? undefined : function (t) { return t.weight; }
     });
 };
 

@@ -13,7 +13,8 @@ var my = {
     doc_topics,
     topic_conditional,
     conditional_total,
-    topic_docs_conditional;
+    topic_docs_conditional,
+    PROPER_TOLERANCE = 0.01;
 
 doc_topics_matrix = function (data) {
     var my = { },
@@ -276,15 +277,18 @@ topic_docs_conditional = function (t, v, key, n) {
 
 // main dispatch
 onmessage = function (e) {
+    var proper;
     if (e.data.what === "set_dt") {
         my.dt = doc_topics_matrix(e.data.dt);
-        // precalculate row sums
+        // precalculate row sums and detect normalized matrix
         if (my.dt) {
-            my.dt.row_sum();
+            proper = my.dt.row_sum().reduce(function (acc, x) {
+                return acc && Math.abs(x - 1.0) < PROPER_TOLERANCE;
+            }, true);
         }
         postMessage({
             what: "set_dt",
-            result: my.dt !== undefined
+            result: { success: my.dt !== undefined, proper: proper }
         });
     } else if (e.data.what === "set_doc_categories") {
         my.doc_categories[e.data.v] = e.data.keys;
