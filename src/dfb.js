@@ -421,7 +421,20 @@ my.views.set("model", function (type, p1, p2) {
 });
 
 model_view_list = function (sort, dir) {
+    var sort_choice, sort_dir;
+
     view.calculating("#model_view_list", true);
+
+    if (!VIS.last.model_list) {
+        VIS.last.model_list = { };
+    }
+
+    sort_choice = sort || VIS.last.model_list.sort || "topic";
+    sort_dir = dir || ((sort_choice === VIS.last.model_list.sort) ?
+        VIS.last.model_list.dir : "up") || "up";
+    // remember for the next time we visit #/model/list
+    VIS.last.model_list.sort = sort_choice;
+    VIS.last.model_list.dir = sort_dir;
 
     my.m.topic_total(undefined, function (sums) {
         my.m.topic_conditional(undefined, my.condition, function (data) {
@@ -433,8 +446,8 @@ model_view_list = function (sort, dir) {
                 key: my.m.meta_condition(my.condition),
                 sums: sums,
                 words: my.m.topic_words(undefined, VIS.overview_words),
-                sort: sort,
-                dir: dir,
+                sort: sort_choice,
+                dir: sort_dir,
                 labels: d3.range(my.m.n()).map(my.m.topic_label),
                 topic_hidden: VIS.topic_hidden
             });

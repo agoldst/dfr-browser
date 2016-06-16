@@ -4,7 +4,7 @@
 view.model.list = function (p) {
     var trs, trs_enter, divs, token_max,
         total = d3.sum(p.sums),
-        keys, sorter, sort_choice, sort_dir,
+        keys, sorter,
         spec;
 
     // set up spark spec
@@ -88,25 +88,17 @@ view.model.list = function (p) {
     
     // sorting
 
-    if (!VIS.last.model_list) {
-        VIS.last.model_list = { };
-    }
-
-    sort_choice = p.sort || VIS.last.model_list.sort || "topic";
-    sort_dir = p.dir || ((sort_choice === VIS.last.model_list.sort) ?
-        VIS.last.model_list.dir : "up") || "up";
-
-    if (sort_choice === "words") {
+    if (p.sort === "words") {
         keys = p.words.map(function (ws) {
             return ws.reduce(function (acc, w) {
                 return acc + " " + w.word;
             }, "");
         });
-    } else if (sort_choice === "frac") {
+    } else if (p.sort === "frac") {
         // default ordering should be largest frac to least,
         // so the sort keys are negative proportions
         keys = p.sums.map(function (x) { return -x / total; });
-    } else if (sort_choice === "condition") {
+    } else if (p.sort === "condition") {
         keys = p.data.map(function (series) {
             var result, max_weight = 0;
             series.forEach(function (cond, weight) {
@@ -123,7 +115,7 @@ view.model.list = function (p) {
         keys = p.labels.map(view.topic.sort_name);
     }
 
-    if (sort_dir === "down") {
+    if (p.dir === "down") {
         sorter = function (a, b) {
             return d3.descending(keys[a.t], keys[b.t]) ||
                 d3.descending(a.t, b.t); // stabilize sort
@@ -136,20 +128,16 @@ view.model.list = function (p) {
         };
     }
 
-    // remember for the next time we visit #/model/list
-    VIS.last.model_list.sort = sort_choice;
-    VIS.last.model_list.dir = sort_dir;
-
-    trs.sort(sorter).order();
+    trs.sort(sorter);
 
     d3.selectAll("#model_view_list th.sort")
         .classed("active", function () {
-            return !!this.id.match(sort_choice);
+            return !!this.id.match(p.sort);
         })
         .each(function () {
             var ref = "#/" + this.id.replace(/_(view_)?/g, "/");
-            if (this.id.match(sort_choice)) {
-                ref += (sort_dir === "down") ? "/up" : "/down";
+            if (this.id.match(p.sort)) {
+                ref += (p.dir === "down") ? "/up" : "/down";
             }
 
             d3.select(this).select("a")
