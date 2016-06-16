@@ -195,6 +195,16 @@ In order to aid interpreting the model, it is often useful to manually label top
 
 One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number.
 
+### Adding view annotations
+
+If you wish to add additional HTML to specific views, simply modify [index.html](index.html). Give the annotating elements two CSS classes: `annote` and a class corresponding to the stable URL for the view, but with slashes replaced by underscores. Thus, 
+
+```html
+<p class="annote topic_5">Topic 5 is particularly fascinating.</p>
+```
+
+will only appear in the display of topic 5 (URL ending in `#/topic/5`). This mechanism is governed by the `update_annotations` function in [view](src/view.js), which is called every time the view changes.
+
 ## Launch the browser
 
 The necessary files are `index.html`, the data files (looked for in `data/` by default), and the `css`, `js`, `lib`, and `fonts` folders. Put all of these files in the path of a web server and go.
