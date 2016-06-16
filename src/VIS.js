@@ -1,7 +1,7 @@
 /*global d3, utils */
 "use strict";
 
-// declaration of global object (modified by browser().load())
+// declaration of global object (modified by dfb().load())
 var VIS = {
     files: { // what data files to request
         info: "data/info.json",
