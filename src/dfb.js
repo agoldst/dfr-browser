@@ -802,7 +802,10 @@ load = function () {
         load_data(VIS.files.dt, function (error, dt_s) {
             my.m.set_dt(dt_s, function (result) {
                 if (result.success) {
-                    my.proper = result.proper;
+                    my.proper = VIS.proper;
+                    if (my.proper === undefined) {
+                        my.proper = result.proper;
+                    }
                     d3.selectAll(".proper")
                         .classed("hidden", !my.proper);
                     d3.selectAll(".not-proper")
