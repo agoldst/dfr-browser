@@ -33,6 +33,8 @@ var VIS = {
             // format: "%Y-%m" // optional display format (strftime)
         }
     },
+    // proper: false        // are doc-topic weights normalized?
+                            // (set only if dfr-browser guesses wrong)
     overview_words: 15,     // may need adjustment
     model_view: {
         plot: {
