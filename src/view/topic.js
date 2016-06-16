@@ -124,7 +124,10 @@ view.topic.conditional = function (p) {
 
     // copy over conditional variable information to bar-step spec
     spec.time.step = VIS.condition.spec;
-    p.svg = view.plot_svg("div#topic_plot", spec);
+    p.svg = d3.select("div#topic_plot").selectAll("svg")
+        .data([1]);
+    p.svg.enter().call(view.append_plot);
+    p.svg = view.setup_plot(p.svg, spec);
     p.axes = true;
     p.clickable = true;
     p.spec = spec;

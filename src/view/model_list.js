@@ -2,7 +2,7 @@
 "use strict";
 
 view.model.list = function (p) {
-    var trs, trs_enter, divs, token_max,
+    var trs, trs_enter, token_max,
         total = d3.sum(p.sums),
         keys, sorter,
         spec;
@@ -25,7 +25,7 @@ view.model.list = function (p) {
                 data: x,
                 label: p.labels[t]
             };
-        }));
+        }), function (x) { return x.t; });
 
     trs_enter = trs.enter().append("tr");
     trs.exit().remove();
@@ -45,8 +45,11 @@ view.model.list = function (p) {
         .text(function (t) { return t.label; });
 
     // create conditional plot column
-    divs = trs_enter.append("td").append("div").classed("spark", true);
-    view.append_svg(divs, spec)
+    trs_enter.append("td").append("div").classed("spark", true)
+        .call(view.append_plot);
+    trs.select("td div.spark svg")
+        .call(view.setup_plot, spec);
+    trs.select("td div.spark svg > g")
         .each(function (t) {
             view.topic.conditional_barplot({ 
                 t: t.t,

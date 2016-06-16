@@ -24,7 +24,10 @@ view.model.plot = function (param) {
         bottom: 0
     };
 
-    svg = view.plot_svg("#model_view_plot", spec);
+    svg = d3.select("#model_view_plot").selectAll("svg")
+        .data([1]);
+    svg.enter().call(view.append_plot);
+    svg = view.setup_plot(svg, spec);
 
     circle_radius = Math.floor(
         spec.w /

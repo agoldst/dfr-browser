@@ -52,7 +52,11 @@ view.model.conditional_plot = function (p) {
     spec.h = Math.floor(spec.w / spec.aspect);
     spec.h -= spec.m.top + spec.m.bottom;
 
-    svg = view.plot_svg(p.selector, spec);
+    svg = d3.select(p.selector).selectAll("svg")
+        .data([1]);
+    svg.enter().call(view.append_plot);
+    svg = view.setup_plot(svg, spec);
+
     bg = svg.selectAll("rect.bg")
         .data([1])
         .enter().append("rect").classed("bg", true);

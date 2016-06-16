@@ -12,8 +12,8 @@ var view = (function () {
         tooltip,
         frame,
         weight_tds,
-        plot_svg,
-        append_svg,
+        setup_plot,
+        append_plot,
         scroll_top,
         scroll_origin;
 
@@ -148,40 +148,22 @@ var view = (function () {
     };
     that.weight_tds = weight_tds;
 
-    plot_svg = function (selector, spec) {
-        var g;
-
-        if (!VIS.svg) {
-            VIS.svg = d3.map();
-        }
-        if (VIS.svg.has(selector)) {
-            g = VIS.svg.get(selector);
-            d3.select(selector + " svg")
-                .attr("width", spec.w + spec.m.left + spec.m.right)
-                .attr("height", spec.h + spec.m.top + spec.m.bottom);
-
-            g.attr("transform",
-                    "translate(" + spec.m.left + "," + spec.m.top + ")");
-        } else {
-            g = append_svg(d3.select(selector), spec);
-            VIS.svg.set(selector, g);
-        }
-        return g;
-    };
-    that.plot_svg = plot_svg;
-
-    append_svg = function (selection, spec) {
+    setup_plot = function (sel, spec) {
         // mbostock margin convention
         // http://bl.ocks.org/mbostock/3019563
-        return selection.append("svg")
-                .attr("width", spec.w + spec.m.left + spec.m.right)
-                .attr("height", spec.h + spec.m.top + spec.m.bottom)
-            // g element passes on xform to all contained elements
-            .append("g")
-                .attr("transform",
-                      "translate(" + spec.m.left + "," + spec.m.top + ")");
+        sel.attr("width", spec.w + spec.m.left + spec.m.right)
+            .attr("height", spec.h + spec.m.top + spec.m.bottom);
+        // g element passes on xform to all contained elements
+        return sel.select("g")
+            .attr("transform",
+                    "translate(" + spec.m.left + "," + spec.m.top + ")");
     };
-    that.append_svg = append_svg;
+    that.setup_plot = setup_plot;
+
+    append_plot = function (sel) {
+        return sel.append("svg").append("g");
+    };
+    that.append_plot = append_plot;
 
     scroll_top = function () {
         window.scrollTo(window.scrollX, 0);

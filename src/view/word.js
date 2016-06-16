@@ -59,7 +59,10 @@ view.word = function (p) {
     spec.h = VIS.word_view.row_height * (p.topics.length + 1);
 
     row_height = VIS.word_view.row_height;
-    svg = view.plot_svg("#word_view_main", spec);
+    svg = d3.select("#word_view_main").selectAll("svg")
+        .data([1]);
+    svg.enter().call(view.append_plot);
+    svg = view.setup_plot(svg, spec);
     width = Math.max(spec.w, VIS.word_view.w); // set a min. width for coord sys
 
     scale_x = d3.scale.linear()
@@ -135,7 +138,8 @@ view.word = function (p) {
                 return {
                     word: w,
                     y: -row_height / 2 -
-                        (ws.length / 2 - k - 1) * VIS.word_view.topic_label_leading
+                        (ws.length / 2 - k - 1) *
+                        VIS.word_view.topic_label_leading
                 };
             }); 
         }, function (w, j) { return w.word + String(j); });
