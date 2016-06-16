@@ -472,13 +472,16 @@ model_view_plot = function (type) {
 
 model_view_conditional = function (type) {
     var p = {
-        type: type,
         key: my.m.meta_condition(my.condition),
         condition_type: VIS.condition.type,
         condition_name: my.condition_name,
         streamgraph: VIS.model_view.conditional.streamgraph,
         signature: data_signature()
     };
+
+    // choose raw / fractional type of view and remember for next time
+    p.raw = type ? (type === "raw") : VIS.last.model_conditional; 
+    VIS.last.model_conditional = p.raw;
 
     view.calculating("#model_view_conditional", true);
     my.m.conditional_total(my.condition, undefined, function (totals) {

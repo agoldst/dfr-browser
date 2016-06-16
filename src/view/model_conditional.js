@@ -2,11 +2,8 @@
 "use strict";
 
 view.model.conditional = function (p) {
-    var raw = p.type ? (p.type === "raw") : VIS.last.model_conditional,
-        streamgraph = p.streamgraph && p.condition_type !== "ordinal",
+    var streamgraph = p.streamgraph && p.condition_type !== "ordinal",
         data = this.conditional.data;
-
-    VIS.last.model_conditional = raw;
 
     // recalculate and cache data if needed
     if (!data || data.signature !== p.signature
@@ -25,17 +22,17 @@ view.model.conditional = function (p) {
     view.model.conditional_plot({
         condition_type: p.condition_type,
         condition_name: p.condition_name,
-        data: data[raw ? "raw" : "frac"],
+        data: data[p.raw ? "raw" : "frac"],
         domain_x: data.domain_x,
-        domain_y: data[raw ? "domain_raw" : "domain_frac"],
+        domain_y: data[p.raw ? "domain_raw" : "domain_frac"],
         order: data.order,
         spec: VIS.model_view.conditional,
-        raw: raw,
+        raw: p.raw,
         selector: "#model_view_conditional"
     });
 
     d3.selectAll("#conditional_choice li").classed("active", false);
-    d3.select(raw ? "#nav_model_conditional_raw"
+    d3.select(p.raw ? "#nav_model_conditional_raw"
             : "#nav_model_conditional_frac")
         .classed("active", true);
 };
