@@ -760,8 +760,7 @@ load = function () {
             // finish initializing VIS by loading any preferences
             // stashed in model info
 
-            VIS.update(my.m.info().VIS);
-
+            utils.deep_replace(VIS, my.m.info().VIS);
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }

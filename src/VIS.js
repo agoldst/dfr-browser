@@ -168,9 +168,6 @@ var VIS = {
     resize_refresh_delay: 100, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
     show_hidden_topics: false,
-    annotes: [],            // list of CSS classes annotating the current view
-    update: function (x) {
-        return utils.deep_replace(this, x);
-    }
+    annotes: []            // list of CSS classes annotating the current view
 };
 
