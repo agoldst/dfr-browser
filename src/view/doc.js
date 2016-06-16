@@ -68,7 +68,7 @@ view.doc = function (p) {
         enter: trs_enter,
         w: function (t) { return t.weight / total_tokens; },
         frac: function (t) {
-            return VIS.percent_format(t.weight / total_tokens);
+            return d3.format(VIS.percent_format)(t.weight / total_tokens);
         },
         raw: p.proper ? undefined : function (t) { return t.weight; }
     });

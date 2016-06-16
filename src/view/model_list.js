@@ -81,7 +81,9 @@ view.model.list = function (p) {
         sel: trs,
         enter: trs_enter,
         w: function (t) { return p.sums[t.t] / token_max; },
-        frac: function (t) { return VIS.percent_format(p.sums[t.t] / total); }
+        frac: function (t) {
+            return d3.format(VIS.percent_format)(p.sums[t.t] / total);
+        }
     });
     
     // sorting

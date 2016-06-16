@@ -107,7 +107,9 @@ view.topic.docs = function (p) {
         sel: trs,
         enter: trs_enter,
         w: function (d) { return d.frac; },
-        frac: function (d) { return VIS.percent_format(d.frac); },
+        frac: function (d) {
+            return d3.format(VIS.percent_format)(d.frac);
+        },
         raw: p.proper ? undefined : function (d) { return d.weight; }
     });
 };
@@ -259,7 +261,7 @@ view.topic.conditional_barplot = function (param) {
                 } else { // y axis
                     ax.tickSize(-spec.w)
                         .outerTickSize(0)
-                        .tickFormat(VIS.percent_format)
+                        .tickFormat(d3.format(VIS.percent_format))
                         .tickPadding(tick_padding)
                         .ticks(spec.ticks_y);
                 }
