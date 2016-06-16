@@ -11,6 +11,7 @@ var view = (function () {
         warning,
         tooltip,
         frame,
+        update_annotations,
         weight_tds,
         setup_plot,
         append_plot,
@@ -107,6 +108,18 @@ var view = (function () {
     };
     that.frame = frame;
 
+    update_annotations = function (v, param) {
+        var j, cs = ["." + v];
+        d3.selectAll(".annote").classed("hidden", true);
+        for (j = 0; j < param.length; j += 1) {
+            cs.push(cs[j] + "_" + param[j]);
+        }
+        cs.forEach(function (c) {
+            d3.selectAll(".annote" + c).classed("hidden", false);
+        });
+    };
+    that.update_annotations = update_annotations;
+
     // add columns to a table corresponding to weights
     // p.sel: table row selection with data bound
     // p.enter: entering table rows
@@ -130,7 +143,7 @@ var view = (function () {
                 });
         }
 
-        if (p.frac) { 
+        if (p.frac) {
             p.enter.append("td")
                 .classed("td-right", true)
                 .classed("weight-percent", true);
@@ -138,7 +151,7 @@ var view = (function () {
                 .text(p.frac);
         }
 
-        if (p.raw) { 
+        if (p.raw) {
             p.enter.append("td")
                 .classed("td-right", true)
                 .classed("weight-raw", true);

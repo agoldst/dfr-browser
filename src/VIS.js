@@ -167,7 +167,6 @@ var VIS = {
     percent_format: ".1%",  // d3.format for percentages
     resize_refresh_delay: 100, // ms
     hidden_topics: [],      // list of 1-based topic numbers to suppress
-    show_hidden_topics: false,
-    annotes: []            // list of CSS classes annotating the current view
+    show_hidden_topics: false
 };
 

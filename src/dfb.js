@@ -126,8 +126,7 @@ my.views.set("topic", function (t_user, y) {
     }
 
     view.loading(false);
-    return true;
-    // (later: nearby topics by J-S div or cor on log probs)
+    return (y === undefined) ? [t_user] : [t_user, y];
 });
 
 my.views.set("word", function (w) {
@@ -191,7 +190,8 @@ my.views.set("word", function (w) {
         }),
         updating: my.updating
     });
-    return true;
+
+    return word ? [word] : [];
 });
 
 my.views.set("words", function () {
@@ -269,7 +269,7 @@ my.views.set("doc", function (d) {
         hide_topics();
     });
 
-    return true;
+    return [doc];
 
     // TODO nearby documents list
 });
@@ -330,7 +330,7 @@ my.views.set("bib", function (maj, min, dir) {
     });
 
     view.loading(false);
-    return true;
+    return [sorting.major, sorting.minor, sorting.dir];
 });
 
 my.views.set("about", function () {
@@ -425,7 +425,9 @@ my.views.set("model", function (type, p1, p2) {
     d3.selectAll(".model_view_" + type_chosen).classed("hidden", false);
 
     view.loading(false);
-    return true;
+    // TODO should in principle also return chosen subview parameters,
+    // but it's hard to imagine annotating #/model/list/frac/down...
+    return [type_chosen];
 });
 
 model_view_list = function (sort, dir) {
@@ -529,8 +531,7 @@ model_view_conditional = function (type) {
 refresh = function () {
     var hash = window.location.hash,
         view_parsed, v_chosen, param,
-        success = false,
-        j;
+        success = false;
 
     if (my.aliases) {
         my.aliases.forEach(function (pat, repl) {
@@ -561,32 +562,20 @@ refresh = function () {
     }
 
     if (success) {
-        // TODO get all view functions to report on the chosen view with this
-        // mechanism, then make less kludgy
-        if (typeof success === "string") {
-            param = [undefined].concat(success.split("/"));
-        }
-
-        VIS.annotes.forEach(function (c) {
-            d3.selectAll(c).classed("hidden", true);
-        });
-        VIS.annotes = [".view_" + v_chosen];
-        for (j = 1; j < param.length; j += 1) {
-            VIS.annotes[j] = VIS.annotes[j - 1] + "_" + param[j];
-        }
-        VIS.annotes.forEach(function (c) {
-            d3.selectAll(c).classed("hidden", false);
-        });
+        param = Array.isArray(success) ? success : [];
     } else if (my.last.view !== undefined) {
         // if we have a last view, render it again
         v_chosen = my.last.view;
+        param = [];
         my.views.get(v_chosen).apply(that, param);
     } else {
         // otherwise fall back on default view
         v_chosen = my.default_view[1];
-        my.views.get("default")();
-        // TODO and register the correct annotations
+        param = my.default_view.slice(2, my.default_view.length);
+        my.views.get("default").apply(that, param);
     }
+
+    view.update_annotations(v_chosen, param);
 
     if (!my.updating) {
         view.scroll_top();
