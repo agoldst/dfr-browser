@@ -35,6 +35,12 @@ var dfb = function (spec) {
 
     // set up view routing table
     my.views = d3.map();
+    // record of previous state
+    my.last = {
+        // view: undefined // until we actually succeed in rendering a view
+        bib: { },
+        model_list: { }
+    };
 
 // Principal view-generating functions
 // -----------------------------------
@@ -137,8 +143,8 @@ my.views.set("word", function (w) {
         div.select("#word_view_help").classed("hidden", true);
     } else {
         div.select("#word_view_help").classed("hidden", false);
-        if (VIS.last.word) {
-            word = VIS.last.word; // fall back to last word if available
+        if (my.last.word) {
+            word = my.last.word; // fall back to last word if available
             div.select("a#last_word")
                 .attr("href", "#/word/" + word)
                 .text(document.URL.replace(/#.*$/, "") + "#/word/" + word);
@@ -151,8 +157,8 @@ my.views.set("word", function (w) {
     }
     div.select("#word_view_main").classed("hidden", false);
 
-    my.updating = word === VIS.last.word;
-    VIS.last.word = word;
+    my.updating = word === my.last.word;
+    my.last.word = word;
 
     topics = my.m.word_topics(word).filter(function (t) {
         return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
@@ -219,20 +225,20 @@ my.views.set("doc", function (d) {
         d3.select("#doc_view_help").classed("hidden", false);
 
         // if doc is un- or misspecified and there is no last doc, bail
-        if (VIS.last.doc === undefined) {
+        if (my.last.doc === undefined) {
             d3.select("#doc_view_main").classed("hidden", true);
             return true;
         }
 
         // otherwise, fall back to last doc if none entered
-        doc = VIS.last.doc;
+        doc = my.last.doc;
         div.select("a#last_doc")
             .attr("href", "#/doc/" + doc)
             .text(document.URL.replace(/#.*$/, "") + "#/doc/" + doc);
         div.select("#last_doc_help").classed("hidden", false);
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
-        VIS.last.doc = doc;
+        my.last.doc = doc;
     }
     d3.select("#doc_view_main").classed("hidden", false);
 
@@ -284,19 +290,19 @@ my.views.set("bib", function (maj, min, dir) {
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
         if (sorting.major === undefined) {
-            sorting.minor = VIS.last.bib.minor || VIS.bib_view.minor;
+            sorting.minor = my.last.bib.minor || VIS.bib_view.minor;
         } else  {
             sorting.minor = VIS.bib_view.minor;
         }
     }
     if (sorting.major === undefined) {
-        sorting.major = VIS.last.bib.major || VIS.bib_view.major;
+        sorting.major = my.last.bib.major || VIS.bib_view.major;
     }
     if (sorting.dir === undefined) {
-        sorting.dir = VIS.last.bib.dir || VIS.bib_view.dir;
+        sorting.dir = my.last.bib.dir || VIS.bib_view.dir;
     }
 
-    VIS.last.bib = sorting;
+    my.last.bib = sorting;
 
     sorting.docs = my.m.meta();
     ordering = my.bib.sort({
@@ -352,7 +358,7 @@ settings_modal = function () {
 that.settings_modal = settings_modal;
 
 my.views.set("model", function (type, p1, p2) {
-    var type_chosen = type || VIS.last.model || "grid";
+    var type_chosen = type || my.last.model || "grid";
 
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
@@ -412,7 +418,7 @@ my.views.set("model", function (type, p1, p2) {
         model_view_plot(type_chosen);
         d3.select("#model_view_plot").classed("hidden", false);
     }
-    VIS.last.model = type_chosen;
+    my.last.model = type_chosen;
     // reveal interface elements
     d3.selectAll(".model_view_" + type_chosen).classed("hidden", false);
 
@@ -425,16 +431,12 @@ model_view_list = function (sort, dir) {
 
     view.calculating("#model_view_list", true);
 
-    if (!VIS.last.model_list) {
-        VIS.last.model_list = { };
-    }
-
-    sort_choice = sort || VIS.last.model_list.sort || "topic";
-    sort_dir = dir || ((sort_choice === VIS.last.model_list.sort) ?
-        VIS.last.model_list.dir : "up") || "up";
+    sort_choice = sort || my.last.model_list.sort || "topic";
+    sort_dir = dir || ((sort_choice === my.last.model_list.sort) ?
+        my.last.model_list.dir : "up") || "up";
     // remember for the next time we visit #/model/list
-    VIS.last.model_list.sort = sort_choice;
-    VIS.last.model_list.dir = sort_dir;
+    my.last.model_list.sort = sort_choice;
+    my.last.model_list.dir = sort_dir;
 
     my.m.topic_total(undefined, function (sums) {
         my.m.topic_conditional(undefined, my.condition, function (data) {
@@ -493,8 +495,8 @@ model_view_conditional = function (type) {
     };
 
     // choose raw / fractional type of view and remember for next time
-    p.raw = type ? (type === "raw") : VIS.last.model_conditional; 
-    VIS.last.model_conditional = p.raw;
+    p.raw = type ? (type === "raw") : my.last.model_conditional;
+    my.last.model_conditional = p.raw;
 
     view.calculating("#model_view_conditional", true);
     my.m.conditional_total(my.condition, undefined, function (totals) {
@@ -544,10 +546,10 @@ refresh = function () {
     v_chosen = view_parsed[1];
     // are we updating a view or changing to a different one?
     my.updating = false;
-    if (my.cur_view) {
-        my.updating = v_chosen === my.cur_view;
+    if (my.last.view) {
+        my.updating = v_chosen === my.last.view;
         if (!my.updating) {
-            d3.select("#" + my.cur_view + "_view").classed("hidden", true);
+            d3.select("#" + my.last.view + "_view").classed("hidden", true);
         }
     }
 
@@ -562,7 +564,6 @@ refresh = function () {
         if (typeof success === "string") {
             param = [undefined].concat(success.split("/"));
         }
-        my.cur_view = v_chosen;
 
         VIS.annotes.forEach(function (c) {
             d3.selectAll(c).classed("hidden", true);
@@ -574,12 +575,14 @@ refresh = function () {
         VIS.annotes.forEach(function (c) {
             d3.selectAll(c).classed("hidden", false);
         });
+    } else if (my.last.view !== undefined) {
+        // if we have a last view, render it again
+        v_chosen = my.last.view;
+        my.views.get(v_chosen).apply(that, param);
     } else {
-        if (my.cur_view === undefined) {
-            // fall back on default view
-            my.cur_view = my.default_view[1];
-            my.views.get("default")();
-        }
+        // otherwise fall back on default view
+        v_chosen = my.default_view[1];
+        my.views.get("default")();
         // TODO and register the correct annotations
     }
 
@@ -590,7 +593,7 @@ refresh = function () {
     // asynchronous rendering this isn't perfect)
     hide_topics();
 
-    d3.select("#" + my.cur_view + "_view").classed("hidden", false);
+    d3.select("#" + v_chosen + "_view").classed("hidden", false);
 
     // ensure highlighting of nav link
     d3.selectAll("#nav_main > li.active").classed("active", false);
@@ -601,6 +604,9 @@ refresh = function () {
         .classed("hidden", true);
     d3.selectAll("#nav_main li.active > .nav")
         .classed("hidden", false);
+
+    // remember state
+    my.last.view = v_chosen;
 };
 that.refresh = refresh;
 

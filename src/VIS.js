@@ -3,9 +3,6 @@
 
 // declaration of global object (modified by browser().load())
 var VIS = {
-    last: { // which subviews last shown?
-        bib: { }
-    },
     files: { // what data files to request
         info: "data/info.json",
         meta: "data/meta.csv.zip",  // remove .zip to use uncompressed data
