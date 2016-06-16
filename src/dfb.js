@@ -41,6 +41,8 @@ var dfb = function (spec) {
         bib: { },
         model_list: { }
     };
+    // stores a boolean indicating whether a given topic is currently hidden
+    my.topic_hidden = [ ];
 
 // Principal view-generating functions
 // -----------------------------------
@@ -161,7 +163,7 @@ my.views.set("word", function (w) {
     my.last.word = word;
 
     topics = my.m.word_topics(word).filter(function (t) {
-        return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+        return !my.topic_hidden[t.topic] || VIS.show_hidden_topics;
     });
 
     if (topics.length > 0) {
@@ -202,7 +204,7 @@ my.views.set("words", function () {
 
     if (!VIS.show_hidden_topics) {
         ts = d3.range(my.m.n())
-            .filter(function (t) { return !VIS.topic_hidden[t]; });
+            .filter(function (t) { return !my.topic_hidden[t]; });
     }
     // if we are revealing hidden topics, ts can be undefined
     // and m.vocab(ts) will return the full vocab.
@@ -245,7 +247,7 @@ my.views.set("doc", function (d) {
     view.calculating("#doc_view", true);
     my.m.doc_topics(doc, my.m.n(), function (ts) {
         var topics = ts.filter(function (t) {
-            return !VIS.topic_hidden[t.topic] || VIS.show_hidden_topics;
+            return !my.topic_hidden[t.topic] || VIS.show_hidden_topics;
         });
 
         view.calculating("#doc_view", false);
@@ -451,7 +453,7 @@ model_view_list = function (sort, dir) {
                 sort: sort_choice,
                 dir: sort_dir,
                 labels: d3.range(my.m.n()).map(my.m.topic_label),
-                topic_hidden: VIS.topic_hidden
+                topic_hidden: my.topic_hidden
             });
 
             hide_topics();
@@ -465,7 +467,7 @@ model_view_plot = function (type) {
     my.m.topic_total(undefined, function (totals) {
         var topics = d3.range(my.m.n());
         if (!VIS.show_hidden_topics) {
-            topics = topics.filter(function (t) { return !VIS.topic_hidden[t]; });
+            topics = topics.filter(function (t) { return !my.topic_hidden[t]; });
         }
 
         view.model.plot({
@@ -513,7 +515,7 @@ model_view_conditional = function (type) {
             })
                 .filter(function (topic) {
                     return VIS.show_hidden_topics
-                        || !VIS.topic_hidden[topic.t];
+                        || !my.topic_hidden[topic.t];
                 });
 
             view.model.conditional(p);
@@ -834,7 +836,7 @@ load = function () {
                 my.m.set_tw(tw_s);
 
                 // set up list of visible topics
-                VIS.topic_hidden = d3.range(my.m.n()).map(function (t) {
+                my.topic_hidden = d3.range(my.m.n()).map(function (t) {
                     return VIS.hidden_topics.indexOf(t + 1) !== -1;
                 });
 
@@ -843,7 +845,7 @@ load = function () {
                         topic: t,
                         words: my.m.topic_words(t, VIS.model_view.words),
                         label: my.m.topic_label(t),
-                        hidden: VIS.topic_hidden[t]
+                        hidden: my.topic_hidden[t]
                     };
                 }));
 
