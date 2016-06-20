@@ -41,15 +41,16 @@ var utils = (function () {
     //
     // x: the original
     // repl: the source of replacements
+    // mask: add new properties from replacement not in original?
 
-    deep_replace = function (x, repl) {
+    deep_replace = function (x, repl, mask) {
         var prop, result = x;
         if (repl === undefined) {
-            return x;
+            return result;
         }
 
         if (x === undefined) {
-            return repl;
+            return mask ? undefined : repl;
         }
 
         // we get errors if we treat arrays like ordinary objects
@@ -63,8 +64,9 @@ var utils = (function () {
             }
             for (prop in repl) {
                 if (repl.hasOwnProperty(prop)
-                        && typeof repl[prop] !== 'function') {
-                    result[prop] = deep_replace(x[prop], repl[prop]);
+                        && typeof repl[prop] !== 'function'
+                        && (!mask || x.hasOwnProperty(prop))) {
+                    result[prop] = deep_replace(x[prop], repl[prop], mask);
                 }
             }
         } else if (typeof repl !== 'function') {
