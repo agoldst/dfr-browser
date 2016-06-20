@@ -1120,7 +1120,7 @@ load_tw = function (f) {
     });
 };
 
-load_topic_scaled = function () {
+load_topic_scaled = function (f) {
     var callback = function () {
         // if scaled missing, gray out the button for the view
         d3.select("#nav_model_scaled")
@@ -1136,7 +1136,7 @@ load_topic_scaled = function () {
         return;
     }
 
-    load_data(VIS.files.topic_scaled, function (error, s) {
+    load_data(f, function (error, s) {
         if (typeof s === 'string') {
             my.m.set_topic_scaled(s);
         } else {
