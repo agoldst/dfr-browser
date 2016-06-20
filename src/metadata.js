@@ -16,6 +16,7 @@ var metadata = function (spec) {
     var my = spec || { },
         that = { },
         from_string,
+        bib,
         date_field,
         doc,
         n_docs,
@@ -39,6 +40,14 @@ var metadata = function (spec) {
         }
     };
     that.from_string = from_string;
+
+    bib = function (b) {
+        if (typeof b === "object") {
+            my.bib = b;
+        }
+        return my.bib;
+    };
+    that.bib = bib;
 
     date_field = function (key) {
         if (typeof key === "string") {
