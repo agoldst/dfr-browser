@@ -959,7 +959,10 @@ load_model = function (id, vis) {
     }
 
     // default filename
-    basename = "data" + (id === "__SINGLE__") ? "/" : id + "/";
+    basename = "data/";
+    if (id !== "__SINGLE__") {
+        basename += id + "/";
+    }
 
     load_info(files.info || basename + "info.json", vis);
     load_meta(files.meta || basename + "meta.csv.zip");
