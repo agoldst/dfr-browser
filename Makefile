@@ -24,7 +24,8 @@ dfb_files := index.html $(dfbjs) $(minified) \
     $(css) $(lib) fonts/
 
 lint:
-	jslint --regexp --todo --white --browser --bitwise $(src) $(src_skip)
+	jslint --regexp --todo --white --browser --bitwise --unparam \
+	    $(src) $(src_skip)
 
 uglify: $(dfbjs) $(minified)
 
