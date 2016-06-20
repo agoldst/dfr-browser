@@ -112,7 +112,10 @@ view.model.plot = function (param) {
             })
             .on("click", function (p) {
                 if (!d3.event.shiftKey) {
-                    view.dfb().set_view(view.topic.hash(p.t));
+                    view.dfb().set_view({
+                        type: "topic",
+                        param: p.t
+                    });
                 }
             })
             .on("mouseover", function (p) {
@@ -255,11 +258,11 @@ view.model.plot = function (param) {
             .y(scale_y)
             .scaleExtent([1, 10])
             .on("zoom", function () {
-                if (VIS.zoom_transition) {
+                if (view.model.plot.zoom_transition) {
                     gs.transition()
                         .duration(1000)
                         .attr("transform", translation);
-                    VIS.zoom_transition = false;
+                    view.model.plot.zoom_transition = false;
                 } else {
                     gs.attr("transform", translation);
                 }
@@ -268,7 +271,7 @@ view.model.plot = function (param) {
         // zoom reset button
         d3.select("button#reset_zoom")
             .on("click", function () {
-                VIS.zoom_transition = true;
+                view.model.plot.zoom_transition = true;
                 zoom.translate([0, 0])
                     .scale(1)
                     .event(svg);

@@ -23,7 +23,10 @@ view.topic.words = function (words) {
     trs.exit().remove();
 
     trs.on("click", function (w) {
-        view.dfb().set_view("/word/" + w.word);
+        view.dfb().set_view({
+            type: "word",
+            param: w.word
+        });
     });
 
     trs_enter.append("td").classed("topic_word", true)
@@ -31,7 +34,7 @@ view.topic.words = function (words) {
 
     trs.select("td.topic_word a")
         .attr("href", function (w) {
-            return "#/word/" + w.word;
+            return view.dfb().view_link({ type:"word", param: + w.word });
         })
         .text(function (w) { return w.word; });
 
@@ -59,7 +62,10 @@ view.topic.docs = function (p) {
             .on("click", function () {
                 d3.select(".selected_condition")
                     .classed("selected_condition", false);
-                view.dfb().set_view(view.topic.hash(p.t));
+                view.dfb().set_view({
+                    type: "topic",
+                    param: p.t
+                });
             })
             .classed("hidden", false);
 
@@ -100,7 +106,7 @@ view.topic.docs = function (p) {
         });
 
     trs.on("click", function (d) {
-        view.dfb().set_view("/doc/" + d.doc);
+        view.dfb().set_view({ type: "doc", param: d.doc });
     });
 
     view.weight_tds({
@@ -385,7 +391,10 @@ view.topic.conditional_barplot = function (param) {
                     d3.select(this.parentNode)
                         .classed("selected_condition", false);
                     view.tooltip().text(tip_text(d));
-                    view.dfb().set_view(view.topic.hash(param.t));
+                    view.dfb().set_view({
+                        type: "topic",
+                        param: param.t
+                    });
                 } else {
                     // TODO selection of multiple conditions
                     // should use a brush http://bl.ocks.org/mbostock/6232537
@@ -394,9 +403,10 @@ view.topic.conditional_barplot = function (param) {
                     d3.select(this.parentNode)
                         .classed("selected_condition", true);
                     view.tooltip().text(tip_text(d));
-                    view.dfb().set_view(
-                        view.topic.hash(param.t) + "/" + d.key
-                    );
+                    view.dfb().set_view({
+                        type: "topic",
+                        param: [param.t, d.key]
+                    });
                 }
             });
     }
@@ -414,7 +424,7 @@ view.topic.sort_name = function (label) {
     return label.replace(/^(the|a|an) /i, "").toLowerCase();
 };
 
-view.topic.dropdown = function (topics) {
+view.topic.dropdown = function (p) {
     var lis;
     // Set up topic menu: remove loading message
     d3.select("ul#topic_dropdown").selectAll("li.loading_message").remove();
@@ -422,20 +432,25 @@ view.topic.dropdown = function (topics) {
     // Add menu items
     lis = d3.select("ul#topic_dropdown")
         .selectAll("li")
-        .data(topics, function (t) {
+        .data(p.topics, function (t) {
             return t.topic;
         });
 
-    lis.enter().append("li").append("a")
+    lis.enter().append("li").append("a");
+    lis.exit().remove();
+    lis.select("a")
         .text(function (t) {
             var words = t.words
-                .slice(0, VIS.overview_words)
+                .slice(0, p.overview_words)
                 .map(function (w) { return w.word; })
                 .join(" ");
             return t.label + ": " + words;
         })
         .attr("href", function (t) {
-            return view.topic.link(t.topic);
+            return view.dfb().view_link({
+                type: "topic",
+                param: t.topic
+            });
         });
     lis.sort(function (a, b) {
         return d3.ascending(view.topic.sort_name(a.label),
@@ -446,14 +461,3 @@ view.topic.dropdown = function (topics) {
         return t.hidden;
     });
 };
-
-// Here we encode the fact that user-facing topic-view links use the 1-based
-// topic index. dfb().topic_view() also expects the 1-based index.
-view.topic.link = function (t) {
-    return "#" + view.topic.hash(t);
-};
-
-view.topic.hash = function (t) {
-    return "/topic/" + String(t + 1);
-};
-

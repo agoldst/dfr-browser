@@ -5,24 +5,27 @@ var dfb = function (spec) {
     var my = spec || { },
         that = { },
         settings_modal,
+        update_settings,
         model_view_list, // helper functions for model subviews
         model_view_plot,
         model_view_conditional,
         refresh,
-        set_view,
+        set_view,       // public methods:  for changing views
+        view_hash,      //                  for getting a link to a view
+        view_link,
+        switch_model,   //                  for switching models
+        parse_hash,
         hide_topics,
         data_signature,
         setup_listeners, // initialization
         setup_views,
-        load_data,
-        load;
+        load_data,      // data-loading utilities
+        load_model,
+        load_info, load_dt, load_tw, load_meta, load_topic_scaled,
+        load;           // public method for starting the whole thing
 
-    // Constructor: call constructors for model
-    my.m = model();
-    // no need to globally expose the model, but handy for debugging
-    // __DEV_ONLY__
-    // VIS.m = my.m;
-    // __END_DEV_ONLY__
+    // set up model storage
+    my.ms = d3.map();
 
     // and tell view who we are
     if (view.dfb() === undefined) {
@@ -41,18 +44,30 @@ var dfb = function (spec) {
         bib: { },
         model_list: { }
     };
-    // stores a boolean indicating whether a given topic is currently hidden
-    my.topic_hidden = [ ];
+    // set up data cache. Components:
+    // topic_hidden array
+    // citations array
+    my.cache = { };
+    // settings which the user change: a subset of VIS which should not change
+    // when we switch models
+    // TODO make less ugly?
+    my.settings = {
+        overview_words: 0,
+        show_hidden_topics: false,
+        topic_view: { words: 0, docs: 0 },
+        model_view: { conditional: { streamgraph: true } }
+    };
 
 // Principal view-generating functions
 // -----------------------------------
 
 my.views.set("topic", function (t_user, y) {
     var words,
+        // TODO option to access topics by label
         t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
         view_top_docs;
 
-    if (!my.m.meta() || !my.m.has_dt() || !my.m.tw()) {
+    if (!my.m.ready("meta") || !my.m.ready("dt") || !my.m.ready("tw")) {
         // not ready yet; show loading message
         view.loading(true);
         return true;
@@ -66,7 +81,7 @@ my.views.set("topic", function (t_user, y) {
         return true;
     }
 
-    words = utils.shorten(my.m.topic_words(t), VIS.topic_view.words);
+    words = utils.shorten(my.m.topic_words(t), my.settings.topic_view.words);
 
     view.topic({
         t: t,
@@ -104,7 +119,7 @@ my.views.set("topic", function (t_user, y) {
             t: t,
             docs: docs,
             citations: docs.map(function (d) {
-                return my.bib.citation(my.m.meta(d.doc));
+                return my.m.bib().citation(my.m.meta(d.doc));
             }),
             condition: y,
             type: VIS.condition.type,
@@ -116,13 +131,13 @@ my.views.set("topic", function (t_user, y) {
 
     // if no condition given, show unconditional top docs
     if (y === undefined) {
-        my.m.topic_docs(t, VIS.topic_view.docs, view_top_docs);
+        my.m.topic_docs(t, my.settings.topic_view.docs, view_top_docs);
     } else {
         // otherwise, ask for list conditional on y
         // N.B. an invalid condition will yield no docs
         // (and a message will show to that effect)
-        my.m.topic_docs_conditional(t, my.condition, y, VIS.topic_view.docs,
-            view_top_docs);
+        my.m.topic_docs_conditional(t, my.condition, y,
+                my.settings.topic_view.docs, view_top_docs);
     }
 
     view.loading(false);
@@ -131,10 +146,11 @@ my.views.set("topic", function (t_user, y) {
 
 my.views.set("word", function (w) {
     var div = d3.select("div#word_view"),
+        h,
         word = w,
         topics, n = 0;
 
-    if (!my.m.tw()) {
+    if (!my.m.ready("tw")) {
         view.loading(true);
         return true;
     }
@@ -146,9 +162,10 @@ my.views.set("word", function (w) {
         div.select("#word_view_help").classed("hidden", false);
         if (my.last.word) {
             word = my.last.word; // fall back to last word if available
+            h = view_link({ type: "word", param: word });
             div.select("a#last_word")
-                .attr("href", "#/word/" + word)
-                .text(document.URL.replace(/#.*$/, "") + "#/word/" + word);
+                .attr("href", h)
+                .text(document.URL.replace(/#.*$/, "") + h);
             div.select("#last_word_help").classed("hidden", false);
         } else {
             div.select("#word_view_main").classed("hidden", true);
@@ -162,14 +179,15 @@ my.views.set("word", function (w) {
     my.last.word = word;
 
     topics = my.m.word_topics(word).filter(function (t) {
-        return !my.topic_hidden[t.topic] || VIS.show_hidden_topics;
+        return !my.cache.topic_hidden[t.topic]
+            || my.settings.show_hidden_topics;
     });
 
     if (topics.length > 0) {
         n = 1 + d3.max(topics, function (t) {
             return t.rank; // 0-based, so we rank + 1
         });
-        // now figure out how many words per row, taking account of possible ties
+        // count words per row, taking account of possible ties
         n = d3.max(topics, function (t) {
             return my.m.topic_words(t.topic, n).length;
         });
@@ -196,15 +214,15 @@ my.views.set("word", function (w) {
 
 my.views.set("words", function () {
     var ts;
-    if (!my.m.tw()) {
+    if (!my.m.ready("tw")) {
         view.loading(true);
         return true;
     }
     view.loading(false);
 
-    if (!VIS.show_hidden_topics) {
+    if (!my.settings.show_hidden_topics) {
         ts = d3.range(my.m.n())
-            .filter(function (t) { return !my.topic_hidden[t]; });
+            .filter(function (t) { return !my.cache.topic_hidden[t]; });
     }
     // if we are revealing hidden topics, ts can be undefined
     // and m.vocab(ts) will return the full vocab.
@@ -214,9 +232,11 @@ my.views.set("words", function () {
 
 my.views.set("doc", function (d) {
     var div = d3.select("div#doc_view"),
-        doc = +d;
+        doc = +d,
+        h;
+    // TODO need option to refer to docs by an arbitrary id, not just index
 
-    if (!my.m.meta() || !my.m.has_dt() || !my.m.tw()) {
+    if (!my.m.ready("meta") || !my.m.ready("dt") || !my.m.ready("tw")) {
         view.loading(true);
         return true;
     }
@@ -234,9 +254,10 @@ my.views.set("doc", function (d) {
 
         // otherwise, fall back to last doc if none entered
         doc = my.last.doc;
+        h = view_link({ type: "doc", param: doc });
         div.select("a#last_doc")
-            .attr("href", "#/doc/" + doc)
-            .text(document.URL.replace(/#.*$/, "") + "#/doc/" + doc);
+            .attr("href", h)
+            .text(document.URL.replace(/#.*$/, "") + h);
         div.select("#last_doc_help").classed("hidden", false);
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
@@ -247,18 +268,19 @@ my.views.set("doc", function (d) {
     view.calculating("#doc_view", true);
     my.m.doc_topics(doc, my.m.n(), function (ts) {
         var topics = ts.filter(function (t) {
-            return !my.topic_hidden[t.topic] || VIS.show_hidden_topics;
+            return !my.cache.topic_hidden[t.topic]
+                || my.settings.show_hidden_topics;
         });
 
         view.calculating("#doc_view", false);
 
         view.doc({
             topics: topics,
-            citation: my.bib.citation(my.m.meta(doc)),
-            url: my.bib.url(my.m.meta(doc)),
+            citation: my.m.bib().citation(my.m.meta(doc)),
+            url: my.m.bib().url(my.m.meta(doc)),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
-                return my.m.topic_words(t.topic, VIS.overview_words);
+                return my.m.topic_words(t.topic, my.settings.overview_words);
             }),
             labels: topics.map(function (t) {
                 return my.m.topic_label(t.topic);
@@ -282,12 +304,12 @@ my.views.set("bib", function (maj, min, dir) {
     },
         ordering;
 
-    if (!my.m.meta()) {
+    if (!my.m.ready("meta")) {
         view.loading(true);
         return true;
     }
 
-    sorting = my.bib.sort.validate(sorting);
+    sorting = my.m.bib().sort.validate(sorting);
     // it's not really clear how to respond to a URL like #/bib/year,
     // but we'll use the default minor sort in that case
     if (sorting.minor === undefined) {
@@ -307,26 +329,26 @@ my.views.set("bib", function (maj, min, dir) {
     my.last.bib = sorting;
 
     sorting.docs = my.m.meta();
-    ordering = my.bib.sort({
+    ordering = my.m.bib().sort({
         major: sorting.major,
         minor: sorting.minor,
-        dir: my.bib.sort.dir(sorting),
+        dir: my.m.bib().sort.dir(sorting),
         docs: my.m.meta()
     });
 
-    if (!my.citations) {
+    if (!my.cache.citations) {
         // Cache the list of citations
-        my.citations = my.m.meta().map(my.bib.citation);
+        my.cache.citations = my.m.meta().map(my.m.bib().citation);
     }
 
-    view.bib.dropdown(my.bib.sorting());
+    view.bib.dropdown(my.m.bib().sorting());
 
     view.bib({
         ordering: ordering,
         major: sorting.major,
         minor: sorting.minor,
         dir: sorting.dir,
-        citations: my.citations
+        citations: my.cache.citations
     });
 
     view.loading(false);
@@ -334,9 +356,10 @@ my.views.set("bib", function (maj, min, dir) {
 });
 
 my.views.set("about", function () {
-    view.about(my.m.info());
+    view.about({
+        meta_info: my.meta_info
+    });
     view.loading(false);
-    d3.select("#about_view").classed("hidden", false);
     return true;
 });
 
@@ -348,16 +371,27 @@ settings_modal = function () {
     if (p.max_words === undefined || p.max_docs === undefined) {
         return false;
     }
+    // validate current settings again maxima (in case a new model is on the
+    // scene with fewer words/docs than current setting)
+    my.settings.overview_words = Math.min(p.max_words,
+            my.settings.overview_words);
+    my.settings.topic_view.words = Math.min(p.max_words,
+            my.settings.topic_view.words);
+    my.settings.topic_view.docs = Math.min(p.max_docs,
+            my.settings.topic_view.docs);
 
-    if (!my.settings_ready) {
-        view.settings(p);
-        my.settings_ready = true;
-    }
+    p = utils.deep_replace(p, my.settings);
+    view.settings(p);
 
     $("#settings_modal").modal();
     return true;
 };
 that.settings_modal = settings_modal;
+
+update_settings = function (s) {
+    my.settings = utils.deep_replace(my.settings, s, true);
+};
+that.update_settings = update_settings;
 
 my.views.set("model", function (type, p1, p2) {
     var type_chosen = type || my.last.model || "grid";
@@ -365,7 +399,7 @@ my.views.set("model", function (type, p1, p2) {
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
     // but fall through to choosing the grid below
-    if (!my.m.tw() || !my.m.topic_scaled()) {
+    if (!my.m.ready("tw") || !my.m.ready("topic_scaled")) {
         view.loading(true);
         return true;
     }
@@ -388,7 +422,7 @@ my.views.set("model", function (type, p1, p2) {
     d3.select("#model_view nav").classed("hidden", false);
 
     if (type_chosen === "list") {
-        if (!my.m.meta() || !my.m.has_dt()) {
+        if (!my.m.ready("meta") || !my.m.ready("dt")) {
             view.loading(true);
             return true;
         }
@@ -396,7 +430,7 @@ my.views.set("model", function (type, p1, p2) {
         model_view_list(p1, p2);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "conditional") {
-        if (!my.m.meta() || !my.m.has_dt()) {
+        if (!my.m.ready("meta") || !my.m.ready("dt")) {
             view.loading(true);
             return true;
         }
@@ -406,7 +440,7 @@ my.views.set("model", function (type, p1, p2) {
     } else { // grid or scaled
         // if loading scaled coordinates failed,
         // we expect m.topic_scaled() to be defined but empty
-        if (!my.m.topic_scaled() || !my.m.has_dt()) {
+        if (!my.m.ready("topic_scaled") || !my.m.ready("dt")) {
             view.loading(true);
             return true;
         }
@@ -451,11 +485,12 @@ model_view_list = function (sort, dir) {
                 type: VIS.condition.type,
                 key: my.m.meta_condition(my.condition),
                 sums: sums,
-                words: my.m.topic_words(undefined, VIS.overview_words),
+                words: my.m.topic_words(undefined,
+                        my.settings.overview_words),
                 sort: sort_choice,
                 dir: sort_dir,
                 labels: d3.range(my.m.n()).map(my.m.topic_label),
-                topic_hidden: my.topic_hidden
+                topic_hidden: my.cache.topic_hidden || []
             });
 
             hide_topics();
@@ -468,8 +503,10 @@ model_view_list = function (sort, dir) {
 model_view_plot = function (type) {
     my.m.topic_total(undefined, function (totals) {
         var topics = d3.range(my.m.n());
-        if (!VIS.show_hidden_topics) {
-            topics = topics.filter(function (t) { return !my.topic_hidden[t]; });
+        if (!my.settings.show_hidden_topics && my.cache.topic_hidden) {
+            topics = topics.filter(function (t) {
+                return !my.cache.topic_hidden[t];
+            });
         }
 
         view.model.plot({
@@ -494,7 +531,7 @@ model_view_conditional = function (type) {
         key: my.m.meta_condition(my.condition),
         condition_type: VIS.condition.type,
         condition_name: my.condition_name,
-        streamgraph: VIS.model_view.conditional.streamgraph,
+        streamgraph: my.settings.model_view.conditional.streamgraph,
         signature: data_signature()
     };
 
@@ -516,8 +553,9 @@ model_view_conditional = function (type) {
                 };
             })
                 .filter(function (topic) {
-                    return VIS.show_hidden_topics
-                        || !my.topic_hidden[topic.t];
+                    return my.settings.show_hidden_topics
+                        || (my.cache.topic_hidden &&
+                                !my.cache.topic_hidden[topic.t]);
                 });
 
             view.model.conditional(p);
@@ -530,7 +568,7 @@ model_view_conditional = function (type) {
 
 refresh = function () {
     var hash = window.location.hash,
-        view_parsed, v_chosen, param,
+        v, type, param,
         success = false;
 
     if (my.aliases) {
@@ -539,43 +577,55 @@ refresh = function () {
         });
     }
 
-    view_parsed = hash.split("/");
+    v = parse_hash(hash);
 
-    // well-formed view must begin #/
-    if (view_parsed[0] !== "#") {
-        view_parsed = my.default_view;
+    // if view not well-formed, fall back to default
+    if (!v) {
+        // fall back to default
+        // hashchange -> queue refresh (NOT an interrupt)
+        set_view(my.default_view);
+        return;
     }
 
-    v_chosen = view_parsed[1];
     // are we updating a view or changing to a different one?
     my.updating = false;
-    if (my.last.view) {
-        my.updating = v_chosen === my.last.view;
-        if (!my.updating) {
-            d3.select("#" + my.last.view + "_view").classed("hidden", true);
+
+    // if we have multiple models, check if we need to change models
+    if (my.models.length > 1 && v.model) {
+        if (my.id && my.id !== v.model) {
+            load_model(v.model);
         }
     }
 
-    param = view_parsed.slice(2, view_parsed.length);
-    if (my.views.has(v_chosen)) {
-        success = my.views.get(v_chosen).apply(that, param);
+    type = v.type;
+    if (my.last.view) {
+        my.updating = type === my.last.view.type;
+        if (!my.updating) {
+            d3.select("#" + my.last.view.type + "_view")
+                .classed("hidden", true);
+        }
+    }
+
+    if (my.views.has(type)) {
+        success = my.views.get(type).apply(that, v.param);
     }
 
     if (success) {
         param = Array.isArray(success) ? success : [];
-    } else if (my.last.view !== undefined) {
+    } else if (my.last.view) {
         // if we have a last view, render it again
-        v_chosen = my.last.view;
-        param = [];
-        my.views.get(v_chosen).apply(that, param);
+        // TODO don't lose last view params
+        type = my.last.view.type;
+        param = my.last.view.param;
+        my.views.get(type).apply(that, param);
     } else {
         // otherwise fall back on default view
-        v_chosen = my.default_view[1];
-        param = my.default_view.slice(2, my.default_view.length);
-        my.views.get("default").apply(that, param);
+        // hashchange -> queue refresh (NOT an interrupt)
+        set_view(my.default_view);
+        return;
     }
 
-    view.update_annotations(v_chosen, param);
+    view.update_annotations(type, param);
 
     if (!my.updating) {
         view.scroll_top();
@@ -584,11 +634,11 @@ refresh = function () {
     // asynchronous rendering this isn't perfect)
     hide_topics();
 
-    d3.select("#" + v_chosen + "_view").classed("hidden", false);
+    d3.select("#" + type + "_view").classed("hidden", false);
 
     // ensure highlighting of nav link
     d3.selectAll("#nav_main > li.active").classed("active", false);
-    d3.select("li#nav_" + v_chosen).classed("active", true);
+    d3.select("li#nav_" + type).classed("active", true);
 
     // hide subnavs
     d3.selectAll("#nav_main li:not(.active) > .nav")
@@ -596,43 +646,115 @@ refresh = function () {
     d3.selectAll("#nav_main li.active > .nav")
         .classed("hidden", false);
 
-    // remember state
-    my.last.view = v_chosen;
+    // remember chosen view
+    my.last.view = { type: type, param: param };
 };
 that.refresh = refresh;
 
 // External objects can request a change in the view with this function,
 // which triggers the hashchange handler and thus a call to refresh()
 
-set_view = function (hash) {
-    window.location.hash = hash;
+set_view = function (v) {
+    window.location.hash = view_hash(v);
 };
 that.set_view = set_view;
 
+switch_model = function (id) {
+    var v = utils.clone(my.last.view);
+    v.model = id;
+    set_view(v);
+};
+that.switch_model = switch_model;
+
+view_link = function (v) {
+    return "#" + view_hash(v);
+};
+that.view_link = view_link;
+
+view_hash = function (v) {
+    var j, result = "";
+
+    if (my.models.length > 1) {
+        v.model = v.model || my.id;
+        result += "/" + v.model;
+    }
+
+    if (!v.type) {
+        return result;
+    }
+
+    result += "/" + v.type;
+
+    if (v.param !== undefined) {
+        // convenience: wrap scalar as single-element array
+        if (!Array.isArray(v.param)) {
+            v.param = [v.param];
+        }
+
+        if (v.param.length === 0) {
+            return result;
+        }
+
+        // special case for topic parameter: user-facing topic number is t + 1
+        result += "/";
+        result += (v.type === "topic")
+            ? String(+v.param[0] + 1)
+            : v.param[0];
+
+        for (j = 1; j < v.param.length; j += 1) {
+            result += "/" + v.param[j];
+        }
+    }
+    return result;
+};
+
+parse_hash = function (h) {
+    var result = { }, hh;
+    if (typeof h !== "string") {
+        return undefined;
+    }
+
+    hh = h.split("/");
+    if (hh.shift() !== "#") {
+        return undefined;
+    }
+    if (my.models.length > 1) {
+        result.model = hh.shift();
+        // special case: even with multiple models, let's accept URLs of the
+        // form #/view. N.B. thus model IDs can't be view names
+        if (my.views.has(result.model)) {
+            hh.unshift(result.model);
+            result.model = my.id;
+        }
+    }
+    result.type = hh.shift();
+    result.param = hh;
+    return result;
+};
+
 hide_topics = function (flg) {
-    var flag = (flg === undefined) ? !VIS.show_hidden_topics : flg;
+    var flag = (flg === undefined) ? !my.settings.show_hidden_topics : flg;
     d3.selectAll(".hidden_topic")
         .classed("hidden", function () {
             return flag;
         });
 };
-that.hide_topics = hide_topics;
 
 // Method giving an identifier with a current state of the full data set.  The
 // only promise is that the data_signature will change if the data have changed
 // in a big way.  Right now the only use for this is for the model/conditional
 // view, which caches the result of the "stacking" calculation and needs to
 // know if we've hidden topics.
-// TODO this is what I'll use for supporting multiple models.
 data_signature = function () {
-    return VIS.show_hidden_topics;
+    return my.id + (my.settings.show_hidden_topics ? "_show" : "_hide");
 };
 
 // initialization
 // --------------
 
 // global visualization setup
-setup_listeners = function () {
+setup_listeners = function (delay) {
+    var resize_timer;
 
     // hashchange handler
     window.onhashchange = function () {
@@ -641,13 +763,13 @@ setup_listeners = function () {
 
     // resizing handler
     $(window).resize(function () {
-        if (VIS.resize_timer) {
-            window.clearTimeout(VIS.resize_timer);
+        if (resize_timer) {
+            window.clearTimeout(resize_timer);
         }
-        VIS.resize_timer = window.setTimeout(function () {
+        resize_timer = window.setTimeout(function () {
             refresh();
-            VIS.resize_timer = undefined; // ha ha
-        }, VIS.resize_refresh_delay);
+            resize_timer = undefined; // ha ha
+        }, delay);
     });
 
 
@@ -662,27 +784,26 @@ setup_listeners = function () {
     });
 
 };
-that.setup_listeners = setup_listeners;
 
-setup_views = function () {
-    var i = my.m.info();
-    view.frame({
-        title: i ? i.title : undefined
-    });
-
-    // and set the default view
-    my.default_view = VIS.default_view.split("/");
-    if (!my.views.has(my.default_view[1])) {
+setup_views = function (default_view) {
+    // validate the default view, with hard-coded fallback
+    my.default_view = parse_hash("#" + default_view);
+    if (my.models.length > 1 && !my.ms.has(my.default_view.model)) {
         view.warning("Invalid VIS.default_view setting.");
-        // invalid default view; hard-code fallback
-        my.default_view = [ "", "model"];
+        my.default_view.model = undefined;
     }
-    my.views.set("default", my.views.get(my.default_view[1]));
 
-    // and set up view aliases by validating them
-    my.aliases = d3.map(VIS.aliases);
+    if (!my.views.has(my.default_view.type)) {
+        view.warning("Invalid VIS.default_view setting.");
+        my.default_view.type = "model";
+    }
+
+    // set up frame (top navbar)
+    view.frame({
+        title: my.title,
+        models: my.models
+    });
 };
-that.setup_views = setup_views;
 
 // data loading
 // ------------
@@ -733,134 +854,299 @@ load_data = function (target, callback) {
         return callback(error, s);
     });
 };
-that.load_data = load_data;
 
 // main data-loader
 load = function () {
-    load_data(VIS.files.info,function (error, info_s) {
+    load_data(VIS.files.info, function (error, info_s) {
+        var info;
 
         // We need to know whether we got new VIS parameters before we
         // do the rest of the loading, but if info is missing, it's not
         // really the end of the world
 
         if (typeof info_s === 'string') {
-            my.m.info(JSON.parse(info_s));
-
-            // finish initializing VIS by loading any preferences
-            // stashed in model info
-
-            utils.deep_replace(VIS, my.m.info().VIS);
+            info = JSON.parse(info_s);
         } else {
             view.warning("Unable to load model info from " + VIS.files.info);
         }
 
-        // now we can set up metadata and bib objects, but we won't overwrite
-        // any custom metadata or bib objects passed in at dfb() invocation;
-        // this does mean, however, that such custom objects can only look in
-        // at VIS parameters by directly accessing the global
-
-        if (my.metadata === undefined) {
-            if (VIS.metadata.type === "base") {
-                my.metadata = metadata(VIS.metadata.spec);
-            } else if (VIS.metadata.type === "dfr") {
-                my.metadata = metadata.dfr(VIS.metadata.spec);
-            } else {
-                // default to DfR subclass if no other specified
-                my.metadata = metadata.dfr();
-                view.warning("Unknown metadata.type; defaulting to dfr.");
+        // retrieve overall browser information
+        my.title = info.title;
+        my.meta_info = info.meta_info;
+        // if no models field, assume single model
+        my.models = info.models || [ { id: "__SINGLE__" } ];
+        // initialize model collection so we know what id's to recognize
+        my.models.forEach(function (m) {
+            // validate model ID: can't conflict with URL pattern
+            if (my.views.has(m.id) || !!m.id.match(/[\/#]/)) {
+                view.warning("The model ID " + m.id +
+" is not compatible with dfr-browser. Please choose another."
+                );
             }
-        }
+            my.ms.set(m.id, undefined);
+        });
 
-        if (my.bib === undefined) {
-            // VIS.bib gives bib options like the Anon. string
-            my.bib = bib.dfr(VIS.bib);
-        }
+        // initialize global visualization settings
+        my.vis_template = utils.clone(VIS); // hard-coded defaults: src/VIS.js
+        // add browser-global defaults
+        my.vis_template = utils.deep_replace(my.vis_template, info.VIS);
 
         // now we can install the main event listeners
-        // TODO can we do this even earlier?
-        setup_listeners();
-        setup_views();
+        // TODO clean up the relation between these settings
+        // and model-specific VIS so it's clear which VIS settings are only
+        // used on initial load and which change on each load_model
+        setup_listeners(my.vis_template.resize_refresh_delay);
+        setup_views(my.vis_template.default_view);
 
-        // now launch remaining data loading; ask for a refresh when done
-        load_data(VIS.files.meta, function (error, meta_s) {
-            if (typeof meta_s === 'string') {
-                // and get the metadata object ready
-                my.metadata.from_string(meta_s);
-                my.condition = VIS.condition.spec.field;
-                my.condition_name = VIS.condition.name || my.condition;
+        // setup mutable browser-level settings that we don't
+        // want to get squashed by model changes
+        update_settings(my.vis_template);
 
-                my.metadata.condition(
-                    my.condition,
-                    metadata.key[VIS.condition.type],
-                    VIS.condition.spec
-                );
-                // pass to object (also stores conditional keys)
-                my.m.set_meta(my.metadata);
-                refresh();
-            } else {
-                view.error("Unable to load metadata from " + VIS.files.meta);
-            }
-        });
-        load_data(VIS.files.dt, function (error, dt_s) {
-            my.m.set_dt(dt_s, function (result) {
-                if (result.success) {
-                    my.proper = VIS.proper;
-                    if (my.proper === undefined) {
-                        my.proper = result.proper;
-                    }
-                    d3.selectAll(".proper")
-                        .classed("hidden", !my.proper);
-                    d3.selectAll(".not-proper")
-                        .classed("hidden", my.proper);
-                    refresh();
-                } else {
-                    view.error("Unable to load document topics from "
-                        + VIS.files.dt);
-                }
-            });
-        });
-        load_data(VIS.files.tw, function (error, tw_s) {
-            if (typeof tw_s === 'string') {
-                my.m.set_tw(tw_s);
+        // set up view aliases: first defaults, then any new ones
+        my.aliases = d3.map(my.vis_template.aliases);
 
-                // set up list of visible topics
-                my.topic_hidden = d3.range(my.m.n()).map(function (t) {
-                    return VIS.hidden_topics.indexOf(t + 1) !== -1;
-                });
-
-                view.topic.dropdown(d3.range(my.m.n()).map(function (t) {
-                    return {
-                        topic: t,
-                        words: my.m.topic_words(t, VIS.model_view.words),
-                        label: my.m.topic_label(t),
-                        hidden: my.topic_hidden[t]
-                    };
-                }));
-
-                refresh();
-            } else {
-                view.error("Unable to load topic words from " + VIS.files.tw);
-            }
-        });
-        load_data(VIS.files.topic_scaled, function (error, s) {
-            if (typeof s === 'string') {
-                my.m.set_topic_scaled(s);
-            } else {
-                // if missing, just gray out the button for the view
-                my.m.set_topic_scaled("");
-                d3.select("#nav_model_scaled")
-                    .classed("disabled", true)
-                    .select("a")
-                        .attr("href", "#/model/scaled");
-            }
-
-            refresh();
-        });
+        if (my.models.length > 1) {
+            // multiple models
+            load_model(my.default_view.model || my.models[0].id);
+        } else {
+            // single model
+            load_model(my.models[0].id, my.vis_template);
+        }
 
         refresh();
     });
 };
 that.load = load;
+
+load_model = function (id, vis) {
+    var files, basename;
+    if (!my.ms.has(id)) {
+        view.warning("unknown model " + id);
+        return false;
+    }
+
+    if (my.m && my.id === id) {
+        // loading the current model: no op
+        return true;
+    }
+
+    if (my.ms.get(id) === undefined) {
+        // this means we need to construct the model
+
+    // TODO should be able to use the same model object for the case where
+    // we show the same model with different conditioning variables, and
+    // conversely should be able to share metadata across different models
+        my.ms.set(id, model({
+            topic_labels: vis.topic_labels
+        }));
+    }
+
+    my.m = my.ms.get(id);
+    my.id = id;
+
+    // invalidate cache
+    // TODO silly to regenerate citations in most cases
+    my.cache = { };
+
+    // now launch remaining data loading; these will not re-request data if
+    // we've already loaded this model
+
+    if (vis) {
+        files = vis.files;
+    } else {
+        // search by id for relevant file data
+        files = my.models.find(function (m) {
+            return m.id === my.id;
+        }).files || { }; // try the default values if file info missing
+    }
+
+    // default filename
+    basename = "data" + (id === "__SINGLE__") ? "/" : id + "/";
+
+    load_info(files.info || basename + "info.json", vis);
+    load_meta(files.meta || basename + "meta.csv.zip");
+    load_dt(files.dt || basename + "dt.json.zip");
+    load_tw(files.tw || basename + "tw.json");
+    load_topic_scaled(files.topic_scaled || basename + "topic_scaled.csv");
+
+    return true;
+};
+
+load_info = function (f, previs) {
+    var callback = function (vis) {
+    // load any preferences stashed in particular model info
+    // TODO segregate browser-general from model-specific settings
+    // TODO better to pass VIS to views rather than have the global, duh
+        if (vis) {
+            VIS = utils.deep_replace(utils.clone(my.vis_template), vis);
+        } else {
+            view.warning("Unable to load model info from " + f);
+        }
+    };
+
+    // if we've already loaded info, we don't need the file
+    if (previs) {
+        callback(previs);
+        return;
+    }
+
+    load_data(f, function (error, s) {
+        if (typeof s === 'string') {
+            callback(JSON.parse(s));
+        } else {
+            callback();
+        }
+    });
+};
+
+load_meta = function (f) {
+    var meta, callback;
+    // now we can set up metadata and bib objects, but we won't overwrite
+    // any custom metadata or bib objects passed in at dfb() invocation;
+    // this does mean, however, that such custom objects can only look in
+    // at VIS parameters by directly accessing the global
+
+    if (typeof my.metadata === "function") {
+        meta = my.metadata(VIS.metadata.spec);
+    } else if (VIS.metadata.type === "base") {
+        meta = metadata(VIS.metadata.spec);
+    } else if (VIS.metadata.type === "dfr") {
+        meta = metadata.dfr(VIS.metadata.spec);
+    } else {
+        // default to DfR subclass if no other specified
+        meta = metadata.dfr();
+        view.warning("Unknown metadata.type; defaulting to dfr.");
+    }
+
+    if (typeof my.bib === "function") {
+        meta.bib(my.bib(VIS.bib));
+    } else {
+        // VIS.bib gives bib options like the Anon. string
+        meta.bib(bib.dfr(VIS.bib));
+    }
+
+    callback = function () {
+        my.condition = VIS.condition.spec.field;
+        my.condition_name = VIS.condition.name || my.condition;
+    };
+
+    if (my.m.ready("meta")) {
+        callback();
+        return;
+    }
+
+    load_data(f, function (error, meta_s) {
+        if (typeof meta_s === 'string') {
+            // and get the metadata object ready
+            meta.from_string(meta_s);
+            callback();
+
+            meta.condition(
+                my.condition,
+                metadata.key[VIS.condition.type],
+                VIS.condition.spec
+            );
+            // pass to object (also stores conditional keys)
+            my.m.set_meta(meta);
+            refresh();
+        } else {
+            view.error("Unable to load metadata from " + f);
+        }
+    });
+};
+
+load_dt = function (f) {
+    var callback = function () {
+        my.proper = VIS.proper;
+        if (my.proper === undefined) {
+            my.proper = my.m.proper();
+        }
+        d3.selectAll(".proper")
+            .classed("hidden", !my.proper);
+        d3.selectAll(".not-proper")
+            .classed("hidden", my.proper);
+    };
+
+    if (my.m.ready("dt")) {
+        callback();
+        return;
+    }
+
+    load_data(f, function (error, dt_s) {
+        my.m.set_dt(dt_s, function (result) {
+            if (result.success) {
+                callback();
+                refresh();
+            } else {
+                view.error("Unable to load document topics from " + f);
+            }
+        });
+    });
+};
+
+load_tw = function (f) {
+    var callback = function () {
+        // set up list of visible topics
+        my.cache.topic_hidden = d3.range(my.m.n()).map(function (t) {
+            return VIS.hidden_topics.indexOf(t + 1) !== -1;
+        });
+
+        view.topic.dropdown({
+            topics: d3.range(my.m.n()).map(function (t) {
+                return {
+                    topic: t,
+                    words: my.m.topic_words(t, VIS.model_view.words),
+                    label: my.m.topic_label(t),
+                    hidden: my.cache.topic_hidden[t]
+                };
+            }),
+            overview_words: my.settings.overview_words
+        });
+    };
+
+    if (my.m.ready("tw")) {
+        callback();
+        return;
+    }
+
+    load_data(f, function (error, tw_s) {
+        if (typeof tw_s === 'string') {
+            my.m.set_tw(tw_s);
+            callback();
+            refresh();
+        } else {
+            view.error("Unable to load topic words from " + f);
+        }
+    });
+};
+
+load_topic_scaled = function () {
+    var callback = function () {
+        // if scaled missing, gray out the button for the view
+        d3.select("#nav_model_scaled")
+            .classed("disabled", !my.m.topic_scaled())
+            .select("a").attr("href", view_link({
+                type: "model",
+                param: "scaled"
+            }));
+    };
+
+    if (my.m.ready("topic_scaled")) {
+        callback();
+        return;
+    }
+
+    load_data(VIS.files.topic_scaled, function (error, s) {
+        if (typeof s === 'string') {
+            my.m.set_topic_scaled(s);
+        } else {
+            // if missing, just gray out the button for the view
+            my.m.set_topic_scaled("");
+        }
+        callback();
+        refresh();
+    });
+};
 
     return that;
 }; // dfb()

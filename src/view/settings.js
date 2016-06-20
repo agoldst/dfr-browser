@@ -9,39 +9,50 @@ view.settings = function (p) {
     stg.select("#n_words_list input")
         .property("min", 1)
         .property("max", p.max_words)
-        .property("value", VIS.overview_words)
+        .property("value", p.overview_words)
         .on("change", function () {
-            VIS.overview_words = this.valueAsNumber;
+            view.dfb().update_settings({
+                overview_words: this.valueAsNumber
+            });
         });
     stg.select("#n_words_topic input")
         .property("min", 1)
         .property("max", p.max_words)
-        .property("value", VIS.topic_view.words)
+        .property("value", p.topic_view.words)
         .on("change", function () {
-            VIS.topic_view.words = this.valueAsNumber;
+            view.dfb().update_settings({
+                topic_view: { words: this.valueAsNumber }
+            });
         });
     stg.select("#n_topic_docs input")
         .property("min", 1)
         .property("max", p.max_docs)
-        .property("value", VIS.topic_view.docs)
+        .property("value", p.topic_view.docs)
         .on("change", function () {
-            VIS.topic_view.docs = this.valueAsNumber;
+            view.dfb().update_settings({
+                topic_view: { docs: this.valueAsNumber }
+            });
         });
 
     stg.select("#reveal_hidden")
         .classed("hidden", VIS.hidden_topics.length === 0)
         .select("input")
-            .property("checked", VIS.show_hidden_topics === true)
+            .property("checked", p.show_hidden_topics === true)
             .on("change", function () {
-                VIS.show_hidden_topics = !VIS.show_hidden_topics;
+                view.dfb().update_settings({
+                    show_hidden_topics: this.checked
+                });
             });
 
     stg.select("#conditional_streamgraph")
         .classed("hidden", VIS.condition.type === "ordinal")
         .select("input")
-            .property("checked", !!VIS.model_view.conditional.streamgraph)
+            .property("checked", !!p.model_view.conditional.streamgraph)
             .on("change", function () {
-                VIS.model_view.conditional.streamgraph =
-                    !VIS.model_view.conditional.streamgraph;
+                view.dfb().update_settings({
+                    model_view: { conditional: {
+                        streamgraph: this.checked
+                    } }
+                });
             });
 };

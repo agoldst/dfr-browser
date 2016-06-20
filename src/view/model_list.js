@@ -5,6 +5,7 @@ view.model.list = function (p) {
     var trs, trs_enter, token_max,
         total = d3.sum(p.sums),
         keys, sorter,
+        sort_view, // utility function defined below for setting sorting links
         spec;
 
     // set up spark spec
@@ -31,17 +32,21 @@ view.model.list = function (p) {
     trs.exit().remove();
 
     trs.on("click", function (t) {
-        view.dfb().set_view(view.topic.hash(t.t));
+        view.dfb().set_view({ type: "topic", param: t.t });
     });
 
     trs.classed("hidden_topic", function (t) {
-        return p.topic_hidden[t.t];
+        return !!p.topic_hidden[t.t];
     });
 
     // create topic label column
     trs_enter.append("td").append("a").classed("topic_name", true);
     trs.select("a.topic_name")
-        .attr("href", function (t) { return view.topic.link(t.t); })
+        .attr("href", function (t) { return view.dfb().view_link({
+                type: "topic",
+                param: t.t
+            });
+        })
         .text(function (t) { return t.label; });
 
     // create conditional plot column
@@ -67,7 +72,11 @@ view.model.list = function (p) {
     // create topic words column
     trs_enter.append("td").append("a").classed("topic_words", true);
     trs.select("a.topic_words")
-        .attr("href", function (t) { return view.topic.link(t.t); });
+        .attr("href", function (t) { return view.dfb().view_link({
+                type: "topic",
+                param: t.t
+            });
+        });
 
     // since the number of topic words can be changed, we always need to
     // rewrite the topic words column
@@ -133,24 +142,31 @@ view.model.list = function (p) {
 
     trs.sort(sorter);
 
+    sort_view = function (id) {
+        var v = {
+            type: "model",
+            param: id.split("_").slice(2) // model_view_list_condition etc.
+        };
+        if (id.match(p.sort)) {
+            v.param.push((p.dir === "down") ? "up" : "down");
+        }
+        return v;
+    };
+
     d3.selectAll("#model_view_list th.sort")
         .classed("active", function () {
             return !!this.id.match(p.sort);
         })
-        .each(function () {
-            var ref = "#/" + this.id.replace(/_(view_)?/g, "/");
-            if (this.id.match(p.sort)) {
-                ref += (p.dir === "down") ? "/up" : "/down";
-            }
-
-            d3.select(this).select("a")
-                .attr("href", ref);
-        })
         .on("click", function () {
-            view.dfb().set_view(d3.select(this).select("a")
-                .attr("href").replace(/#/, ""));
+            view.dfb().set_view(
+                sort_view(this.id)
+            );
+        })
+        .select("a").attr("href", function () { 
+            return view.dfb().view_link(
+                sort_view(this.parentElement.id)
+            );
         });
-
 
     return true;
 };

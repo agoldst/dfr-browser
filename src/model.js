@@ -12,17 +12,18 @@ var model;
 model = function (spec) {
     var my = spec || { }, // private members
         that = { }, // resultant object
-        info, // accessors and pseudo-accessors
+        ready, // accessors and pseudo-accessors
         n_docs,
-        has_dt,
         tw,
         n,
         n_top_words,
+        proper,
         total_tokens,
         topic_total,
         alpha,
         meta,
         meta_condition,
+        bib,
         vocab,
         topic_scaled,
         topic_conditional, // slicing by metadata variable
@@ -33,7 +34,7 @@ model = function (spec) {
         doc_topics,
         word_topics,
         topic_label,
-        set_dt, // methods for loading model data from strings 
+        set_dt, // methods for loading model data
         set_tw,
         set_meta,
         doc_category,
@@ -52,14 +53,6 @@ model = function (spec) {
         my.worker.fs.set(key, f);
     };
 
-    info = function (model_meta) {
-        if (model_meta) {
-            my.info = model_meta;
-        }
-        return my.info;
-    };
-    that.info = info;
-
     n_docs = function () {
         var result;
         if (my.n_docs !== undefined) {
@@ -72,11 +65,11 @@ model = function (spec) {
     };
     that.n_docs = n_docs;
 
-    // has dt been loaded?
-    has_dt = function () {
-        return !!my.ready.dt;
+    // says whether a component has been loaded
+    ready = function (key) {
+        return !!my.ready[key];
     };
-    that.has_dt = has_dt;
+    that.ready = ready;
 
     // access top key words per topic
     tw = function (t, word) {
@@ -114,6 +107,11 @@ model = function (spec) {
         return my.tw[0].keys().length;
     };
     that.n_top_words = n_top_words;
+
+    proper = function () {
+        return my.proper;
+    };
+    that.proper = proper;
 
     total_tokens = function (callback) {
         if (!my.total_tokens) {
@@ -164,6 +162,16 @@ model = function (spec) {
         return my.meta.condition(key);
     };
     that.meta_condition = meta_condition;
+
+    // expose metadata's bib object
+    bib = function () {
+        if (!my.meta) {
+            return undefined;
+        }
+
+        return my.meta.bib();
+    };
+    that.bib = bib;
 
     // aggregate vocabulary of all top words for some or all topics
     vocab = function (t) {
@@ -361,8 +369,8 @@ model = function (spec) {
     topic_label = function (t) {
         var t_s = String(t + 1);
         // expect names keyed to 1-indexed numbers (easier to edit)
-        if (my.info.topic_labels && my.info.topic_labels[t_s]) {
-            return my.info.topic_labels[t_s];
+        if (my.topic_labels && my.topic_labels[t_s]) {
+            return my.topic_labels[t_s];
         }
 
         // default name: use a no-break space
@@ -391,6 +399,7 @@ model = function (spec) {
         if (!my.n) {
             my.n = my.alpha.length;
         }
+        my.ready.tw = true;
     };
     that.set_tw = set_tw;
 
@@ -403,6 +412,7 @@ model = function (spec) {
 
         my.worker.callback("set_dt", function (result) {
             my.ready.dt = result.success;
+            my.proper = result.proper;
             callback(result);
         });
         my.worker.postMessage({
@@ -417,6 +427,7 @@ model = function (spec) {
 
         // cache metadata variable information for each doc
         meta.conditionals().forEach(doc_category);
+        my.ready.meta = true;
     };
     that.set_meta = set_meta;
 
@@ -442,16 +453,16 @@ model = function (spec) {
     // load scaled topic coordinates from a string of CSV lines
     set_topic_scaled = function (ts_s) {
         var s;
-        if (typeof ts_s  !== 'string') {
-            return;
+        if (typeof ts_s  === 'string') {
+            // strip blank "rows" at start or end
+            s = ts_s.replace(/^\n*/, "")
+                .replace(/\n*$/, "\n");
+            my.topic_scaled = d3.csv.parseRows(s, function (row) {
+                return row.map(parseFloat);
+            });
         }
-
-        // strip blank "rows" at start or end
-        s = ts_s.replace(/^\n*/, "")
-            .replace(/\n*$/, "\n");
-        my.topic_scaled = d3.csv.parseRows(s, function (row) {
-            return row.map(parseFloat);
-        });
+        // consider the load complete even if there wasn't any data
+        my.ready.topic_scaled = true;
     };
     that.set_topic_scaled = set_topic_scaled;
 

@@ -179,7 +179,10 @@ view.model.conditional_plot = function (p) {
         })
         .on("click", function (d) {
             if (!d3.event.shiftKey) {
-                view.dfb().set_view(view.topic.hash(d.t));
+                view.dfb().set_view({
+                    type: "topic",
+                    param: d.t
+                });
             }
         });
 
@@ -298,15 +301,15 @@ view.model.conditional_plot = function (p) {
     zoom.y(scale_y)
         .scaleExtent([1, 5])
         .on("zoom", function () {
-            marks.call(render_marks(VIS.zoom_transition));
-            if (VIS.zoom_transition) {
+            marks.call(render_marks(view.model.conditional.zoom_transition));
+            if (view.model.conditional.zoom_transition) {
                 svg.select("g.x.axis").transition()
                     .duration(2000)
                     .call(axis_x);
                 labels.transition()
                     .duration(2000)
                     .call(render_labels);
-                VIS.zoom_transition = false;
+                view.model.conditional.zoom_transition = false;
             } else {
                 labels.call(render_labels);
                 svg.select("g.x.axis").call(axis_x);
@@ -316,7 +319,7 @@ view.model.conditional_plot = function (p) {
     // zoom reset button
     d3.select("button#reset_zoom")
         .on("click", function () {
-            VIS.zoom_transition = true;
+            view.model.conditional.zoom_transition = true;
             zoom.translate([0, 0])
                 .scale(1)
                 .event(svg);

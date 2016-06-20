@@ -28,7 +28,10 @@ view.bib = function (p) {
                     sorting = this.value;
                 }
             });
-            view.dfb().set_view("/bib/" + sorting.replace(/_/, "/"));
+            view.dfb().set_view({
+                type: "bib",
+                param: sorting.split("_")
+            });
         });
     d3.select("select#select_bib_dir")
         .on("change", function () {
@@ -38,12 +41,17 @@ view.bib = function (p) {
                     dir = this.value;
                 }
             });
-            view.dfb().set_view("/bib/" + p.major + "/" + p.minor + "/" + dir);
+            view.dfb().set_view({
+                type: "bib",
+                param: [p.major, p.minor, dir]
+            });
         });
 
     d3.select("a#bib_sort_dir")
-        .attr("href", "#/bib/" + p.major + "/" + p.minor + "/"
-                + ((p.dir === "up") ? "down" : "up"));
+        .attr("href", view.dfb().view_link({
+            type: "bib",
+            param: [p.major, p.minor, (p.dir === "up") ? "down" : "up"]
+        }));
 
     d3.select("#bib_headings a.top_link")
         .on("click", function () {
@@ -130,9 +138,9 @@ view.bib.render = function (p) {
     // Not elegant, but avoids some messy fiddling to make sure we don't
     // double-append the inner <a> elements
     items.html(function (d) {
-            var s = '<a href="#/doc/' + d + '">';
-            s += p.citations[d];
-            s += '</a>';
+            var s = '<a href="';
+            s += view.dfb().view_link({ type: "doc", param: d });
+            s += '">' + p.citations[d] + '</a>';
 
             return s;
         });

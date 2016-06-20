@@ -44,7 +44,6 @@ var view = (function () {
             .append("p").text(msg);
 
         this.loading(false);
-        VIS.error = true;
     };
     that.error = error;
 
@@ -101,9 +100,36 @@ var view = (function () {
 
     // render global framing elements of the view
     frame = function (p) {
+        var as;
         if (p.title) {
             d3.selectAll(".model_title")
                 .html(p.title);
+        }
+
+        // multiple models: data dropdown menu
+        if (p.models && p.models.length > 1) {
+            as = d3.select("ul#data_dropdown").selectAll("li")
+                .data(p.models)
+                .enter().append("li").append("a").href("#");
+            as.append("span")
+                .classed("glyphicon", true)
+                .classed("glyphicon-ok", true)
+                .property("aria-hidden", true)
+                .classed("invisible", function (m, j) { return j !== 0; });
+            as.append("span")
+                .text(function (m) {
+                    return m.name;
+                });
+            as.on(function (m) {
+                d3.selectAll("#data_dropdown span.glyphicon-ok")
+                    .classed("invisible", true);
+                d3.select(this).select("span.glyphicon-ok")
+                    .classed("invisible", false);
+                d3.select("#data_name")
+                    .text(m.name);
+                my.dfb.switch_model(m.id);
+            });
+            d3.select("li#nav_data").classed("hidden", false);
         }
     };
     that.frame = frame;

@@ -1,4 +1,4 @@
-/*global view, VIS, set_view, bib, utils, d3 */
+/*global view, VIS, utils, d3 */
 "use strict";
 
 view.doc = function (p) {
@@ -6,6 +6,8 @@ view.doc = function (p) {
         total_tokens = p.total_tokens,
         topics = p.topics,
         trs, trs_enter;
+
+    // TODO option to select docs by id, not index
 
     d3.select("#doc_view_main").classed("hidden", false);
 
@@ -33,7 +35,7 @@ view.doc = function (p) {
     trs.exit().remove();
 
     trs.on("click", function (t) {
-        view.dfb().set_view(view.topic.hash(t.topic));
+        view.dfb().set_view({ type: "topic", param: t.topic });
     });
 
     trs_enter.append("td").append("a")
@@ -43,7 +45,7 @@ view.doc = function (p) {
 
     trs.select("a.topic_name")
         .attr("href", function (t) {
-            return view.topic.link(t.topic);
+            return view.dfb().view_link({ type: "topic", param: t.topic });
         })
         .select("span.name")
             .text(function (t) { return t.label; });
@@ -54,7 +56,7 @@ view.doc = function (p) {
             .classed("words", true);
     trs.select("a.topic_words")
         .attr("href", function (t) {
-            return view.topic.link(t.topic);
+            return view.dfb().view_link({ type: "topic", param: t.topic });
         })
         .select("span.words")
             .text(function (t) {
