@@ -3,6 +3,8 @@
 # make uglify -- compile minified source file
 # make tarball -- create dfb.tar.gz file suitable for deployment as a website
 
+source_map :=
+
 # Name of minified output file
 dfbjs := js/dfb.min.js
 minified := js/utils.min.js js/worker.min.js
@@ -30,10 +32,11 @@ lint:
 uglify: $(dfbjs) $(minified)
 
 $(minified): js/%.min.js: src/%.js
-	uglifyjs $< --mangle -o $@
+	uglifyjs $< $(if $(source_map),--source-map $@.map) --mangle -o $@
 
 $(dfbjs): $(src)
-	uglifyjs $(src) --mangle -o $@
+	uglifyjs $(src) $(if $(source_map),--source-map $@.map) \
+	    --mangle -o $@
 
 dfb.tar.gz: $(dfb_files)
 	rm -f $@
