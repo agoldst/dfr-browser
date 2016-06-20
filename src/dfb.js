@@ -936,9 +936,7 @@ load_model = function (id, vis) {
     // TODO should be able to use the same model object for the case where
     // we show the same model with different conditioning variables, and
     // conversely should be able to share metadata across different models
-        my.ms.set(id, model({
-            topic_labels: vis.topic_labels
-        }));
+        my.ms.set(id, model());
     }
 
     my.m = my.ms.get(id);
@@ -979,6 +977,7 @@ load_info = function (f, previs) {
     // TODO better to pass VIS to views rather than have the global, duh
         if (vis) {
             VIS = utils.deep_replace(utils.clone(my.vis_template), vis);
+            my.m.set_topic_labels(VIS.topic_labels);
         } else {
             view.warning("Unable to load model info from " + f);
         }

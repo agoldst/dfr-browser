@@ -34,6 +34,7 @@ model = function (spec) {
         doc_topics,
         word_topics,
         topic_label,
+        set_topic_labels,
         set_dt, // methods for loading model data
         set_tw,
         set_meta,
@@ -377,6 +378,11 @@ model = function (spec) {
         return "Topic" + "\u00a0" + t_s;
     };
     that.topic_label = topic_label;
+
+    set_topic_labels = function (lbls) {
+        my.topic_labels = lbls;
+    };
+    that.set_topic_labels = set_topic_labels;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {
