@@ -720,11 +720,11 @@ parse_hash = function (h) {
     }
     if (my.models.length > 1) {
         result.model = hh.shift();
-        // special case: even with multiple models, let's accept URLs of the
+        // liberal parsing: even with multiple models, accept URLs of the
         // form #/view. N.B. thus model IDs can't be view names
         if (my.views.has(result.model)) {
             hh.unshift(result.model);
-            result.model = my.id;
+            result.model = undefined;
         }
     }
     result.type = hh.shift();
@@ -786,13 +786,13 @@ setup_listeners = function (delay) {
 };
 
 setup_views = function (default_view) {
-    // validate the default view, with hard-coded fallback
-    my.default_view = parse_hash("#" + default_view);
+    // validate the default view
+    my.default_view = parse_hash("#" + default_view, true);
     if (my.models.length > 1 && !my.ms.has(my.default_view.model)) {
-        view.warning("Invalid VIS.default_view setting.");
         my.default_view.model = undefined;
     }
 
+    // hard-coded fallback
     if (!my.views.has(my.default_view.type)) {
         view.warning("Invalid VIS.default_view setting.");
         my.default_view.type = "model";
