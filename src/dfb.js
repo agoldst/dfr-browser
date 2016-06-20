@@ -26,6 +26,8 @@ var dfb = function (spec) {
 
     // set up model storage
     my.ms = d3.map();
+    // and settings storage
+    my.model_vis = d3.map();
 
     // and tell view who we are
     if (view.dfb() === undefined) {
@@ -801,7 +803,9 @@ setup_views = function (default_view) {
     // set up frame (top navbar)
     view.frame({
         title: my.title,
-        models: my.models
+        models: my.models,
+        // TODO would be better not to duplicate this logic from load()
+        id: my.default_view.model || my.models[0].id
     });
 };
 
@@ -984,11 +988,19 @@ load_info = function (f, previs) {
         } else {
             view.warning("Unable to load model info from " + f);
         }
+        // cache for later reloads
+        my.model_vis.set(my.id, vis);
     };
 
-    // if we've already loaded info, we don't need the file
+    // info is provided, no load
     if (previs) {
         callback(previs);
+        return;
+    }
+
+    // or if we've already loaded info, we don't need the file
+    if (my.model_vis.has(my.id)) {
+        callback(my.model_vis.get(my.id));
         return;
     }
 
