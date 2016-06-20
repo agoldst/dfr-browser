@@ -94,6 +94,33 @@ vi data/info.json
 
 The data files used in the [demo](http://agoldst.github.io/dfr-browser/demo) (*PMLA*, 64 topics) reside in a directory on the [gh-pages branch of this repository](https://github.com/agoldst/dfr-browser/tree/gh-pages/demo/data).
 
+### Multiple models in a single browser
+
+As of v0.8.1-alpha, you can use dfr-browser to explore multiple related models. Each model needs to have the five files described above. `data/info.json` serves as the overall configuration file, and should include a `models` array:
+
+```json
+"models": [
+    {
+        "id": "model1",
+        "name": "First Model"
+    },
+    {
+        "id": "model2",
+        "name": "Second Model"
+    }
+]
+```
+
+By default the data files will then be retrieved from `data/model1/info.json`, `data/model1/tw.json`, etc. These locations can be modified by adding a `files` property to the model specification with members `info`, `tw`, `dt`, `meta`, `topic_scaled` specifying any non-default paths.
+
+The order of the array gives the order of the menu of model `name`s that appears next to "Settings" in the top navigation bar. The first model in the array will be loaded first by default (this can be changed). See "Settings for multiple models" below for more on the configuration possibilities.
+
+In addition to displaying different topic models, you might also choose to present multiple configurations of the same model, e.g., changing only the metadata variable for the conditional display ("Conditioning on metadata" below).
+
+TODO configuration to not duplicate data in this case
+
+The dfrtopics R package has can export the appropriate files for this case; see the R help for `dfr_browser`. That package also has some support for "aligning" multiple models. TODO more discussion
+
 ## Tune the visualization parameters
 
 In the model-info file `data/info.json`, you can also override some aspects of the visualization by adding a `VIS` object with properties whose names correspond to those of the `VIS` object in the program. See [VIS.js](src/VIS.js) for the fields of the `VIS` object and their default values. Specifying `VIS` properties in `info.json` changes these defaults.
@@ -184,7 +211,7 @@ If certain topics are distractingly uninterpretable, they can be hidden from the
 
 ### Adding topic labels
 
-In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a top-level `topic_labels` property (not a property of `VIS`) with the following slightly eccentric form:
+In order to aid interpreting the model, it is often useful to manually label topics. The browser looks for labels in `data/info.json`, in a `topic_labels` property of `VIS` with the following slightly eccentric form:
 
 ```json
 "topic_labels": {
@@ -195,6 +222,8 @@ In order to aid interpreting the model, it is often useful to manually label top
 
 One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number.
 
+Note that in versions of dfr-browser prior to 0.8.1-alpha, `topic_labels` was a top-level property in `info.json` rather than a subproperty of `VIS`.
+
 ### Adding view annotations
 
 If you wish to add additional HTML to specific views, simply modify [index.html](index.html). Give the annotating elements two CSS classes: `annote` and a class corresponding to the stable URL for the view, but with slashes replaced by underscores. Thus, 
@@ -204,6 +233,36 @@ If you wish to add additional HTML to specific views, simply modify [index.html]
 ```
 
 will only appear in the display of topic 5 (URL ending in `#/topic/5`). This mechanism is governed by the `update_annotations` function in [view](src/view.js), which is called every time the view changes.
+
+### Settings for multiple models
+
+For multiple models in a single browser, the configuration is spread across multiple `info.json` files. Settings that are meant for all models should go in a `VIS` property of the top-level `data/info.json` file. Additional per-model configuration should go in subsidiary `info.json` files as properties of a single top-level object. For example, `data/info.json` might specify
+
+```json
+"VIS": {
+    "model_view": {
+        "plot": {
+            "words": 4
+            "size_range": [8, 12]
+          }
+    }
+}
+```
+
+but `data/model2/info.json` might have
+
+```
+"model_view": {
+    "plot": {
+        "words": 7
+    }
+}
+```
+
+(no `VIS`). Then the `words` setting for `model2` display will be taken from this last, the `size_range` setting from `data/info.json`, and all further settings will be the defaults specified in [VIS.js](src/VIS.js).
+
+A few properties are only read from `data/info.json` and not the subsidiary `info.json` files, because they correspond to settings for the whole browser rather than for individual models. These are: `title`, `meta_info` (for the "about" page, which does not vary for different models), `VIS.default_view`, `VIS.aliases`, and `VIS.resize_refresh_delay`.
+
 
 ## Launch the browser
 
