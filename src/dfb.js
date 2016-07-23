@@ -398,6 +398,12 @@ that.update_settings = update_settings;
 my.views.set("model", function (type, p1, p2) {
     var type_chosen = type || my.last.model || "grid";
 
+    // validate type, default to grid
+    if (["grid", "scaled", "list", "conditional"].indexOf(type_chosen)
+            === -1) {
+        type_chosen = "grid";
+    }
+
     // if loading scaled coordinates failed,
     // we expect m.topic_scaled() to be defined but empty, so we'll pass this,
     // but fall through to choosing the grid below
@@ -410,15 +416,20 @@ my.views.set("model", function (type, p1, p2) {
     d3.selectAll("#nav_model li.active").classed("active", false);
     d3.select("#nav_model_" + type_chosen).classed("active", true);
 
-    // hide all subviews and controls; we'll reveal the chosen one
-    d3.select("#model_view_plot").classed("hidden", true);
-    d3.select("#model_view_list").classed("hidden", true);
-    d3.select("#model_view_conditional").classed("hidden", true);
+    // we don't want the view to flicker if this is a data switch only
+    my.updating = my.updating && type_chosen === my.last.model;
 
-    d3.selectAll(".model_view_grid").classed("hidden", true);
-    d3.selectAll(".model_view_scaled").classed("hidden", true);
-    d3.selectAll(".model_view_list").classed("hidden", true);
-    d3.selectAll(".model_view_conditional").classed("hidden", true);
+    if (!my.updating) {
+        // hide all subviews and controls; we'll reveal the chosen one
+        d3.select("#model_view_plot").classed("hidden", true);
+        d3.select("#model_view_list").classed("hidden", true);
+        d3.select("#model_view_conditional").classed("hidden", true);
+
+        d3.selectAll(".model_view_grid").classed("hidden", true);
+        d3.selectAll(".model_view_scaled").classed("hidden", true);
+        d3.selectAll(".model_view_list").classed("hidden", true);
+        d3.selectAll(".model_view_conditional").classed("hidden", true);
+    }
 
     // reveal navbar
     d3.select("#model_view nav").classed("hidden", false);
