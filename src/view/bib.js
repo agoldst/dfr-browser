@@ -85,6 +85,7 @@ view.bib = function (p) {
             return o.heading_display || o.heading;
         });
 
+    lis.order();
 
     view.bib.render({
         ordering: ordering,
@@ -114,7 +115,8 @@ view.bib.render = function (p) {
             return view.bib.id(o.heading);
         });
 
-    sec_enter.append("h2")
+    sec_enter.append("h2");
+    sections.selectAll("h2")
         .text(function (o) {
             return o.heading_display || o.heading;
         });
@@ -122,27 +124,24 @@ view.bib.render = function (p) {
 
     sections.exit().remove();
 
-    // Cheating here. We are not going to update the headings in the
-    // update selection, since we know that if something is in update
-    // but not enter, its heading isn't changing (because the data is
-    // keyed by headings).
+    sections.order();
 
     items = sections.select("ul").selectAll("li")
         .data(function (o) {
             return o.docs;
         });
 
-    items.enter().append("li");
+    items.enter().append("li").append("a");
     items.exit().remove();
 
-    // Not elegant, but avoids some messy fiddling to make sure we don't
-    // double-append the inner <a> elements
-    items.html(function (d) {
-            var s = '<a href="';
-            s += view.dfb().view_link({ type: "doc", param: d });
-            s += '">' + p.citations[d] + '</a>';
+    items.order();
 
-            return s;
+    items.selectAll("a")
+        .html(function (d) {
+            return p.citations[d];
+        })
+        .attr("href", function (d) {
+            return view.dfb().view_link({ type: "doc", param: d });
         });
 
     view.loading("false");
