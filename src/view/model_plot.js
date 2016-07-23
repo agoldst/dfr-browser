@@ -7,7 +7,7 @@ view.model.plot = function (param) {
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, gs_enter,
-        words,
+        words, names,
         translation, zoom,
         topics = param.topics,
         n = param.topics.length,
@@ -89,11 +89,16 @@ view.model.plot = function (param) {
         .domain([0,d3.max(topics, function (p) { return p.total; })])
         .range([0,VIS.model_view.plot.stroke_range]);
 
-    gs = svg.selectAll("g")
+    gs = svg.selectAll("g.topic")
         .data(topics, function (p) { return p.t; });
 
-    gs_enter = gs.enter().append("g");
-    gs.exit().remove();
+    gs_enter = gs.enter().append("g")
+        .classed("topic", true)
+        .attr("opacity", 0);    // will transition to visible below
+
+    gs.exit().transition(1000)
+        .attr("opacity", 0)
+        .remove();
 
     gs_enter.append("clipPath").attr("id", function (p) {
         return "clip_circ" + p.t; // we'll clip the topic words to the circles
@@ -172,13 +177,18 @@ view.model.plot = function (param) {
                 }
             }
             return wds.slice(0, i);
-        });
+        }, function (w) { return w.text; });
 
     words.enter().append("text").classed("topic_word", true)
         .attr("clip-path", function (w) {
             return "url(#" + "clip_circ" + w.t;
         })
         .style("font-size", "1px"); // additional words start tiny then grow
+
+    words.exit().transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .remove();
 
     words.text(function (wd) {
             return wd.text;
@@ -188,10 +198,10 @@ view.model.plot = function (param) {
             return wd.y;
         });
 
-    gs_enter.selectAll("text.topic_name")
+    names = gs.selectAll("text.topic_name")
         .data(function (p) {
             var ws = p.label.split(" ");
-            // TODO 1 label word on each "line" is a problem for "of" and "the" etc.
+            // TODO 1 label word on each "line": problem for "of," "the" etc.
             return ws.map(function (w, j) {
                 return {
                     w: w,
@@ -199,9 +209,11 @@ view.model.plot = function (param) {
                         * (j - (ws.length - 1) / 2)
                 };
             });
-        })
-        .enter().append("text").classed("topic_name", true)
-        .attr("x", 0)
+        });
+    names.enter().append("text").classed("topic_name", true);
+    names.exit().remove();
+
+    names.attr("x", 0)
         .attr("y", function (w) { return w.y; })
         .text(function (w) { return w.w; })
         .style("font-size", VIS.model_view.plot.name_size + "px")
@@ -215,18 +227,20 @@ view.model.plot = function (param) {
         return result;
     };
 
+    gs_enter.attr("transform", translation)
+        .selectAll("circle")
+            .attr("r", circle_radius);
+
     gs.transition()
         .duration(1000)
         .attr("transform", translation)
         .selectAll("circle")
         .attr("r", circle_radius);
 
-    // new nodes just appear, no gratuitous translation: interrupt the other
+    // new nodes: no translation, just fade in: interrupt the other
     gs_enter.transition()
-        .duration(0)
-        .attr("transform", translation)
-        .selectAll("circle")
-        .attr("r", circle_radius);
+        .duration(1000)
+        .attr("opacity", 1);
 
     words.transition()
         .duration(1000)
