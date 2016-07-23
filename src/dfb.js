@@ -788,8 +788,9 @@ setup_listeners = function (delay) {
 };
 
 setup_views = function (default_view) {
+    var cur, result;
     // validate the default view
-    my.default_view = parse_hash("#" + default_view, true);
+    my.default_view = parse_hash("#" + default_view);
     if (my.models.length > 1 && !my.ms.has(my.default_view.model)) {
         my.default_view.model = undefined;
     }
@@ -800,13 +801,23 @@ setup_views = function (default_view) {
         my.default_view.type = "model";
     }
 
+    // inspect initial hash and validate model id
+    cur = parse_hash(window.location.hash);
+    if (cur && cur.model && my.ms.has(cur.model)) {
+        result = cur.model;
+    } else {
+        result = my.default_view.model || my.models[0].id;
+    }
+
     // set up frame (top navbar)
     view.frame({
         title: my.title,
         models: my.models,
         // TODO would be better not to duplicate this logic from load()
-        id: my.default_view.model || my.models[0].id
+        id: result
     });
+
+    return result;
 };
 
 // data loading
@@ -862,7 +873,7 @@ load_data = function (target, callback) {
 // main data-loader
 load = function () {
     load_data(VIS.files.info, function (error, info_s) {
-        var info;
+        var info, id;
 
         // We need to know whether we got new VIS parameters before we
         // do the rest of the loading, but if info is missing, it's not
@@ -890,6 +901,7 @@ load = function () {
             my.ms.set(m.id, undefined);
         });
 
+
         // initialize global visualization settings
         my.vis_template = utils.clone(VIS); // hard-coded defaults: src/VIS.js
         // add browser-global defaults
@@ -900,7 +912,9 @@ load = function () {
         // and model-specific VIS so it's clear which VIS settings are only
         // used on initial load and which change on each load_model
         setup_listeners(my.vis_template.resize_refresh_delay);
-        setup_views(my.vis_template.default_view);
+
+        // setup_views tells us which model is initially chosen
+        id = setup_views(my.vis_template.default_view);
 
         // setup mutable browser-level settings that we don't
         // want to get squashed by model changes
@@ -911,10 +925,10 @@ load = function () {
 
         if (my.models.length > 1) {
             // multiple models
-            load_model(my.default_view.model || my.models[0].id);
+            load_model(id);
         } else {
             // single model
-            load_model(my.models[0].id, my.vis_template);
+            load_model(id, my.vis_template);
         }
 
         refresh();
@@ -925,7 +939,7 @@ that.load = load;
 load_model = function (id, vis) {
     var files, basename;
     if (!my.ms.has(id)) {
-        view.warning("unknown model " + id);
+        view.warning("Unknown model " + id);
         return false;
     }
 
