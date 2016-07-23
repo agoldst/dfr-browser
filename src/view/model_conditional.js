@@ -144,8 +144,14 @@ view.model.conditional_plot = function (p) {
             .text(p.condition_name);
     }
 
+    // marks group (we want to ensure that the labels are always drawn after
+    // the marks, even if we add new marks later)
+    svg.selectAll("g.marks_group")
+        .data([0])
+        .enter().append("g").classed("marks_group", true);
+
     // the actual streams
-    marks = svg.selectAll(mark + ".topic_area")
+    marks = svg.select("g.marks_group").selectAll(mark + ".topic_area")
         .data(p.data, function (d) {
             return d.t;
         });
@@ -186,6 +192,7 @@ view.model.conditional_plot = function (p) {
             }
         });
 
+    // animated transition to removal would be better for data switch
     marks.exit().remove();
 
     if (mark === "path") {
@@ -232,8 +239,13 @@ view.model.conditional_plot = function (p) {
     // draw the streams: ensure transition for raw/frac swap
     marks.call(render_marks(true));
 
+    // labels group
+    svg.selectAll("g.labels_group")
+        .data([0])
+        .enter().append("g").classed("labels_group", true);
+
     // the stream labels
-    labels = svg.selectAll("text.layer_label")
+    labels = svg.select("g.labels_group").selectAll("text.layer_label")
         .data(p.data, function (d) { return d.t; });
 
     labels.enter().append("text")
