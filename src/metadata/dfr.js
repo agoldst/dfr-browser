@@ -54,7 +54,7 @@ metadata.dfr = function (spec) {
             };
             // now add extra columns
             d.slice(8, d.length).forEach(function (x, i) {
-                result[my.extra_fields[i] || "X" + String(i)] = x.trim();
+                result[my.extra_fields[i] || "X" + String(i + 1)] = x.trim();
             });
 
             return result;
