@@ -993,17 +993,20 @@ load_model = function (id, vis) {
         basename += id + "/";
     }
 
-    load_info(files.info || basename + "info.json", vis);
-    load_meta(files.meta || basename + "meta.csv.zip");
-    load_dt(files.dt || basename + "dt.json.zip");
-    load_tw(files.tw || basename + "tw.json");
-    load_topic_scaled(files.topic_scaled || basename + "topic_scaled.csv");
-
+    load_info(files.info || basename + "info.json", vis, function () {
+        load_meta(files.meta || basename + "meta.csv.zip");
+        load_dt(files.dt || basename + "dt.json.zip");
+        load_tw(files.tw || basename + "tw.json");
+        load_topic_scaled(files.topic_scaled
+                || basename + "topic_scaled.csv");
+    });
     return true;
 };
 
-load_info = function (f, previs) {
-    var callback = function (vis) {
+// unlike the other data-loaders, load_info takes a callback
+// (so that we can ensure data is loaded AFTER info)
+load_info = function (f, previs, callback) {
+    var cb = function (vis) {
     // load any preferences stashed in particular model info
     // TODO segregate browser-general from model-specific settings
     // TODO better to pass VIS to views rather than have the global, duh
@@ -1015,25 +1018,26 @@ load_info = function (f, previs) {
         }
         // cache for later reloads
         my.model_vis.set(my.id, vis);
+        callback();
     };
 
     // info is provided, no load
     if (previs) {
-        callback(previs);
+        cb(previs);
         return;
     }
 
     // or if we've already loaded info, we don't need the file
     if (my.model_vis.has(my.id)) {
-        callback(my.model_vis.get(my.id));
+        cb(my.model_vis.get(my.id));
         return;
     }
 
     load_data(f, function (error, s) {
         if (typeof s === 'string') {
-            callback(JSON.parse(s));
+            cb(JSON.parse(s));
         } else {
-            callback();
+            cb();
         }
     });
 };
