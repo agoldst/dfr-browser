@@ -115,11 +115,9 @@ By default the data files will then be retrieved from `data/model1/info.json`, `
 
 The order of the array gives the order of the menu of model `name`s that appears next to "Settings" in the top navigation bar. The first model in the array will be loaded first by default (this can be changed). See "Settings for multiple models" below for more on the configuration possibilities.
 
-In addition to displaying different topic models, you might also choose to present multiple configurations of the same model, e.g., changing only the metadata variable for the conditional display ("Conditioning on metadata" below).
+In addition to displaying different topic models, you might also choose to present multiple configurations of the same model, e.g., changing only the metadata variable for the conditional display ("Conditioning on metadata" below). Where model data or metadata are shared, the same file paths can be given for different models' data files. In this case dfr-browser tries not to load the duplicate data more than once. At present this functionality is subject to the following restriction: if the metadata file is shared, you cannot condition on the same variable with two different sets of parameters (e.g. conditioning on `date` by both years and decades); you also cannot give divergent values to the `metadata.spec.extra_fields` parameter. To work around these limitations, simply duplicate the metadata file.
 
-TODO configuration to not duplicate data in this case
-
-The dfrtopics R package has can export the appropriate files for this case; see the R help for `dfr_browser`. That package also has some support for "aligning" multiple models. TODO more discussion
+The dfrtopics R package can export the appropriate files for this case; see the R help for `dfr_browser`. That package also has some support for "aligning" multiple models. TODO more discussion
 
 ## Tune the visualization parameters
 
