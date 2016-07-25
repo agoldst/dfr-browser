@@ -7,6 +7,7 @@ view.model.plot = function (param) {
         domain_x, domain_y,
         scale_x, scale_y, scale_size, scale_stroke,
         gs, gs_enter,
+        exit_duration,
         words, names,
         translation, zoom,
         topics = param.topics,
@@ -96,7 +97,9 @@ view.model.plot = function (param) {
         .classed("topic", true)
         .attr("opacity", 0);    // will transition to visible below
 
-    gs.exit().transition().duration(1000)
+    // TODO refine animation choreography here: not quite right
+    exit_duration = (gs.exit().size() > 0) ? 1000 : 0;
+    gs.exit().transition().duration(exit_duration)
         .attr("opacity", 0)
         .remove();
 
@@ -239,15 +242,15 @@ view.model.plot = function (param) {
         });
 
     gs.transition()
-        .delay(1000)
+        .delay(exit_duration)
         .duration(1000)
         .attr("transform", translation)
         .selectAll("circle")
         .attr("r", circle_radius);
 
-    // new nodes: no translation, just fade in
+    // new nodes: no translation, just (possibly) fade in
     gs_enter.transition()
-        .delay(2000)
+        .delay((exit_duration === 0) ? 0 : (1000 + exit_duration))
         .duration(1000)
         .attr("opacity", 1);
 
