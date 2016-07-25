@@ -59,6 +59,14 @@ var dfb = function (spec) {
         topic_view: { words: 0, docs: 0 },
         model_view: { conditional: { streamgraph: true } }
     };
+    // maps of file names to arrays of model ids that have common data
+    my.shared = {
+        models: d3.map(),
+        meta: d3.map(),
+        model_key: function (fs) {
+            return fs.dt + ">>>" + fs.tw + ">>>" + fs.topic_scaled;
+        }
+    };
 
 // Principal view-generating functions
 // -----------------------------------
@@ -98,6 +106,12 @@ my.views.set("topic", function (t_user, y) {
     // topic word subview
     view.topic.words(words);
 
+    view.calculating("#topic_docs", true);
+    if (!my.m.ready("meta_" + my.condition)) {
+        view.loading(true);
+        return true;
+    }
+
     // topic conditional barplot subview
     my.m.topic_conditional(t, my.condition, function (data) {
         view.topic.conditional({
@@ -113,7 +127,6 @@ my.views.set("topic", function (t_user, y) {
         });
     });
 
-    view.calculating("#topic_docs", true);
     // create callback for showing top docs; used in if/else following
     view_top_docs = function (docs) {
         view.calculating("#topic_docs", false);
@@ -121,7 +134,7 @@ my.views.set("topic", function (t_user, y) {
             t: t,
             docs: docs,
             citations: docs.map(function (d) {
-                return my.m.bib().citation(my.m.meta(d.doc));
+                return my.m.bib().citation(my.m.meta().doc(d.doc));
             }),
             condition: y,
             type: VIS.condition.type,
@@ -278,8 +291,8 @@ my.views.set("doc", function (d) {
 
         view.doc({
             topics: topics,
-            citation: my.m.bib().citation(my.m.meta(doc)),
-            url: my.m.bib().url(my.m.meta(doc)),
+            citation: my.m.bib().citation(my.m.meta().doc(doc)),
+            url: my.m.bib().url(my.m.meta().doc(doc)),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return my.m.topic_words(t.topic, my.settings.overview_words);
@@ -330,17 +343,16 @@ my.views.set("bib", function (maj, min, dir) {
 
     my.last.bib = sorting;
 
-    sorting.docs = my.m.meta();
     ordering = my.m.bib().sort({
         major: sorting.major,
         minor: sorting.minor,
         dir: my.m.bib().sort.dir(sorting),
-        docs: my.m.meta()
+        docs: my.m.meta().doc()
     });
 
     if (!my.cache.citations) {
         // Cache the list of citations
-        my.cache.citations = my.m.meta().map(my.m.bib().citation);
+        my.cache.citations = my.m.meta().doc().map(my.m.bib().citation);
     }
 
     view.bib.dropdown(my.m.bib().sorting());
@@ -742,6 +754,10 @@ parse_hash = function (h) {
     }
     result.type = hh.shift();
     result.param = hh;
+    // special case for topic parameter: user-facing topic number is t + 1
+    if (result.type === "topic" && result.param.length > 0) {
+        result.param[0] = +result.param[0] - 1;
+    }
     return result;
 };
 
@@ -884,7 +900,7 @@ load_data = function (target, callback) {
 // main data-loader
 load = function () {
     load_data(VIS.files.info, function (error, info_s) {
-        var info, id;
+        var info, id, k;
 
         // We need to know whether we got new VIS parameters before we
         // do the rest of the loading, but if info is missing, it's not
@@ -901,14 +917,55 @@ load = function () {
         my.meta_info = info.meta_info;
         // if no models field, assume single model
         my.models = info.models || [ { id: "__SINGLE__" } ];
-        // initialize model collection so we know what id's to recognize
+        // initialize model collection so we know what id's to recognize,
+        // and fill in default file names
         my.models.forEach(function (m) {
+            var basename;
+
             // validate model ID: can't conflict with URL pattern
             if (my.views.has(m.id) || !!m.id.match(/[\/#]/)) {
                 view.warning("The model ID " + m.id +
 " is not compatible with dfr-browser. Please choose another."
                 );
             }
+
+            if (typeof m.id !== "string") {
+                view.error(
+"The ID is mising from a model specification in info.json is missing."
+                );
+            }
+
+            basename = "data/";
+            if (m.id !== "__SINGLE__") {
+                basename += m.id + "/";
+            }
+
+            m.files = utils.deep_replace(
+                {
+                    info: basename + "info.json",
+                    meta: basename + "meta.csv.zip",
+                    dt: basename + "dt.json.zip",
+                    tw: basename + "tw.json",
+                    topic_scaled: basename + "topic_scaled.csv"
+                },
+                m.files
+            );
+
+            k = my.shared.model_key(m.files);
+            if (my.shared.models.get(k)) {
+                my.shared.models.get(k).push(m.id);
+            } else {
+                my.shared.models.set(k, [m.id]);
+            }
+
+            k = m.files.meta;
+            if (my.shared.meta.get(k)) {
+                my.shared.meta.get(k).push(m.id);
+            } else {
+                my.shared.meta.set(k, [m.id]);
+            }
+
+            // initialize my.ms for stored models
             my.ms.set(m.id, undefined);
         });
 
@@ -948,7 +1005,7 @@ load = function () {
 that.load = load;
 
 load_model = function (id, vis) {
-    var files, basename;
+    var files, shared_m;
     if (!my.ms.has(id)) {
         view.warning("Unknown model " + id);
         return false;
@@ -959,13 +1016,25 @@ load_model = function (id, vis) {
         return true;
     }
 
-    if (my.ms.get(id) === undefined) {
-        // this means we need to construct the model
+    if (vis) {
+        files = vis.files;
+    } else {
+        // search by id for relevant file data
+        files = my.models.find(function (m) {
+            return m.id === id;
+        }).files;
+    }
 
-    // TODO should be able to use the same model object for the case where
-    // we show the same model with different conditioning variables, and
-    // conversely should be able to share metadata across different models
-        my.ms.set(id, model());
+    if (my.ms.get(id) === undefined) {
+        // no data loaded for this id; is it loaded under another id?
+
+        shared_m = my.shared.models.get(my.shared.model_key(files))
+            .find(function (m_id) {
+                return my.ms.get(m_id) !== undefined;
+            });
+
+        // if shared data found, set; otherwise, construct new object
+        my.ms.set(id, shared_m ? my.ms.get(shared_m) : model());
     }
 
     my.m = my.ms.get(id);
@@ -978,27 +1047,12 @@ load_model = function (id, vis) {
     // now launch remaining data loading; these will not re-request data if
     // we've already loaded this model
 
-    if (vis) {
-        files = vis.files;
-    } else {
-        // search by id for relevant file data
-        files = my.models.find(function (m) {
-            return m.id === my.id;
-        }).files || { }; // try the default values if file info missing
-    }
 
-    // default filename
-    basename = "data/";
-    if (id !== "__SINGLE__") {
-        basename += id + "/";
-    }
-
-    load_info(files.info || basename + "info.json", vis, function () {
-        load_meta(files.meta || basename + "meta.csv.zip");
-        load_dt(files.dt || basename + "dt.json.zip");
-        load_tw(files.tw || basename + "tw.json");
-        load_topic_scaled(files.topic_scaled
-                || basename + "topic_scaled.csv");
+    load_info(files.info, vis, function () {
+        load_meta(files.meta);
+        load_dt(files.dt);
+        load_tw(files.tw);
+        load_topic_scaled(files.topic_scaled);
     });
     return true;
 };
@@ -1044,7 +1098,39 @@ load_info = function (f, previs, callback) {
 
 load_meta = function (f) {
     var meta, callback;
-    // now we can set up metadata and bib objects, but we won't overwrite
+
+    // final action after metadata is retrieved / constructed:
+    // store conditionining-variable information
+    callback = function (md) {
+        my.condition = VIS.condition.spec.field;
+        my.condition_name = VIS.condition.name || my.condition;
+        // update conditional data
+        my.m.meta_condition(
+            my.condition,
+            metadata.key[VIS.condition.type],
+            VIS.condition.spec,
+            refresh
+        );
+    };
+
+    if (my.m.ready("meta")) {
+        callback();
+        return;
+    }
+
+    // TODO determine whether we can use an already-loaded metadata object
+
+    meta = my.shared.meta.get(f).find(function (mid) {
+        var m_share = my.ms.get(mid);
+        return m_share && m_share.ready("meta");
+    });
+    if (meta) {
+        my.m.meta(my.ms.get(meta).meta());
+        callback();
+        return;
+    }
+
+    // Otherwise: set up metadata and bib objects. We won't overwrite
     // any custom metadata or bib objects passed in at dfb() invocation;
     // this does mean, however, that such custom objects can only look in
     // at VIS parameters by directly accessing the global
@@ -1068,29 +1154,12 @@ load_meta = function (f) {
         meta.bib(bib.dfr(VIS.bib));
     }
 
-    callback = function () {
-        my.condition = VIS.condition.spec.field;
-        my.condition_name = VIS.condition.name || my.condition;
-    };
-
-    if (my.m.ready("meta")) {
-        callback();
-        return;
-    }
-
     load_data(f, function (error, meta_s) {
         if (typeof meta_s === 'string') {
             // and get the metadata object ready
             meta.from_string(meta_s);
+            my.m.meta(meta);
             callback();
-
-            meta.condition(
-                my.condition,
-                metadata.key[VIS.condition.type],
-                VIS.condition.spec
-            );
-            // pass to object (also stores conditional keys)
-            my.m.set_meta(meta);
             refresh();
         } else {
             view.error("Unable to load metadata from " + f);

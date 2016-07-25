@@ -23,6 +23,7 @@ model = function (spec) {
         alpha,
         meta,
         meta_condition,
+        doc_category,
         bib,
         vocab,
         topic_scaled,
@@ -37,8 +38,6 @@ model = function (spec) {
         set_topic_labels,
         set_dt, // methods for loading model data
         set_tw,
-        set_meta,
-        doc_category,
         set_topic_scaled;
 
     my.ready = { };
@@ -148,21 +147,51 @@ model = function (spec) {
     };
     that.alpha = alpha;
 
-    // metadata table
-    meta = function (d) {
-        if (!my.meta) {
-            return undefined;
+    // metadata object getter / setter
+    meta = function (meta) {
+        if (meta) {
+            my.meta = meta;
+            // cache metadata variable information for each doc
+            my.meta.conditionals().forEach(doc_category);
+            my.ready.meta = true;
         }
 
-        return my.meta.doc(d);
+        return my.meta;
     };
     that.meta = meta;
 
     // expose metadata's conditional key/invert functions
-    meta_condition = function (key) {
-        return my.meta.condition(key);
+    meta_condition = function (cond, key, spec, callback) {
+        if (key !== undefined) {
+            if (!my.ready["meta_" + cond]) {
+                my.meta.condition(cond, key, spec);
+                doc_category(cond, my.meta.condition(cond), callback);
+            } else if (typeof callback === "function") {
+                callback();
+            }
+        }
+
+        return my.meta.condition(cond);
     };
     that.meta_condition = meta_condition;
+
+    doc_category = function (v, f, callback) {
+        var doc_keys;
+        // calculate and store document keys
+        doc_keys = my.meta.doc().map(f);
+
+        my.worker.callback("set_doc_categories/" + v, function (result) {
+            my.ready["meta_" + v] = result;
+            if (typeof callback === "function") {
+                callback();
+            }
+        });
+        my.worker.postMessage({
+            what: "set_doc_categories",
+            v: v,
+            keys: doc_keys
+        });
+    };
 
     // expose metadata's bib object
     bib = function () {
@@ -427,34 +456,6 @@ model = function (spec) {
         });
     };
     that.set_dt = set_dt;
-
-    set_meta = function (meta) {
-        my.meta = meta;
-
-        // cache metadata variable information for each doc
-        meta.conditionals().forEach(doc_category);
-        my.ready.meta = true;
-    };
-    that.set_meta = set_meta;
-
-    doc_category = function (v, f) {
-        var doc_keys;
-        // calculate and store document keys
-        doc_keys = my.meta.doc().map(f);
-
-        my.worker.callback("set_doc_categories/" + v, function (result) {
-            if (!my.ready.doc_categories) {
-                my.ready.doc_categories = { };
-            }
-            my.ready.doc_categories[v] = result;
-        });
-        my.worker.postMessage({
-            what: "set_doc_categories",
-            v: v,
-            keys: doc_keys
-        });
-    };
-    that.doc_category = doc_category;
 
     // load scaled topic coordinates from a string of CSV lines
     set_topic_scaled = function (ts_s) {
