@@ -169,8 +169,7 @@ view.model.conditional_plot = function (p) {
             return d.t;
         });
 
-    initial = false;
-    // initial = other_marks.size() === 0 && marks.enter().size() === marks.size();
+    initial = other_marks.size() === 0 && marks.size() === 0;
 
     marks.enter()
         .append(mark)
@@ -251,10 +250,6 @@ view.model.conditional_plot = function (p) {
         };
     }
 
-    // draw the streams: ensure transition for raw/frac swap
-    marks.transition().duration(initial ? 0 : 1000)
-        .call(render_marks);
-
     // labels group
     svg.selectAll("g.labels_group")
         .data([0])
@@ -319,8 +314,14 @@ view.model.conditional_plot = function (p) {
             });
     };
 
-    labels.transition().duration(initial ? 0 : 1000)
-        .call(render_labels);
+    // actually draw the streams and labels
+    if (initial) {
+        marks.call(render_marks);
+        labels.call(render_labels);
+    } else {
+        marks.transition().duration(1000).call(render_marks);
+        labels.transition().duration(1000).call(render_labels);
+    }
 
     // set up zoom
     zoom = d3.behavior.zoom();
