@@ -93,12 +93,14 @@ view.model.plot = function (param) {
     gs = svg.selectAll("g.topic")
         .data(topics, function (p) { return p.t; });
 
+    // add circles. If this isn't an initial render, the update selection
+    // is non-empty and we want entering circles to fade in.
     gs_enter = gs.enter().append("g")
         .classed("topic", true)
-        .attr("opacity", 0);    // will transition to visible below
+        .attr("opacity", gs.enter().size() === gs.size() ? 1 : 0);
 
     // TODO refine animation choreography here: not quite right
-    exit_duration = (gs.exit().size() > 0) ? 1000 : 0;
+    exit_duration = gs.exit().empty() ? 0 : 1000;
     gs.exit().transition().duration(exit_duration)
         .attr("opacity", 0)
         .remove();
