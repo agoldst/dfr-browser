@@ -42,7 +42,7 @@ view.model.conditional_plot = function (p) {
         scale_x, scale_y, axis_x, ax_label, g_axis, area,
         scale_color,
         bg, clip,
-        mark, marks, render_marks,
+        mark, marks, other_marks, render_marks,
         labels, render_labels,
         zoom;
 
@@ -144,11 +144,23 @@ view.model.conditional_plot = function (p) {
             .text(p.condition_name);
     }
 
+
     // marks group (we want to ensure that the labels are always drawn after
     // the marks, even if we add new marks later)
     svg.selectAll("g.marks_group")
         .data([0])
         .enter().append("g").classed("marks_group", true);
+
+    // if drawing rects, clear continuous-type paths from other datasets if any
+    // and vice versa
+    // TODO better removal would be to flatten down to x axis
+
+    other_marks = svg.selectAll((mark === "path") ? "g.topic_area"
+            : "path.topic_area");
+    other_marks.transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .remove();
 
     // the actual streams
     marks = svg.select("g.marks_group").selectAll(mark + ".topic_area")
@@ -163,6 +175,7 @@ view.model.conditional_plot = function (p) {
         .style("fill", function (d) {
             return scale_color(d.t);
         })
+        .style("opacity", 0)
         .on("mouseover", function (d) {
             var label = d.label;
             d3.select(this).style("fill", scale_color(d.t, true));
@@ -192,7 +205,7 @@ view.model.conditional_plot = function (p) {
             }
         });
 
-    // animated transition to removal would be better for data switch
+    // TODO better removal would be to flatten down to x axis
     marks.exit().remove();
 
     if (mark === "path") {
@@ -207,24 +220,29 @@ view.model.conditional_plot = function (p) {
         // area.interpolate("monotone");
         // These are quite slow.
 
-        render_marks = function (tx) {
+        render_marks = function (dur, del) {
+            var duration = dur || 0;
             return function (sel) {
-                var paths = tx ? sel.transition().duration(2000) : sel;
-                paths.attr("d", function (d) { return area(d.values); });
+                sel.transition().duration(duration)
+                    .delay(del || 0)
+                    .attr("d", function (d) { return area(d.values); })
+                    .transition().duration(duration)
+                    .style("opacity", 1);
             };
         };
     } else {
-        render_marks = function (tx) {
+        render_marks = function (dur, del) {
+            var duration = dur || 0,
+                delay = del || 0;
             return function (sel) {
                 var rects = sel.selectAll("rect")
                     .data(function (d) { return d.values; });
                 rects.enter()
                     .append("rect");
                 rects.exit().remove();
-                if (tx) {
-                    rects = rects.transition().duration(2000);
-                }
-                rects.attr("x", function (d) { return scale_x(d.x); })
+                rects.transition().duration(duration)
+                    .delay(del || 0)
+                    .attr("x", function (d) { return scale_x(d.x); })
                     .attr("y", function (d) {
                         return scale_y(d.y0 + d.y);
                     })
@@ -232,12 +250,16 @@ view.model.conditional_plot = function (p) {
                     .attr("height", function (d) {
                         return scale_y(d.y0) - scale_y(d.y0 + d.y);
                     });
+                sel.transition()
+                    .duration(duration)
+                    .delay(duration + delay)
+                    .style("opacity", 1);
             };
         };
     }
 
     // draw the streams: ensure transition for raw/frac swap
-    marks.call(render_marks(true));
+    marks.call(render_marks(1000));
 
     // labels group
     svg.selectAll("g.labels_group")
@@ -250,6 +272,7 @@ view.model.conditional_plot = function (p) {
 
     labels.enter().append("text")
         .classed("layer_label", true)
+        .style("opacity", 0)
         .attr("clip-path", "url(#model_conditional_clip)");
 
     labels.exit().remove();
@@ -279,8 +302,8 @@ view.model.conditional_plot = function (p) {
             }
         }
 
-        sel.attr("display", function (d) {
-            return show[d.t] ? "inherit" : "none";
+        sel.style("opacity", function (d) {
+            return show[d.t] ? 1 : 0;
         });
 
         sel.filter(function (d) { return show[d.t]; })
@@ -321,7 +344,7 @@ view.model.conditional_plot = function (p) {
                 labels.transition()
                     .duration(2000)
                     .call(render_labels);
-                view.model.conditional.zoom_transition = false;
+                view.model.conditional.zoom_transition = undefined;
             } else {
                 labels.call(render_labels);
                 svg.select("g.x.axis").call(axis_x);
@@ -331,7 +354,7 @@ view.model.conditional_plot = function (p) {
     // zoom reset button
     d3.select("button#reset_zoom")
         .on("click", function () {
-            view.model.conditional.zoom_transition = true;
+            view.model.conditional.zoom_transition = 2000;
             zoom.translate([0, 0])
                 .scale(1)
                 .event(svg);
