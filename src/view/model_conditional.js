@@ -42,7 +42,8 @@ view.model.conditional_plot = function (p) {
         scale_x, scale_y, axis_x, ax_label, g_axis, area,
         scale_color,
         bg, clip,
-        mark, marks, other_marks, render_marks,
+        initial = false,
+        mark, marks, other_marks, render_marks, rects,
         labels, render_labels,
         zoom;
 
@@ -75,7 +76,7 @@ view.model.conditional_plot = function (p) {
             .attr("height", spec.h);
     }
 
-    d3.select("#model_conditional_clip rect").transition().duration(2000)
+    d3.select("#model_conditional_clip rect").transition().duration(1000)
         .attr("width", spec.w)
         .attr("height", spec.h);
 
@@ -129,7 +130,7 @@ view.model.conditional_plot = function (p) {
 
     // and preempt any initial transition from the top
     g_axis.transition()
-        .duration(2000)
+        .duration(1000)
         .attr("transform", "translate(0," + spec.h + ")")
         .call(axis_x);
 
@@ -168,6 +169,9 @@ view.model.conditional_plot = function (p) {
             return d.t;
         });
 
+    initial = false;
+    // initial = other_marks.size() === 0 && marks.enter().size() === marks.size();
+
     marks.enter()
         .append(mark)
         .classed("topic_area", true)
@@ -175,7 +179,7 @@ view.model.conditional_plot = function (p) {
         .style("fill", function (d) {
             return scale_color(d.t);
         })
-        .style("opacity", 0)
+        .style("opacity", initial ? 1 : 0)
         .on("mouseover", function (d) {
             var label = d.label;
             d3.select(this).style("fill", scale_color(d.t, true));
@@ -220,46 +224,36 @@ view.model.conditional_plot = function (p) {
         // area.interpolate("monotone");
         // These are quite slow.
 
-        render_marks = function (dur, del) {
-            var duration = dur || 0;
-            return function (sel) {
-                sel.transition().duration(duration)
-                    .delay(del || 0)
-                    .attr("d", function (d) { return area(d.values); })
-                    .transition().duration(duration)
-                    .style("opacity", 1);
-            };
+        render_marks = function (sel) {
+            sel.attr("d", function (d) { return area(d.values); })
+                .transition().duration(1000)
+                .style("opacity", 1);
         };
     } else {
-        render_marks = function (dur, del) {
-            var duration = dur || 0,
-                delay = del || 0;
-            return function (sel) {
-                var rects = sel.selectAll("rect")
-                    .data(function (d) { return d.values; });
-                rects.enter()
-                    .append("rect");
-                rects.exit().remove();
-                rects.transition().duration(duration)
-                    .delay(del || 0)
-                    .attr("x", function (d) { return scale_x(d.x); })
-                    .attr("y", function (d) {
-                        return scale_y(d.y0 + d.y);
-                    })
-                    .attr("width", scale_x.rangeBand())
-                    .attr("height", function (d) {
-                        return scale_y(d.y0) - scale_y(d.y0 + d.y);
-                    });
-                sel.transition()
-                    .duration(duration)
-                    .delay(duration + delay)
-                    .style("opacity", 1);
-            };
+        rects = marks.selectAll("rect")
+            .data(function (d) { return d.values; });
+        rects.enter()
+            .append("rect");
+        rects.exit().remove();
+
+        render_marks = function (sel) {
+            sel.selectAll("rect")
+                .attr("x", function (d) { return scale_x(d.x); })
+                .attr("y", function (d) {
+                    return scale_y(d.y0 + d.y);
+                })
+                .attr("width", scale_x.rangeBand())
+                .attr("height", function (d) {
+                    return scale_y(d.y0) - scale_y(d.y0 + d.y);
+                });
+            sel.transition().duration(1000)
+                .style("opacity", 1);
         };
     }
 
     // draw the streams: ensure transition for raw/frac swap
-    marks.call(render_marks(1000));
+    marks.transition().duration(initial ? 0 : 1000)
+        .call(render_marks);
 
     // labels group
     svg.selectAll("g.labels_group")
@@ -272,7 +266,7 @@ view.model.conditional_plot = function (p) {
 
     labels.enter().append("text")
         .classed("layer_label", true)
-        .style("opacity", 0)
+        .style("opacity", initial ? 1 : 0)
         .attr("clip-path", "url(#model_conditional_clip)");
 
     labels.exit().remove();
@@ -302,9 +296,10 @@ view.model.conditional_plot = function (p) {
             }
         }
 
-        sel.style("opacity", function (d) {
-            return show[d.t] ? 1 : 0;
-        });
+        sel.transition().duration(1000)
+            .style("opacity", function (d) {
+                return show[d.t] ? 1 : 0;
+            });
 
         sel.filter(function (d) { return show[d.t]; })
             .attr("x", function (d) {
@@ -324,8 +319,7 @@ view.model.conditional_plot = function (p) {
             });
     };
 
-    labels.transition()
-        .duration(2000)
+    labels.transition().duration(initial ? 0 : 1000)
         .call(render_labels);
 
     // set up zoom
@@ -336,16 +330,17 @@ view.model.conditional_plot = function (p) {
     zoom.y(scale_y)
         .scaleExtent([1, 5])
         .on("zoom", function () {
-            marks.call(render_marks(view.model.conditional.zoom_transition));
             if (view.model.conditional.zoom_transition) {
-                svg.select("g.x.axis").transition()
-                    .duration(2000)
-                    .call(axis_x);
-                labels.transition()
-                    .duration(2000)
+                marks.transition().duration(1000)
+                    .call(render_marks);
+                labels.transition().duration(1000)
                     .call(render_labels);
-                view.model.conditional.zoom_transition = undefined;
+                svg.select("g.x.axis").transition().duration(1000)
+                    .call(axis_x);
+
+                view.model.conditional.zoom_transition = false;
             } else {
+                marks.call(render_marks);
                 labels.call(render_labels);
                 svg.select("g.x.axis").call(axis_x);
             }
@@ -354,7 +349,7 @@ view.model.conditional_plot = function (p) {
     // zoom reset button
     d3.select("button#reset_zoom")
         .on("click", function () {
-            view.model.conditional.zoom_transition = 2000;
+            view.model.conditional.zoom_transition = true;
             zoom.translate([0, 0])
                 .scale(1)
                 .event(svg);
