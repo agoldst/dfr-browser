@@ -293,7 +293,7 @@ onmessage = function (e) {
     } else if (e.data.what === "set_doc_categories") {
         my.doc_categories[e.data.v] = e.data.keys;
         postMessage({
-            what: "set_doc_categories",
+            what: "set_doc_categories/" + e.data.v,
             result: my.doc_categories[e.data.v] !== undefined
         });
     } else if (e.data.what === "total_tokens") {
