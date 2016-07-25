@@ -96,7 +96,7 @@ view.model.plot = function (param) {
         .classed("topic", true)
         .attr("opacity", 0);    // will transition to visible below
 
-    gs.exit().transition(1000)
+    gs.exit().transition().duration(1000)
         .attr("opacity", 0)
         .remove();
 
@@ -227,31 +227,33 @@ view.model.plot = function (param) {
         return result;
     };
 
+    // new nodes: translate (they're still opacity 0)
     gs_enter.attr("transform", translation)
         .selectAll("circle")
             .attr("r", circle_radius);
 
+    // words on new nodes just appear at the right size
+    gs_enter.selectAll("text.topic_word")
+        .style("font-size", function (wd) {
+            return wd.size + "px";
+        });
+
     gs.transition()
+        .delay(1000)
         .duration(1000)
         .attr("transform", translation)
         .selectAll("circle")
         .attr("r", circle_radius);
 
-    // new nodes: no translation, just fade in: interrupt the other
+    // new nodes: no translation, just fade in
     gs_enter.transition()
+        .delay(2000)
         .duration(1000)
         .attr("opacity", 1);
 
     words.transition()
+        .delay(1000)
         .duration(1000)
-        .style("font-size", function (wd) {
-            return wd.size + "px";
-        });
-
-    // words on new nodes also just appear
-    gs_enter.selectAll("text.topic_word")
-        .transition()
-        .duration(0)
         .style("font-size", function (wd) {
             return wd.size + "px";
         });
