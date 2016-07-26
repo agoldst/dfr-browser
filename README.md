@@ -115,7 +115,7 @@ By default the data files will then be retrieved from `data/model1/info.json`, `
 
 The order of the array gives the order of the menu of model `name`s that appears next to "Settings" in the top navigation bar. The first model in the array will be loaded first by default (this can be changed). See "Settings for multiple models" below for more on the configuration possibilities.
 
-In addition to displaying different topic models, you might also choose to present multiple configurations of the same model, e.g., changing only the metadata variable for the conditional display ("Conditioning on metadata" below). Where model data or metadata are shared, the same file paths can be given for different models' data files. In this case dfr-browser tries not to load the duplicate data more than once. At present this functionality is subject to the following restriction: if the metadata file is shared, you cannot condition on the same variable with two different sets of parameters (e.g. conditioning on `date` by both years and decades); you also cannot give divergent values to the `metadata.spec.extra_fields` parameter. To work around these limitations, simply duplicate the metadata file.
+In addition to displaying different topic models, you might also choose to present multiple configurations of the same model, e.g., changing only the metadata variable for the conditional display ("Conditioning on metadata" below). Where model data or metadata are shared, the same file paths can be given for different models' data files. In this case dfr-browser tries not to load the duplicate data more than once. At present this functionality is subject to the following restriction: if the metadata file is shared, you cannot condition on the same variable with two different sets of parameters (e.g. conditioning on `date` by both years and decades); also, giving divergent values to the `metadata.spec` parameters (`extra_fields`, `id`,  `date_field`) will give unpredictable results. These settings must be specified identically for each dataset that shares the same metadata (it may be most convenient to do this by adding, e.g., a `VIS.metadata.spec.id` property to the top-level `info.json` file, which then propagates to each of the other models; see "Settings for multiple models" below). You can also work around these limitations by duplicating the metadata file itself.
 
 The dfrtopics R package can export the appropriate files for this case; see the R help for `dfr_browser`. That package also has some support for "aligning" multiple models. TODO more discussion
 
@@ -218,7 +218,7 @@ In order to aid interpreting the model, it is often useful to manually label top
 }
 ```
 
-One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number.
+One-based topic numbers *as strings* are the keys. This allows for easier editing by hand. Topics for which no label is supplied are automatically labeled by their number. In a multiple-model browser, there is no requirement that topics with corresponding IDs (either numeric or arbitrary, via `topic_ids`) have corresponding labels.
 
 Note that in versions of dfr-browser prior to 0.8.1-alpha, `topic_labels` was a top-level property in `info.json` rather than a subproperty of `VIS`.
 
@@ -261,6 +261,17 @@ but `data/model2/info.json` might have
 
 A few properties are only read from `data/info.json` and not the subsidiary `info.json` files, because they correspond to settings for the whole browser rather than for individual models. These are: `title`, `meta_info` (for the "about" page, which does not vary for different models), `VIS.default_view`, `VIS.aliases`, and `VIS.resize_refresh_delay`.
 
+### Document and topic identifiers
+
+`metadata.spec` can also include an `id` field naming a column of metadata to use as a document identifier. In this case, the URL for the document view will have the form `#/[M/]doc/id`, where `id` will be the contents of the ID field for the document rather than the default, which is the sequential document number. In a multiple-model browser with metadata `id` set, changing from `#/M1/doc/D` to `#/M2/doc/D` will then display the estimated topics for the *same* document `D` in the two models even if internally `M1` and `M2` store documents in different orders or (more likely) have non-overlapping documents.
+
+In a single-model browser this setting will also work (to little end). Note that the default metadata loading, via `metadata.dfr().from_string`, creates a `doi` field that can be used as a document ID.
+
+Similarly, each `info.json` file can include an array of `topic_ids`, one for each topic in the corresponding model. If this array is defined, URLs for the topic view will have the form `#/[M/]topic/id`, where `id` is an element of `topic_ids`, instead of being a sequential topic number. The aim is to make it possible to specify correspondences between topics in any number of models, as well as to specify non-correspondence. `id` can be any alphanumeric sequence (avoid using `/` and `.`), though non-sequential numbers may often do well enough.
+
+My [dfrtopics](https://github.com/agoldst/dfrtopics) provides basic functions for aligning a set of topic models and outputting suitable data files to browse them together.
+
+A `topic_ids` setting will also work in a single-model browser. This might be useful: suppose you share a visualization of a model, then later regenerate the model with slightly adjusted parameters, reshuffling the topic numbers. Say old topic 4 is very similar to new topic 20. Then you can give new topic 20 an id of 4 (and so on for other topics: this process can be automated using dfrtopics), ensuring that `#/topic/4` points to a visualization of the topic you want, regardless of the arbitrary ordering of topics in the new model.
 
 ## Launch the browser
 
