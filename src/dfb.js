@@ -245,31 +245,38 @@ my.views.set("words", function () {
     return view.words(my.m.vocab(ts));
 });
 
-my.views.set("doc", function (d) {
+my.views.set("doc", function (doc) {
     var div = d3.select("div#doc_view"),
-        doc = +d,
-        h;
-    // TODO need option to refer to docs by an arbitrary id, not just index
+        d, h, meta;
 
     if (!my.m.ready("meta") || !my.m.ready("dt") || !my.m.ready("tw")) {
         view.loading(true);
         return true;
     }
 
+    d = my.m.meta().doc_index(doc);
     view.loading(false);
 
-    if (!isFinite(doc) || doc < 0 || doc >= my.m.n_docs()) {
+    if (d === undefined) {
         d3.select("#doc_view_help").classed("hidden", false);
 
         // if doc is un- or misspecified and there is no last doc, bail
         if (my.last.doc === undefined) {
             d3.select("#doc_view_main").classed("hidden", true);
-            return true;
+            return [];
         }
 
         // otherwise, fall back to last doc if none entered
-        doc = my.last.doc;
-        h = view_link({ type: "doc", param: doc });
+        d = my.m.meta().doc_index(my.last.doc);
+
+        // last.doc might be no good if we've changed models
+        if (d === undefined) {
+            d3.select("#doc_view_main").classed("hidden", true);
+            return [];
+        }
+
+        meta = my.m.meta().doc(my.last.doc);
+        h = view_link({ type: "doc", param: my.last.doc });
         div.select("a#last_doc")
             .attr("href", h)
             .text(document.URL.replace(/#.*$/, "") + h);
@@ -277,11 +284,12 @@ my.views.set("doc", function (d) {
     } else {
         d3.select("#doc_view_help").classed("hidden", true);
         my.last.doc = doc;
+        meta = my.m.meta().doc(doc);
     }
     d3.select("#doc_view_main").classed("hidden", false);
 
     view.calculating("#doc_view", true);
-    my.m.doc_topics(doc, my.m.n(), function (ts) {
+    my.m.doc_topics(d, my.m.n(), function (ts) {
         var topics = ts.filter(function (t) {
             return !my.cache.topic_hidden[t.topic]
                 || my.settings.show_hidden_topics;
@@ -291,8 +299,8 @@ my.views.set("doc", function (d) {
 
         view.doc({
             topics: topics,
-            citation: my.m.bib().citation(my.m.meta().doc(doc)),
-            url: my.m.bib().url(my.m.meta().doc(doc)),
+            citation: my.m.bib().citation(meta),
+            url: my.m.bib().url(meta),
             total_tokens: d3.sum(topics, function (t) { return t.weight; }),
             words: topics.map(function (t) {
                 return my.m.topic_words(t.topic, my.settings.overview_words);
