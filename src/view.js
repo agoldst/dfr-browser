@@ -134,7 +134,8 @@ var view = (function () {
         var j, cs = ["." + v];
         d3.selectAll(".annote").classed("hidden", true);
         for (j = 0; j < param.length; j += 1) {
-            cs.push(cs[j] + "_" + param[j]);
+            // we have to sanitize param to use in selectors:
+            cs.push(cs[j] + "_" + String(param[j]).replace(/\W/g, "_"));
         }
         cs.forEach(function (c) {
             d3.selectAll(".annote" + c).classed("hidden", false);
