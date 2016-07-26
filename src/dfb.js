@@ -129,12 +129,16 @@ my.views.set("topic", function (t_user, y) {
 
     // create callback for showing top docs; used in if/else following
     view_top_docs = function (docs) {
+        var doc_ids = docs.map(function (d) {
+            return my.m.meta().doc_id(d.doc);
+        });
         view.calculating("#topic_docs", false);
         view.topic.docs({
             t: t,
             docs: docs,
-            citations: docs.map(function (d) {
-                return my.m.bib().citation(my.m.meta().doc(d.doc));
+            doc_ids: doc_ids,
+            citations: my.m.meta().doc(doc_ids).map(function (d) {
+                return my.m.bib().citation(d);
             }),
             condition: y,
             type: VIS.condition.type,
@@ -142,6 +146,7 @@ my.views.set("topic", function (t_user, y) {
             key: my.m.meta_condition(my.condition),
             proper: my.proper
         });
+
     };
 
     // if no condition given, show unconditional top docs

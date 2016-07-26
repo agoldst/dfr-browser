@@ -34,7 +34,7 @@ view.topic.words = function (words) {
 
     trs.select("td.topic_word a")
         .attr("href", function (w) {
-            return view.dfb().view_link({ type:"word", param: + w.word });
+            return view.dfb().view_link({ type:"word", param: +w.word });
         })
         .text(function (w) { return w.word; });
 
@@ -105,8 +105,8 @@ view.topic.docs = function (p) {
             return p.citations[j];
         });
 
-    trs.on("click", function (d) {
-        view.dfb().set_view({ type: "doc", param: d.doc });
+    trs.on("click", function (d, j) {
+        view.dfb().set_view({ type: "doc", param: p.doc_ids[j] });
     });
 
     view.weight_tds({
