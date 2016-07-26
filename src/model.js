@@ -438,6 +438,11 @@ model = function (spec) {
     set_topic_ids = function (ids) {
         my.ids = ids;
         if (Array.isArray(my.ids)) {
+            // if wrong number of IDs, bail
+            if (my.n && my.ids.length !== my.n) {
+                my.ids = undefined;
+                return;
+            }
             my.topic_ids = d3.map();
             ids.forEach(function (id, j) {
                 my.topic_ids.set(id, j);
