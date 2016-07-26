@@ -1,16 +1,28 @@
-/*global d3 */
+/*global d3, view */
 "use strict";
 
 // ---- metadata specification ----
 //
-// This object stores metadata. A metadata object should do the following:
+// This object stores metadata. The object returned by metadata(...) does the
+// following:
 //
-// from_string: load data from text (called by browser().load())
-// doc(i): access metadata for document or documents i
+// from_string(s): load data from text s (called by browser().load())
+// doc(id): access metadata for document or documents with IDs id
+// doc_id(i), doc_index(id): convert an index i into an ID and vice-versa
 // n_docs: say how many documents there are
+// condition: get or set a conditioning variable (and calculate bins for
+// continuous variables)
 //
-// metadata() is a generic and not used here except as a template for
-// metadata.dfr(), which understands DfR metadata.
+// The constructor parameter in metadata(spec) supplies initial values for
+// private data. The following fields of spec are used here:
+//
+// date_field: name of column to parse as a date (if any)
+// id: name of column to use as a doc identifier. Must be unique. If missing,
+// documents will be accessed and identified by their numeric index (from 0).
+//
+// metadata() is a generic. By default, dfr-browser uses the derived object
+// constructed with metadata.dfr() (see src/metadata/dfr.js), which understands
+// DfR metadata.
 
 var metadata = function (spec) {
     var my = spec || { },
@@ -18,7 +30,10 @@ var metadata = function (spec) {
         from_string,
         bib,
         date_field,
+        id_field,
         doc,
+        doc_id,
+        doc_index,
         n_docs,
         condition;
 
@@ -37,6 +52,10 @@ var metadata = function (spec) {
                 d[my.date_field] = new Date(d[my.date_field]);
             });
         }
+        if (my.id && !my.docs[0].hasOwnProperty(my.id)) {
+            view.warning("Metadata does not have an ID column named " + my.id);
+            my.id = undefined;
+        }
     };
     that.from_string = from_string;
 
@@ -48,6 +67,14 @@ var metadata = function (spec) {
     };
     that.bib = bib;
 
+    id_field = function (id) {
+        if (id !== undefined) {
+            my.id = id;
+        }
+        return my.id;
+    };
+    that.id_field = id_field;
+
     date_field = function (key) {
         if (typeof key === "string") {
             my.date_field = key;
@@ -58,19 +85,67 @@ var metadata = function (spec) {
     };
     that.date_field = date_field;
 
+    // document accessor. doc() gives the array of all docs, for a single index
+    // value i doc(i) gives a single doc, and for an array i doc(i) gives an
+    // array. If my.id is set, access is by matching on values in the field
+    // my.id rather than the numeric index.
+    //
+    // doc_id turns numeric indices into ID values; doc_index turns ID values
+    // into numeric indices.
     doc = function (i) {
-        if (isFinite(i)) {
-            return my.docs[i];
-        }
-
+        var ind;
         if (i === undefined) {
             return my.docs;
         }
 
-        // otherwise, assume i is an array of indices
-        return i.map(function (j) { return my.docs[j]; });
+        ind = doc_index(i);
+        if (Array.isArray(ind)) {
+            return ind.map(function (j) { return my.docs[j]; });
+        }
+
+        return my.docs[ind];
     };
     that.doc = doc;
+
+    doc_id = function (i) {
+        if (i === undefined) {
+            return my.docs.map(function (d, j) { return doc_id(j); });
+        }
+
+        if (my.id === undefined) {
+            return i;
+        }
+
+        if (Array.isArray(i)) {
+            return i.map(function (j) { return my.docs[j][my.id]; });
+        }
+
+        return my.docs[i][my.id];
+    };
+    that.doc_id = doc_id;
+
+    doc_index = function (id) {
+        if (Array.isArray(id)) {
+            return id.map(doc_index);
+        }
+
+        if (!my.id) {
+            return +id;
+        }
+
+        if (my.by_id[my.id] === undefined) {
+            my.by_id[my.id] = d3.map();
+            my.docs.forEach(function (doc, j) {
+                my.by_id[my.id].set(doc[my.id], j);
+            });
+            if (my.by_id[my.id].size() !== my.docs.length) {
+                view.error("Document IDs in " + my.id
+                        + " column are not unique");
+            }
+        }
+        return my.by_id[my.id].get(id);
+    };
+    that.doc_index = doc_index;
 
     n_docs = function () {
         if (my.docs) {

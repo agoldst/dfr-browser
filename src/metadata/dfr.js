@@ -4,12 +4,14 @@
 // ---- metadata specification: DfR ----
 //
 // Metadata storage specialized for DfR. from_string() expects eight DfR
-// metadata columns (trimmed as by dfrtopics::export_browser_data). For
-// additional columns, names may be specified at construction time with
+// metadata columns (trimmed as by dfrtopics::export_browser_data).
 //
-// metadata.dfr({ extra_fields: [ "genre", "sparkliness" ] })
+// In addition to the parameters for the base metadata() object,
+// metadata.dfr(spec) can have the following additional parameter in spec:
 //
-// otherwise the default is to name them X1, X2, ...
+// extra_fields: array of names for columns beyond the expected eight. If
+// missing (or there are more columns than extra_fields), column 9 is named X1,
+// column 10 is named X2, etc.
 
 metadata.dfr = function (spec) {
     var my = spec || { },
