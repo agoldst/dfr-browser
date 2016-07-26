@@ -20,12 +20,11 @@ var metadata = function (spec) {
         date_field,
         doc,
         n_docs,
-        condition,
-        conditionals;
+        condition;
 
     // constructor: initialize conditionals
-    // empty map if spec.conditionals undefined
-    my.conditionals = d3.map(my.conditionals);
+    my.conditionals = d3.map();
+    my.by_id = { };
 
     // default method: d3 csv parsing
     from_string = function (s) {
@@ -83,13 +82,6 @@ var metadata = function (spec) {
     // Which variables can we condition topic distributions on?  condition()
     // gets/sets key translators, one for each variable. See metadata.key and
     // metadata.key.time below.
-    //
-    // conditionals() returns the d3.map of all the pairings.
-
-    conditionals = function () {
-        return my.conditionals;
-    };
-    that.conditionals = conditionals;
 
     condition = function (key, f, spec) {
         if (f === undefined) {

@@ -151,8 +151,6 @@ model = function (spec) {
     meta = function (meta) {
         if (meta) {
             my.meta = meta;
-            // cache metadata variable information for each doc
-            my.meta.conditionals().forEach(doc_category);
             my.ready.meta = true;
         }
 
@@ -160,7 +158,12 @@ model = function (spec) {
     };
     that.meta = meta;
 
-    // expose metadata's conditional key/invert functions
+    // Main method for getting/setting metadata conditions. The getter returns
+    // the conditional key object (a function with the `invert` property,
+    // itself a function); the setter calls metadata().condition, which sets up
+    // the conditional key object, then caches the keys for all documents on a
+    // separate thread. When this cacheing is finished, a callback (if present)
+    // is invoked.
     meta_condition = function (cond, key, spec, callback) {
         if (key !== undefined) {
             if (!my.ready["meta_" + cond]) {
