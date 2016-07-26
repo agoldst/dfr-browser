@@ -347,12 +347,17 @@ my.views.set("bib", function (maj, min, dir) {
         major: sorting.major,
         minor: sorting.minor,
         dir: my.m.bib().sort.dir(sorting),
-        docs: my.m.meta().doc()
+        docs: my.m.meta().doc(),
+        doc_ids: my.m.meta().doc_id()
     });
 
     if (!my.cache.citations) {
         // Cache the list of citations
-        my.cache.citations = my.m.meta().doc().map(my.m.bib().citation);
+        my.cache.citations = d3.map();
+        my.m.meta().doc().forEach(function (d, j) {
+            my.cache.citations.set(my.m.meta().doc_id(j),
+                    my.m.bib().citation(d));
+        });
     }
 
     view.bib.dropdown(my.m.bib().sorting());

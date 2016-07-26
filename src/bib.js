@@ -76,7 +76,7 @@ var bib = function (spec) {
 
         docs = p.docs.map(function (d, j) {
                 return {
-                    id: j,
+                    id: p.doc_ids[j],
                     major: that.keys[p.major](d),
                     minor: that.keys[p.minor](d)
                 };

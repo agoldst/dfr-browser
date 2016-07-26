@@ -138,7 +138,7 @@ view.bib.render = function (p) {
 
     items.selectAll("a")
         .html(function (d) {
-            return p.citations[d];
+            return p.citations.get(d);
         })
         .attr("href", function (d) {
             return view.dfb().view_link({ type: "doc", param: d });
