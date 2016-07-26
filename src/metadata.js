@@ -6,12 +6,12 @@
 // This object stores metadata. The object returned by metadata(...) does the
 // following:
 //
-// from_string(s): load data from text s (called by browser().load())
+// from_string(s): load data from text s (called by browser().load()). Calls
+//     validate() after loading.
 // doc(id): access metadata for document or documents with IDs id
 // doc_id(i), doc_index(id): convert an index i into an ID and vice-versa
 // n_docs: say how many documents there are
-// condition: get or set a conditioning variable (and calculate bins for
-// continuous variables)
+// condition: get/set conditioning variable & calculate bins if needed
 //
 // The constructor parameter in metadata(spec) supplies initial values for
 // private data. The following fields of spec are used here:
@@ -27,9 +27,9 @@
 var metadata = function (spec) {
     var my = spec || { },
         that = { },
+        validate,
         from_string,
         bib,
-        date_field,
         id_field,
         doc,
         doc_id,
@@ -47,17 +47,33 @@ var metadata = function (spec) {
             return;
         }
         my.docs = d3.csv.parse(s);
-        if (my.date_field && my.docs[0].hasOwnProperty(my.date_field)) {
-            my.docs.forEach(function (d) {
-                d[my.date_field] = new Date(d[my.date_field]);
-            });
+        validate();
+    };
+    that.from_string = from_string;
+
+    validate = function () {
+        if (!Array.isArray(my.docs)) {
+            return;
         }
         if (my.id && !my.docs[0].hasOwnProperty(my.id)) {
             view.warning("Metadata does not have an ID column named " + my.id);
             my.id = undefined;
         }
+        if (my.date_field && !Array.isArray(my.date_field)) {
+            my.date_field = [my.date_field];
+        }
+        my.date_field = my.date_field.filter(function (k) {
+            var result = my.docs[0].hasOwnProperty(k);
+            if (!result) {
+                view.warning("Did not find specified date field " + k);
+            }
+            return result;
+        });
+        my.docs.forEach(function (d) {
+            my.date_field.forEach(function (k) { d[k] = new Date(d[k]); });
+        });
     };
-    that.from_string = from_string;
+    that.validate = validate;
 
     bib = function (b) {
         if (typeof b === "object") {
@@ -74,16 +90,6 @@ var metadata = function (spec) {
         return my.id;
     };
     that.id_field = id_field;
-
-    date_field = function (key) {
-        if (typeof key === "string") {
-            my.date_field = key;
-            return this;
-        }
-
-        return my.date_field;
-    };
-    that.date_field = date_field;
 
     // document accessor. doc() gives the array of all docs, for a single index
     // value i doc(i) gives a single doc, and for an array i doc(i) gives an
@@ -139,8 +145,8 @@ var metadata = function (spec) {
                 my.by_id[my.id].set(doc[my.id], j);
             });
             if (my.by_id[my.id].size() !== my.docs.length) {
-                view.error("Document IDs in " + my.id
-                        + " column are not unique");
+                view.error("Document IDs in metadata column \"" + my.id
+                        + "\" are not unique.");
             }
         }
         return my.by_id[my.id].get(id);

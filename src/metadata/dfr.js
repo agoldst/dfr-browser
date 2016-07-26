@@ -18,6 +18,15 @@ metadata.dfr = function (spec) {
         that,
         from_string;
 
+    // ensure date_field is an array including "date"
+    my.date_field = my.date_field || ["date"];
+    if (!Array.isArray(my.date_field)) {
+        my.date_field = [my.date_field];
+    }
+    if (my.date_field.indexOf("date") === -1) {
+        my.date_field.push("date");
+    }
+
     // constructor: build from parent
     that = metadata(my);
     if (!Array.isArray(my.extra_fields)) {    // validate extra_fields
@@ -49,7 +58,7 @@ metadata.dfr = function (spec) {
                 journal: d[3].trim(),
                 volume: d[4].trim(),
                 issue: d[5].trim(),
-                date: new Date(d[6].trim()), // pubdate (UTC)
+                date: d[6].trim(), // pubdate (UTC) converted by validate()
                 pagerange: d[7].trim()
                     .replace(/^p?p\. /, "")
                     .replace(/-/g, "–")
@@ -61,6 +70,7 @@ metadata.dfr = function (spec) {
 
             return result;
         });
+        that.validate();
     };
     that.from_string = from_string;
 
