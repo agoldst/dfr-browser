@@ -16,6 +16,7 @@ var dfb = function (spec) {
         switch_model,   //                  for switching models
         parse_hash,
         hide_topics,
+        topic_hidden,
         data_signature,
         setup_listeners, // initialization
         setup_views,
@@ -199,8 +200,7 @@ my.views.set("word", function (w) {
     my.last.word = word;
 
     topics = my.m.word_topics(word).filter(function (t) {
-        return !my.cache.topic_hidden[t.topic]
-            || my.settings.show_hidden_topics;
+        return !topic_hidden(t.topic);
     });
 
     if (topics.length > 0) {
@@ -242,7 +242,7 @@ my.views.set("words", function () {
 
     if (!my.settings.show_hidden_topics) {
         ts = d3.range(my.m.n())
-            .filter(function (t) { return !my.cache.topic_hidden[t]; });
+            .filter(function (t) { return !topic_hidden(t); });
     }
     // if we are revealing hidden topics, ts can be undefined
     // and m.vocab(ts) will return the full vocab.
@@ -296,8 +296,7 @@ my.views.set("doc", function (doc) {
     view.calculating("#doc_view", true);
     my.m.doc_topics(d, my.m.n(), function (ts) {
         var topics = ts.filter(function (t) {
-            return !my.cache.topic_hidden[t.topic]
-                || my.settings.show_hidden_topics;
+            return !topic_hidden(t.topic);
         });
 
         view.calculating("#doc_view", false);
@@ -533,7 +532,9 @@ model_view_list = function (sort, dir) {
                 sort: sort_choice,
                 dir: sort_dir,
                 labels: d3.range(my.m.n()).map(my.m.topic_label),
-                topic_hidden: my.cache.topic_hidden || []
+                topic_hidden: data.map(function (d) {
+                    return topic_hidden(d.t);
+                })
             });
 
             hide_topics();
@@ -545,12 +546,8 @@ model_view_list = function (sort, dir) {
 
 model_view_plot = function (type) {
     my.m.topic_total(undefined, function (totals) {
-        var topics = d3.range(my.m.n());
-        if (!my.settings.show_hidden_topics && my.cache.topic_hidden) {
-            topics = topics.filter(function (t) {
-                return !my.cache.topic_hidden[t];
-            });
-        }
+        var topics = d3.range(my.m.n())
+            .filter(function (t) { return !topic_hidden(t); });
 
         view.model.plot({
             type: type,
@@ -595,11 +592,7 @@ model_view_conditional = function (type) {
                     label: my.m.topic_label(t)
                 };
             })
-                .filter(function (topic) {
-                    return my.settings.show_hidden_topics
-                        || (my.cache.topic_hidden &&
-                                !my.cache.topic_hidden[topic.t]);
-                });
+                .filter(function (topic) { return !topic_hidden(topic.t); });
 
             view.model.conditional(p);
             view.calculating("#model_view_conditional", false);
@@ -776,6 +769,10 @@ parse_hash = function (h) {
     if (result.type === "topic" && result.param.length > 0) {
         result.param[0] = +result.param[0] - 1;
     }
+    // doc: fix doc ids with slashes in them (like, say, DOIs)
+    if (result.type === "doc" && result.param.length > 1) {
+        result.param = [result.param.join("/")];
+    }
     return result;
 };
 
@@ -786,6 +783,24 @@ hide_topics = function (flg) {
             return flag;
         });
 };
+
+topic_hidden = function (t) {
+    if (my.settings.show_hidden_topics) {
+        return false;
+    }
+    if (!my.cache.topic_hidden) {
+        // set up list of visible topics when needed, provided we can
+        if (!isFinite(my.m.n())) {
+            return false;
+        }
+        my.cache.topic_hidden = d3.range(my.m.n()).map(function (t) {
+            return VIS.hidden_topics.indexOf(t + 1) !== -1;
+        });
+    }
+    return my.cache.topic_hidden[t];
+};
+
+
 
 // Method giving an identifier with a current state of the full data set.  The
 // only promise is that the data_signature will change if the data have changed
@@ -1216,22 +1231,21 @@ load_dt = function (f) {
 
 load_tw = function (f) {
     var callback = function () {
-        // set up list of visible topics
-        my.cache.topic_hidden = d3.range(my.m.n()).map(function (t) {
-            return VIS.hidden_topics.indexOf(t + 1) !== -1;
-        });
-
         view.topic.dropdown({
             topics: d3.range(my.m.n()).map(function (t) {
                 return {
                     topic: t,
                     words: my.m.topic_words(t, VIS.model_view.words),
                     label: my.m.topic_label(t),
-                    hidden: my.cache.topic_hidden[t]
+                    hidden: topic_hidden(t) // refreshes cache.topic_hidden
                 };
             }),
             overview_words: my.settings.overview_words
         });
+
+        // because the hidden-topic setting can change, we have to issue a
+        // refresh here whether or not we've loaded new data
+        refresh();
     };
 
     if (my.m.ready("tw")) {
@@ -1243,7 +1257,6 @@ load_tw = function (f) {
         if (typeof tw_s === 'string') {
             my.m.set_tw(tw_s);
             callback();
-            refresh();
         } else {
             view.error("Unable to load topic words from " + f);
         }
