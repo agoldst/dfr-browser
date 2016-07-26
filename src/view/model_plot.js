@@ -45,9 +45,9 @@ view.model.plot = function (param) {
     zoom_rect.attr("height", spec.h);
 
     if (param.type === "scaled") {
-        topics.forEach(function (p, j) {
-            topics[j].x = p.scaled[0];
-            topics[j].y = p.scaled[1];
+        topics.forEach(function (p) {
+            p.x = p.scaled[0];
+            p.y = p.scaled[1];
         });
     } else {
         // default to grid
@@ -91,18 +91,18 @@ view.model.plot = function (param) {
         .range([0,VIS.model_view.plot.stroke_range]);
 
     gs = svg.selectAll("g.topic")
-        .data(topics, function (p) { return p.t; });
+        .data(topics, function (p) { return p.id; });
 
     // add circles. If this isn't an initial render, the update selection
     // is non-empty and we want entering circles to fade in.
     gs_enter = gs.enter().append("g")
         .classed("topic", true)
-        .attr("opacity", gs.enter().size() === gs.size() ? 1 : 0);
+        .style("opacity", gs.enter().size() === gs.size() ? 1 : 0);
 
     // TODO refine animation choreography here: not quite right
     exit_duration = gs.exit().empty() ? 0 : 1000;
     gs.exit().transition().duration(exit_duration)
-        .attr("opacity", 0)
+        .style("opacity", 0)
         .remove();
 
     gs_enter.append("clipPath").attr("id", function (p) {
@@ -124,7 +124,7 @@ view.model.plot = function (param) {
                 if (!d3.event.shiftKey) {
                     view.dfb().set_view({
                         type: "topic",
-                        param: p.t
+                        param: p.id
                     });
                 }
             })
@@ -246,15 +246,14 @@ view.model.plot = function (param) {
     gs.transition()
         .delay(exit_duration)
         .duration(1000)
-        .attr("transform", translation)
-        .selectAll("circle")
-        .attr("r", circle_radius);
-
-    // new nodes: no translation, just (possibly) fade in
-    gs_enter.transition()
-        .delay((exit_duration === 0) ? 0 : (1000 + exit_duration))
+        .attr("transform", translation) // move updating nodes
+        .each(function () {
+            d3.select(this).selectAll("circle").transition()
+                .attr("r", circle_radius);
+        })
+        .transition() // then fade in any new nodes
         .duration(1000)
-        .attr("opacity", 1);
+        .style("opacity", 1);
 
     words.transition()
         .delay(1000)

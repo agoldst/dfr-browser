@@ -24,7 +24,7 @@ view.doc = function (p) {
         .selectAll("tr")
         .data(topics.map(function (d, j) {
             return {
-                topic: d.topic,
+                topic: p.ids[j],
                 weight: d.weight,
                 label: p.labels[j],
                 words: p.words[j]

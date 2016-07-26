@@ -72,10 +72,8 @@ var dfb = function (spec) {
 // Principal view-generating functions
 // -----------------------------------
 
-my.views.set("topic", function (t_user, y) {
-    var words,
-        // TODO option to access topics by label
-        t = +t_user - 1, // t_user is 1-based topic index, t is 0-based
+my.views.set("topic", function (t_id, y) {
+    var words, t,
         view_top_docs;
 
     if (!my.m.ready("meta") || !my.m.ready("dt") || !my.m.ready("tw")) {
@@ -83,6 +81,8 @@ my.views.set("topic", function (t_user, y) {
         view.loading(true);
         return true;
     }
+
+    t = my.m.topic_index(t_id);
 
     // if the topic is missing or unspecified, show the help
     if (!isFinite(t) || t < 0 || t >= my.m.n()) {
@@ -108,20 +108,20 @@ my.views.set("topic", function (t_user, y) {
     view.topic.words(words);
 
     view.calculating("#topic_docs", true);
-    if (!my.m.ready("meta_" + my.condition)) {
+    if (!my.condition || !my.m.ready("meta_" + my.condition.field)) {
         view.loading(true);
         return true;
     }
 
     // topic conditional barplot subview
-    my.m.topic_conditional(t, my.condition, function (data) {
+    my.m.topic_conditional(t, my.condition.field, function (data) {
         view.topic.conditional({
-            t: t,
+            t: t_id,
             condition: data.has(y) ? y : undefined, // validate condition y
-            type: VIS.condition.type,
-            condition_name: my.condition_name,
+            type: my.condition.type,
+            condition_name: my.condition.name,
             data: data,
-            key: my.m.meta_condition(my.condition),
+            key: my.m.meta_condition(my.condition.field),
             // if the last view was also a topic view,
             // we allow an animated transition
             transition: my.updating
@@ -135,16 +135,16 @@ my.views.set("topic", function (t_user, y) {
         });
         view.calculating("#topic_docs", false);
         view.topic.docs({
-            t: t,
+            t: my.m.topic_id(t),
             docs: docs,
             doc_ids: doc_ids,
             citations: my.m.meta().doc(doc_ids).map(function (d) {
                 return my.m.bib().citation(d);
             }),
             condition: y,
-            type: VIS.condition.type,
-            condition_name: my.condition_name,
-            key: my.m.meta_condition(my.condition),
+            type: my.condition.type,
+            condition_name: my.condition.name,
+            key: my.m.meta_condition(my.condition.field),
             proper: my.proper
         });
 
@@ -157,12 +157,12 @@ my.views.set("topic", function (t_user, y) {
         // otherwise, ask for list conditional on y
         // N.B. an invalid condition will yield no docs
         // (and a message will show to that effect)
-        my.m.topic_docs_conditional(t, my.condition, y,
+        my.m.topic_docs_conditional(t, my.condition.field, y,
                 my.settings.topic_view.docs, view_top_docs);
     }
 
     view.loading(false);
-    return (y === undefined) ? [t_user] : [t_user, y];
+    return (y === undefined) ? [t_id] : [t_id, y];
 });
 
 my.views.set("word", function (w) {
@@ -217,15 +217,17 @@ my.views.set("word", function (w) {
 
     view.word({
         word: word,
-        topics: topics,
-        words: topics.map(function (t) {
-            return my.m.topic_words(t.topic, n).slice(0, n);
+        topics: topics.map(function (t) {
+            return {
+                t: t.topic,
+                id: my.m.topic_id(t.topic),
+                label: my.m.topic_label(t.topic),
+                rank: t.rank,
+                words: my.m.topic_words(t.topic, n).slice(0, n)
+            };
         }),
         n: n,
         n_topics: my.m.n(),
-        labels: topics.map(function (t) {
-            return my.m.topic_label(t.topic);
-        }),
         updating: my.updating
     });
 
@@ -312,6 +314,9 @@ my.views.set("doc", function (doc) {
             labels: topics.map(function (t) {
                 return my.m.topic_label(t.topic);
             }),
+            ids: topics.map(function (t) {
+                return my.m.topic_id(t.topic);
+            }),
             proper: my.proper
         });
 
@@ -397,7 +402,8 @@ my.views.set("about", function () {
 settings_modal = function () {
     var p = {
         max_words: my.m.n_top_words(),
-        max_docs: my.m.n_docs()
+        max_docs: my.m.n_docs(),
+        condition_type: my.condition.type
     };
     if (p.max_words === undefined || p.max_docs === undefined) {
         return false;
@@ -464,7 +470,8 @@ my.views.set("model", function (type, p1, p2) {
     d3.select("#model_view nav").classed("hidden", false);
 
     if (type_chosen === "list") {
-        if (!my.m.ready("meta") || !my.m.ready("dt")) {
+        if (!my.m.ready("meta") || !my.m.ready("dt") || !my.condition
+                || !my.m.ready("meta_" + my.condition.field)) {
             view.loading(true);
             return true;
         }
@@ -472,7 +479,8 @@ my.views.set("model", function (type, p1, p2) {
         model_view_list(p1, p2);
         d3.select("#model_view_list").classed("hidden", false);
     } else if (type_chosen === "conditional") {
-        if (!my.m.ready("meta") || !my.m.ready("dt")) {
+        if (!my.m.ready("meta") || !my.m.ready("dt") || !my.condition
+                || !my.m.ready("meta_" + my.condition.field)) {
             view.loading(true);
             return true;
         }
@@ -509,6 +517,7 @@ my.views.set("model", function (type, p1, p2) {
 model_view_list = function (sort, dir) {
     var sort_choice, sort_dir;
 
+    // TODO fix hide-show flicker when re-sorting or model-switching
     view.calculating("#model_view_list", true);
 
     sort_choice = sort || my.last.model_list.sort || "topic";
@@ -519,26 +528,28 @@ model_view_list = function (sort, dir) {
     my.last.model_list.dir = sort_dir;
 
     my.m.topic_total(undefined, function (sums) {
-        my.m.topic_conditional(undefined, my.condition, function (data) {
-            view.calculating("#model_view_list", false);
-            view.model.list({
-                data: data,
-                condition_name: my.condition_name,
-                type: VIS.condition.type,
-                key: my.m.meta_condition(my.condition),
-                sums: sums,
-                words: my.m.topic_words(undefined,
-                        my.settings.overview_words),
-                sort: sort_choice,
-                dir: sort_dir,
-                labels: d3.range(my.m.n()).map(my.m.topic_label),
-                topic_hidden: data.map(function (d) {
-                    return topic_hidden(d.t);
-                })
-            });
+        my.m.topic_conditional(undefined, my.condition.field,
+            function (data) {
+                view.calculating("#model_view_list", false);
+                view.model.list({
+                    data: data,
+                    condition_name: my.condition.name,
+                    type: my.condition.type,
+                    key: my.m.meta_condition(my.condition.field),
+                    sums: sums,
+                    words: my.m.topic_words(undefined,
+                            my.settings.overview_words),
+                    sort: sort_choice,
+                    dir: sort_dir,
+                    labels: d3.range(my.m.n()).map(my.m.topic_label),
+                    ids: d3.range(my.m.n()).map(my.m.topic_id),
+                    topic_hidden: data.map(function (d) {
+                        return topic_hidden(d.t);
+                    })
+                });
 
-            hide_topics();
-        });
+                hide_topics();
+            });
     });
 
     return true;
@@ -557,7 +568,8 @@ model_view_plot = function (type) {
                     words: my.m.topic_words(t, VIS.model_view.plot.words),
                     scaled: my.m.topic_scaled(t),
                     total: totals[t],
-                    label: my.m.topic_label(t)
+                    label: my.m.topic_label(t),
+                    id: my.m.topic_id(t)
                 };
             })
         });
@@ -568,9 +580,9 @@ model_view_plot = function (type) {
 
 model_view_conditional = function (type) {
     var p = {
-        key: my.m.meta_condition(my.condition),
-        condition_type: VIS.condition.type,
-        condition_name: my.condition_name,
+        key: my.m.meta_condition(my.condition.field),
+        condition_type: my.condition.type,
+        condition_name: my.condition.name,
         streamgraph: my.settings.model_view.conditional.streamgraph,
         signature: data_signature()
     };
@@ -580,24 +592,31 @@ model_view_conditional = function (type) {
     my.last.model_conditional = p.raw;
 
     view.calculating("#model_view_conditional", true);
-    my.m.conditional_total(my.condition, undefined, function (totals) {
-        my.m.topic_conditional(undefined, my.condition, function (data) {
-            p.conditional_totals = totals;
-            p.topics = data.map(function (wts, t) {
-                return {
-                    t: t,
-                    wts: wts,
-                    words: my.m.topic_words(t,
-                            VIS.model_view.conditional.words),
-                    label: my.m.topic_label(t)
-                };
-            })
-                .filter(function (topic) { return !topic_hidden(topic.t); });
+    my.m.conditional_total(my.condition.field, undefined, function (totals) {
+        my.m.topic_conditional(undefined, my.condition.field,
+            function (data) {
+                p.conditional_totals = totals;
+                p.topics = data.map(function (wts, t) {
+                    return {
+                        t: t,
+                        wts: wts,
+                        words: my.m.topic_words(t,
+                                VIS.model_view.conditional.words
+                            ).map(function (w) {
+                                return w.word;
+                        }),
+                        label: my.m.topic_label(t),
+                        id: my.m.topic_id(t)
+                    };
+                })
+                    .filter(function (topic) {
+                        return !topic_hidden(topic.t);
+                    });
 
-            view.model.conditional(p);
-            view.calculating("#model_view_conditional", false);
+                view.model.conditional(p);
+                view.calculating("#model_view_conditional", false);
+            });
         });
-    });
 
     return true;
 };
@@ -708,7 +727,7 @@ view_link = function (v) {
 that.view_link = view_link;
 
 view_hash = function (v) {
-    var j, result = "";
+    var result = "";
 
     if (my.models.length > 1) {
         v.model = v.model || my.id;
@@ -731,15 +750,7 @@ view_hash = function (v) {
             return result;
         }
 
-        // special case for topic parameter: user-facing topic number is t + 1
-        result += "/";
-        result += (v.type === "topic")
-            ? String(+v.param[0] + 1)
-            : v.param[0];
-
-        for (j = 1; j < v.param.length; j += 1) {
-            result += "/" + v.param[j];
-        }
+        result += "/" + v.param.join("/");
     }
     return result;
 };
@@ -765,11 +776,7 @@ parse_hash = function (h) {
     }
     result.type = hh.shift();
     result.param = hh;
-    // special case for topic parameter: user-facing topic number is t + 1
-    if (result.type === "topic" && result.param.length > 0) {
-        result.param[0] = +result.param[0] - 1;
-    }
-    // doc: fix doc ids with slashes in them (like, say, DOIs)
+    // special case: fix doc ids with slashes in them (like, say, DOIs)
     if (result.type === "doc" && result.param.length > 1) {
         result.param = [result.param.join("/")];
     }
@@ -794,13 +801,11 @@ topic_hidden = function (t) {
             return false;
         }
         my.cache.topic_hidden = d3.range(my.m.n()).map(function (t) {
-            return VIS.hidden_topics.indexOf(t + 1) !== -1;
+            return VIS.hidden_topics.indexOf(my.m.topic_id(t)) !== -1;
         });
     }
     return my.cache.topic_hidden[t];
 };
-
-
 
 // Method giving an identifier with a current state of the full data set.  The
 // only promise is that the data_signature will change if the data have changed
@@ -1076,11 +1081,11 @@ load_model = function (id, vis) {
     // invalidate cache
     // TODO silly to regenerate citations in most cases
     my.cache = { };
+    // this will get set in load_meta
+    my.condition = undefined;
 
     // now launch remaining data loading; these will not re-request data if
     // we've already loaded this model
-
-
     load_info(files.info, vis, function () {
         load_meta(files.meta);
         load_dt(files.dt);
@@ -1100,6 +1105,7 @@ load_info = function (f, previs, callback) {
         if (vis) {
             VIS = utils.deep_replace(utils.clone(my.vis_template), vis);
             my.m.set_topic_labels(VIS.topic_labels);
+            my.m.set_topic_ids(VIS.topic_ids);
         } else {
             view.warning("Unable to load model info from " + f);
         }
@@ -1135,12 +1141,15 @@ load_meta = function (f) {
     // final action after metadata is retrieved / constructed:
     // store conditionining-variable information
     callback = function (md) {
-        my.condition = VIS.condition.spec.field;
-        my.condition_name = VIS.condition.name || my.condition;
+        my.condition = {
+            field: VIS.condition.spec.field,
+            name: VIS.condition.name || VIS.condition.spec.field,
+            type: VIS.condition.type
+        };
         // update conditional data
         my.m.meta_condition(
-            my.condition,
-            metadata.key[VIS.condition.type],
+            my.condition.field,
+            metadata.key[my.condition.type],
             VIS.condition.spec,
             refresh
         );
@@ -1235,6 +1244,7 @@ load_tw = function (f) {
             topics: d3.range(my.m.n()).map(function (t) {
                 return {
                     topic: t,
+                    id: my.m.topic_id(t),
                     words: my.m.topic_words(t, VIS.model_view.words),
                     label: my.m.topic_label(t),
                     hidden: topic_hidden(t) // refreshes cache.topic_hidden

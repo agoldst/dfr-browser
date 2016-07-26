@@ -24,27 +24,29 @@ view.model.list = function (p) {
             return {
                 t: t,
                 data: x,
-                label: p.labels[t]
+                label: p.labels[t],
+                id: p.ids[t],
+                hidden: !!p.topic_hidden[t],
+                words: p.words[t],
+                sum: p.sums[t]
             };
-        }), function (x) { return x.t; });
+        }), function (x) { return x.id; });
 
     trs_enter = trs.enter().append("tr");
     trs.exit().remove();
 
     trs.on("click", function (t) {
-        view.dfb().set_view({ type: "topic", param: t.t });
+        view.dfb().set_view({ type: "topic", param: t.id });
     });
 
-    trs.classed("hidden_topic", function (t) {
-        return !!p.topic_hidden[t.t];
-    });
+    trs.classed("hidden_topic", function (t) { return t.hidden; });
 
     // create topic label column
     trs_enter.append("td").append("a").classed("topic_name", true);
     trs.select("a.topic_name")
         .attr("href", function (t) { return view.dfb().view_link({
                 type: "topic",
-                param: t.t
+                param: t.id
             });
         })
         .text(function (t) { return t.label; });
@@ -57,7 +59,7 @@ view.model.list = function (p) {
     trs.select("td div.spark svg > g")
         .each(function (t) {
             view.topic.conditional_barplot({ 
-                t: t.t,
+                t: t.id,
                 data: t.data,
                 key: p.key,
                 type: p.type,
@@ -74,7 +76,7 @@ view.model.list = function (p) {
     trs.select("a.topic_words")
         .attr("href", function (t) { return view.dfb().view_link({
                 type: "topic",
-                param: t.t
+                param: t.id
             });
         });
 
@@ -82,7 +84,7 @@ view.model.list = function (p) {
     // rewrite the topic words column
     trs.selectAll("td a.topic_words")
         .text(function (t) {
-            return p.words[t.t].reduce(function (acc, x) {
+            return t.words.reduce(function (acc, x) {
                 return acc + " " + x.word;
             }, "");
         });
@@ -92,9 +94,9 @@ view.model.list = function (p) {
     view.weight_tds({
         sel: trs,
         enter: trs_enter,
-        w: function (t) { return p.sums[t.t] / token_max; },
+        w: function (t) { return t.sum / token_max; },
         frac: function (t) {
-            return d3.format(VIS.percent_format)(p.sums[t.t] / total);
+            return d3.format(VIS.percent_format)(t.sum / total);
         }
     });
     

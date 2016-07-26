@@ -5,7 +5,6 @@ view.word = function (p) {
     var div = d3.select("div#word_view"),
         word = p.word,
         n = p.n,
-        words,
         spec, row_height, width,
         svg, clip,
         scale_x, scale_y, scale_bar,
@@ -37,22 +36,6 @@ view.word = function (p) {
     div.selectAll("#word_view .none").classed("hidden", p.topics.length !== 0);
     div.select("table#word_topics").classed("hidden", p.topics.length === 0);
     div.select("#word_view_explainer").classed("hidden", p.topics.length === 0);
-
-    words = p.topics.map(function (t, j) {
-        var max_weight, ws = p.words[j];
-        return ws.map(function (tw, i) {
-            if (i === 0) {
-                max_weight = tw.weight;
-            }
-            // normalize weights relative to the weight of the word ranked 1
-            // TODO should be able to choose to put all weights from different
-            // topics on same scale
-            return {
-                word: tw.word,
-                weight: tw.weight / max_weight
-            };
-        });
-    });
 
     spec = { m: VIS.word_view.m };
     spec.w = d3.select("#main_container").node().clientWidth || VIS.word_view.w;
@@ -95,7 +78,7 @@ view.word = function (p) {
     svg.attr("clip-path", "url(#word_view_clip)");
 
     gs_t = svg.selectAll("g.topic")
-        .data(p.topics, function (t) { return t.topic; } );
+        .data(p.topics, function (t) { return t.id; } );
 
     // transition: update only
     gs_t.transition().duration(1000)
@@ -114,7 +97,7 @@ view.word = function (p) {
         .each("end", function () {
             gs_t.style("opacity", 1);
         });
-    
+
     // and move exit rows out of the way
     gs_t.exit().transition()
         .duration(2000)
@@ -130,16 +113,16 @@ view.word = function (p) {
             width: spec.m.left,
             height: row_height
         })
-        .on("click", function (t) {
+        .on("click", function (t, j) {
             view.dfb().set_view({
                 type: "topic",
-                param: t.topic
+                param: t.id
             });
         });
-                
+
     gs_t_label = gs_t.selectAll("text.topic")
-        .data(function (t, j) {
-            var ws = p.labels[j].split(" ");
+        .data(function (t) {
+            var ws = t.label.split(" ");
             return ws.map(function (w, k) {
                 return {
                     word: w,
@@ -147,7 +130,7 @@ view.word = function (p) {
                         (ws.length / 2 - k - 1) *
                         VIS.word_view.topic_label_leading
                 };
-            }); 
+            });
         }, function (w, j) { return w.word + String(j); });
 
     gs_t_label.enter().append("text").classed("topic", true);
@@ -163,9 +146,25 @@ view.word = function (p) {
             return w.word === "or";
         });
 
+
+    // normalize weights relative to the weight of the word ranked 1
+    // TODO should be able to choose to put all weights from different
+    // topics on same scale
     gs_w = gs_t.selectAll("g.word")
-        .data(function (t, i) { return words[i]; },
-                function (d) { return d.word; });
+        .data(
+            function (t) {
+                var max_weight = t.words[0].weight;
+                return t.words.map(function (tw) {
+                    return {
+                        word: tw.word,
+                        weight: tw.weight / max_weight
+                    };
+                });
+            },
+            function (d) { // key function
+                return d.word;
+            }
+        );
 
     gs_w_enter = gs_w.enter().append("g").classed("word", true);
 

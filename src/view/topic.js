@@ -449,7 +449,7 @@ view.topic.dropdown = function (p) {
         .attr("href", function (t) {
             return view.dfb().view_link({
                 type: "topic",
-                param: t.topic
+                param: t.id
             });
         });
     lis.sort(function (a, b) {

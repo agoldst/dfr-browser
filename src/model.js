@@ -14,6 +14,8 @@ model = function (spec) {
         that = { }, // resultant object
         ready, // accessors and pseudo-accessors
         n_docs,
+        topic_id,
+        topic_index,
         tw,
         n,
         n_top_words,
@@ -36,6 +38,7 @@ model = function (spec) {
         word_topics,
         topic_label,
         set_topic_labels,
+        set_topic_ids,
         set_dt, // methods for loading model data
         set_tw,
         set_topic_scaled;
@@ -70,6 +73,22 @@ model = function (spec) {
         return !!my.ready[key];
     };
     that.ready = ready;
+
+    topic_index = function (id) {
+        if (!my.topic_ids) {
+            return +id - 1;
+        }
+        return my.topic_ids.get(id);
+    };
+    that.topic_index = topic_index;
+
+    topic_id = function (i) {
+        if (!my.ids) {
+            return +i + 1;
+        }
+        return my.ids[i];
+    };
+    that.topic_id = topic_id;
 
     // access top key words per topic
     tw = function (t, word) {
@@ -407,7 +426,7 @@ model = function (spec) {
         }
 
         // default name: use a no-break space
-        return "Topic" + "\u00a0" + t_s;
+        return "Topic" + "\u00a0" + topic_id(t);
     };
     that.topic_label = topic_label;
 
@@ -415,6 +434,17 @@ model = function (spec) {
         my.topic_labels = lbls;
     };
     that.set_topic_labels = set_topic_labels;
+
+    set_topic_ids = function (ids) {
+        my.ids = ids;
+        if (Array.isArray(my.ids)) {
+            my.topic_ids = d3.map();
+            ids.forEach(function (id, j) {
+                my.topic_ids.set(id, j);
+            });
+        }
+    };
+    that.set_topic_ids = set_topic_ids;
 
     // load tw from a string of JSON
     set_tw = function (tw_s) {

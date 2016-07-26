@@ -45,7 +45,7 @@ view.settings = function (p) {
             });
 
     stg.select("#conditional_streamgraph")
-        .classed("hidden", VIS.condition.type === "ordinal")
+        .classed("hidden", p.condition_type === "ordinal")
         .select("input")
             .property("checked", !!p.model_view.conditional.streamgraph)
             .on("change", function () {

@@ -128,23 +128,23 @@ view.model.conditional_plot = function (p) {
     g_axis.enter().append("g").classed("axis", true).classed("x", true)
         .attr("transform", "translate(0," + spec.h + ")");
 
-    // and preempt any initial transition from the top
-    g_axis.transition()
-        .duration(1000)
-        .attr("transform", "translate(0," + spec.h + ")")
+    // TODO transition here gives javascript errors under some conditions
+    // namely, switching between ordinal and time/continuous variables
+    // on already-loaded models. Can't trace what I suspect is a race condition
+    //
+    //g_axis.transition("model-conditional-axis")
+        //.duration(1000)
+    g_axis.attr("transform", "translate(0," + spec.h + ")")
         .call(axis_x);
 
-    if (p.condition_type !== "time") {
-        ax_label = svg.selectAll("text.axis_label")
-            .data([1]);
-        ax_label.enter().append("text");
-        ax_label.classed("axis_label", true)
-            .attr("x", spec.w / 2)
-            .attr("y", spec.h + spec.m.bottom)
-            .attr("text-anchor", "middle")
-            .text(p.condition_name);
-    }
-
+    ax_label = svg.selectAll("text.axis_label")
+        .data([1]);
+    ax_label.enter().append("text");
+    ax_label.classed("axis_label", true)
+        .attr("x", spec.w / 2)
+        .attr("y", spec.h + spec.m.bottom)
+        .attr("text-anchor", "middle")
+        .text(p.condition_name);
 
     // marks group (we want to ensure that the labels are always drawn after
     // the marks, even if we add new marks later)
@@ -166,7 +166,7 @@ view.model.conditional_plot = function (p) {
     // the actual streams
     marks = svg.select("g.marks_group").selectAll(mark + ".topic_area")
         .data(p.data, function (d) {
-            return d.t;
+            return d.id;
         });
 
     initial = other_marks.size() === 0 && marks.size() === 0;
@@ -203,7 +203,7 @@ view.model.conditional_plot = function (p) {
             if (!d3.event.shiftKey) {
                 view.dfb().set_view({
                     type: "topic",
-                    param: d.t
+                    param: d.id
                 });
             }
         });
@@ -257,7 +257,7 @@ view.model.conditional_plot = function (p) {
 
     // the stream labels
     labels = svg.select("g.labels_group").selectAll("text.layer_label")
-        .data(p.data, function (d) { return d.t; });
+        .data(p.data, function (d) { return d.id; });
 
     labels.enter().append("text")
         .classed("layer_label", true)
@@ -376,17 +376,18 @@ view.model.stacked_series = function (p) {
         stack_domain_y,
         result = { };
 
-    all_series = p.topics.map(function (topic) {
+    all_series = p.topics.map(function (t) {
         var series = {
-            t: topic.t,
-            words: topic.words.map(function (w) { return w.word; }),
-            label: topic.label
+            t: t.t,
+            words: t.words,
+            label: t.label,
+            id: t.id
         };
         series.values = p.keys.map(function (k, j) {
             return {
                 key: k,
                 x: p.xs[j],
-                y: topic.wts.get(k) || 0
+                y: t.wts.get(k) || 0
             };
         });
         return series;
