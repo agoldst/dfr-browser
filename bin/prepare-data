@@ -156,6 +156,8 @@ def convert_citations(fs, matchfile, out):
         with open(f) as meta:
             meta.readline() # header
             for line in meta:
+                if not line.strip():
+                    continue  # Ignore lines that contain only whitespace.
                 fields = [s.replace('"', '""') for s in line.strip().split("\t")]
                 ll.append('"' + fields[0] + '","' + '","'.join(fields[2:9]) +
                         '"')
