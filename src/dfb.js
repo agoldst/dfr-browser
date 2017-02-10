@@ -897,7 +897,8 @@ load_data = function (target, callback) {
     }
 
     target_base = target.replace(/^.*\//, "");
-    dom_data = d3.select("#m__DATA__" + target_base.replace(/\..*$/, ""));
+    dom_data = d3.select("#m__DATA__"
+            + target_base.replace(/\//g, "_").replace(/\..*$/, ""));
 
     // preprocessed data available in DOM?
     if (!dom_data.empty()) {
