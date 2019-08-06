@@ -18,7 +18,7 @@ var VIS = {
         type: "dfr",        // use "base" if meta.csv has a header
         spec: {
             extra_fields: [ ],// (dfr type only) names for extra columns
-            date_field: "date"// (base type only) name of date field
+            date_field: "date"// field(s) to convert to Date type
         }
     },
     condition: {            // metadata variable to condition topics on
