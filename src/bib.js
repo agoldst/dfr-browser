@@ -155,9 +155,15 @@ var bib = function (spec) {
         };
     };
 
-    // Stub citation method
+    // Crude citation method
     citation = function (doc) {
-        return JSON.stringify(doc);
+        var k, result = "";
+        for (k in doc) {
+            if (doc.hasOwnProperty(k) && typeof doc[k] === "string") {
+                result += doc[k] + ". ";
+            }
+        }
+        return result;
     };
     that.citation = citation;
 
