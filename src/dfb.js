@@ -1191,10 +1191,15 @@ load_meta = function (f) {
     }
 
     if (typeof my.bib === "function") {
-        meta.bib(my.bib(VIS.bib));
+        // custom bib constructor passed in at dfb() invocation
+        meta.bib(my.bib(VIS.bib.spec));
+    } else if (VIS.bib.type === "base") {
+        meta.bib(bib(VIS.bib.spec));
+    } else if (VIS.bib.type === "dfr") {
+        meta.bib(bib.dfr(VIS.bib.spec));
     } else {
-        // VIS.bib gives bib options like the Anon. string
-        meta.bib(bib.dfr(VIS.bib));
+        meta.bib(bib.dfr(VIS.bib.spec));
+        view.warning("Unknown bib.type; defaulting to dfr.");
     }
 
     load_data(f, function (error, meta_s) {

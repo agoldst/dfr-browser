@@ -144,13 +144,16 @@ var VIS = {
         }
     },
     bib: {
-        // default if no author delimiter supplied, but note that
-        // 2014 JSTOR metadata format uses ", " instead
-        author_delimiter: "\t",
-        // "et al" is better for real bibliography, but it's
-        // actually worth being able to search all the multiple authors
-        et_al: Infinity,
-        anon: "[Anon]",
+        type: "dfr", // use "base" for bare-bones src/bib.js
+        spec: {
+            // default if no author delimiter supplied, but note that
+            // 2014 JSTOR metadata format uses ", " instead
+            author_delimiter: "\t",
+            // "et al" is better for real bibliography, but it's
+            // actually worth being able to search all the multiple authors
+            et_al: Infinity,
+            anon: "[Anon]",
+        }
     },
     bib_view: {
         window_lines: 100,
