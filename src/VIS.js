@@ -157,8 +157,8 @@ var VIS = {
     },
     bib_view: {
         window_lines: 100,
-        major: "year",
-        minor: "authortitle",
+        major: "year",          // for bib.type "base", use "all"
+        minor: "authortitle",   // for bib.type "base", use "raw"
         dir: "up"
     },
     tooltip: {              // tooltip div parameters
