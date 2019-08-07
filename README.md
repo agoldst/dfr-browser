@@ -286,10 +286,31 @@ bin/server
 
 ## Adapting this project to other kinds of documents (or models)
 
-The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, but again altering the setup for other implementations of LDA would not be too challenging. Adapting to other kinds of latent topic models would require more changes.
+The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, but again altering the setup for other implementations of LDA would not be too challenging. dfrtopics has some "glue" for two other R implementations. Adapting to other kinds of latent topic models would require more changes. 
 
-Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. Though some modifications to the program are necessary in such cases, they should normally be limited to the `metadata` and `bib` objects. Let me first 
-explain a little more about the design of the program.
+Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore MALLET's LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. For a quick-and-dirty display of documents with arbitrary metadata, the following settings can be specified in `info.json`:
+
+```json
+VIS: {
+    metadata: {
+        type: "base"
+    },
+    bib: {
+        type: "base"
+    },
+    bib_view: {
+        major: "all",
+        minor: "raw"
+    },
+    condition: {
+        ...
+    }
+}
+```
+
+**N.B.** in this case, `meta.csv.zip` should NOT be in the format given above but can be any zip'd RFC 4180-compatible CSV file **with column headers**. These headers give the names of metadata variables that can be used to specifiy a conditioning variable in the manner explained above. The bibliographic citing and sorting will be ugly.
+
+To produce more polished output, some modifications to the program are necessary, though they should normally be limited to the `metadata` and `bib` objects. Let me first explain a little more about the design of the program.
 
 ### The design
 
