@@ -240,7 +240,7 @@ For multiple models in a single browser, the configuration is spread across mult
 "VIS": {
     "model_view": {
         "plot": {
-            "words": 4
+            "words": 4,
             "size_range": [8, 12]
           }
     }
@@ -291,18 +291,18 @@ The data-prep is tuned to MALLET and my [dfrtopics](agoldst/dfrtopics) package, 
 Since I first released this model-browser, numerous (more than three!) people have been interested in using it to explore MALLET's LDA models of other kinds of documents. This is more straightforward, since the specialization to JSTOR articles is limited to the expectations about the metadata format, the bibliography sort, and the way documents are cited and externally linked. For a quick-and-dirty display of documents with arbitrary metadata, the following settings can be specified in `info.json`:
 
 ```json
-VIS: {
-    metadata: {
-        type: "base"
+"VIS": {
+    "metadata": {
+        "type": "base"
     },
-    bib: {
-        type: "base"
+    "bib": {
+        "type": "base"
     },
-    bib_view: {
-        major: "all",
-        minor: "raw"
+    "bib_view": {
+        "major": "all",
+        "minor": "raw"
     },
-    condition: {
+    "condition": {
         ...
     }
 }
