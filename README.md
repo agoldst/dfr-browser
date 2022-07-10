@@ -1,8 +1,15 @@
 # A simple topic-model browser
 
-These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of texts in a web browser, relying entirely on static html and javascript files. It is specialized for models of texts from JSTOR's [Data for Research](http://dfr.jstor.org) service, though it can be (and has been) adapted for models of other corpora. For more information, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser) and the [working demo](http://agoldst.github.io/dfr-browser/demo), a browser for a 64-topic model of the journal *PMLA*.
+These files use [d3](http://d3js.org) to provide a way to browse some of a topic model of texts in a web browser, relying entirely on static html and javascript files.  For more information, see the main project page at [agoldst.github.io/dfr-browser](http://agoldst.github.io/dfr-browser) and the [working demo](http://agoldst.github.io/dfr-browser/demo), a browser for a 64-topic model of the journal *PMLA*.
 
 This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). This project skews to my needs as a literary scholar and to my amateurishness as a programmer. No aspect of this code has been systematically tested. Sorry.
+
+I worked on this project in 2013–2019, so some parts of it are behind the times.
+I developed this brower specifically to explore models of texts from JSTOR's Data for Research service, which has been replaced by the [Constellate](https://constellate.org) "platform" for similar but differently-formatted data. This model-browser can be, and has been, adapted for topic models of other corpora. The information needed for adapting it can be found below: details may be fiddly but are not particularly complex (or at least they didn't seem so when I was actively working on this!).
+
+While developing this, I used [mallet](https://mimno.github.io/Mallet) to generate topic models. The documentation below assumes a model output by mallet. Again, it is fiddly but not difficult to adjust for another topic-model output format.
+
+In terms of web technologies, dfr-browser relies on an old version of d3 (3.5.17), which is why a copy of that version is part of the repository; the same goes for other javascript "libraries" in the `lib` directory. These old libraries still seem to work fine in current browsers, but at this point in the latest stage of capitalism (mid-2022) all I can say is YMMV.
 
 The rest of this file explains how to set up the browser to use with your own topic models.
 
