@@ -33,17 +33,17 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
 
-      <p>Thanks to the easy availability of <a href="http://dfr.jstor.org">counts of words occurring in JSTOR articles</a>, humanists have grown interested in seeing what they can learn about those articles in the aggregate. How can we analyze this digital archive to learn about large-scale patterns in scholarly fields over the last century or more? Recently, one algorithmic approach to investigating patterns in a big set of documents has received quite a bit of attention in the humanities and social sciences: topic modeling with Latent Dirichlet Allocation (see <a href="http://www.sciencedirect.com/science/article/pii/S0304422X13000442">this overview article from the sociology journal <em>Poetics</em></a>, <a href="http://www.matthewjockers.net/2011/09/29/the-lda-buffet-is-now-open-or-latent-dirichlet-allocation-for-english-majors/">this explanation for &ldquo;English majors,&rdquo;</a>, the <a href="http://dl.acm.org/citation.cfm?id=944937">original paper about the algorithm</a>, or the essay I co-wrote with Ted Underwood, <a href="http://muse.jhu.edu/journals/new_literary_history/v045/45.3.goldstone.pdf">The Quiet Transformations of Literary Studies: What Thirteen Thousand Scholars Could Tell Us</a>).</p>
-      
-      <p>So: take data from DfR—or another source of texts—<a href="http://github.com/agoldst/dfrtopics">wrangle it a little</a>, feed it to <a href="http://mallet.cs.umass.edu">MALLET</a>, and poof! the algorithm yields a topic model. For example, a model of all the articles from the century-long run of <em>PMLA</em>. <em>So what is that?</em></p>
+        <p>Topic models are a popular way to analyze digital text archives to learn about large-scale patterns of meaning. This project provides a web-browser-based interactive visualization of a topic model of text. Initially, I developed it in conjunction with a study of scholarly journals in literary studies (see the essay I co-wrote with Ted Underwood, <a href="http://muse.jhu.edu/journals/new_literary_history/v045/45.3.goldstone.pdf">The Quiet Transformations of Literary Studies: What Thirteen Thousand Scholars Could Tell Us</a> and its <a href="https://www.sas.rutgers.edu/virtual/ag978/quiet/">accompanying website</a>). The name "dfr-browser" reflects my initial focus on data supplied by the journal archive JSTOR's Data for Research ("DfR") service, which I was exploring using topic models generated via the implementation of Latent Dirichlet Allocation in <a href="https://mimno.github.io/Mallet/">Mallet</a>. However, this model browser can also be used with topic models of other corpora (including models generated with other software). In any case, here is what a 64-topic model of the literary studies journal <em>PMLA</em> looks like in dfr-browser:</p>
 
 <h2><a href="demo">Try the demo &rarr;</a></h2>
 
-<p>I embarked on this little visualization side project to help me understand such models a little more clearly. The purpose of my DfR browser is to let users see the ways that a topic model attempts to classify words <em>and</em> documents through patterns of co-occurring words. My wish, as a literary scholar, was to interpret the classification of documents—and time-slices of corpora—into topics. But I am wary of the complexity of the overlapping, fuzzy classifications. This visualizer tries to put all the moving pieces of a model into the visual field: topics, documents, words, and (key to interpretation, yet not factored into a simple LDA model) document metadata.</p>
+<p>The purpose of my model browser is to let users see the ways that a topic model attempts to classify words <em>and</em> documents through patterns of co-occurring words. My wish, as a literary scholar, was to interpret the classification of documents—and time-slices of corpora—into topics. But I am wary of the complexity of the overlapping, fuzzy classifications. This visualizer tries to put all the moving pieces of a model into the visual field: topics, documents, words, and (key to interpretation, yet not factored into a simple LDA model) document metadata.</p>
+
+<p>This project has become old in computer years. The JSTOR Data for Research service has been replaced by the <a href="https://constellate.org/">Constellate</a> platform, and topic modeling approaches have been considerably refined over time. I am no longer actively maintaining or updating dfr-browser; anyone who wishes to topic-model Constellate's JSTOR data, for example, will have to do some extra work to wrangle it into a form the tools supplied here can use. Nonetheless, I hope this page and this project might remain useful as a reference for my own past work and and possibly as a useful stepping-stone for others learning their way around topic models. </p>
 
 <h2>What this browser shows</h2>
 
-<p>This browser, which I am making public in an <em>alpha release</em>, seeks to reflect the multifaceted nature of a topic model (it is a model of patterns in both <em>words</em> and <em>documents</em>) by offering you multiple views of the model. Navigate among the views by using the navigation links at the top of the screen. </p>
+<p>This browser seeks to reflect the multifaceted nature of a topic model (it is a model of patterns in both <em>words</em> and <em>documents</em>) by offering you multiple views of the model. Navigate among the views by using the navigation links at the top of the screen. </p>
 
 <h3>The overview</h3>
 
@@ -117,7 +117,7 @@
 
 <p>The <a href="demo">working example</a> explores a topic model of articles from the journal <em>PMLA</em>. More specifically, what it shows is the results of allowing <a href="http://mallet.cs.umass.edu">MALLET</a>'s Latent Dirichlet Allocation algorithm to categorize those articles into 64 "topics" or patterns of co-occurring words. The resulting model simultaneously gives some information about words that occur together in this corpus, about documents that are related by their shared patterns of language use, and about (approximately) the thematic make-up of the documents. The visualization also indicates trends in the proportions of a topic in all the documents in with a given publication year.</p>
 
-<p>This model was constructed with the help of my <a href="http://github.com/agoldst/dfrtopics">dfrtopics R package</a>, which gives an interface for topic-modeling JSTOR (or similar) data with MALLET and exploring the results; for a tutorial in using the package, see my <a href="http://agoldst.github.io/dfrtopics/introduction.html">introduction to dfrtopics</a>. There are of course many other ways to make topic models, with MALLET or other software. The data for the demonstration model consists of all <em>PMLA</em> items from JSTOR's <a href="http://dfr.jstor.org">Data for Research</a> service, restricted to items categorized as “full-length articles” with more than 2000 words (this leaves 5605 articles out of the 9200 items from the years 1889–2007). All but the most ten thousand frequent words and a fairly large set of <a href="https://github.com/agoldst/dfr-analysis/blob/master/demo/stoplist.txt">stop words</a> are also removed. The model has 64 topics; having experimented with more and fewer topics, this seemed to produce a reasonable, though far from perfect, broad thematic classification.</p>
+<p>This model was constructed with the help of my <a href="http://github.com/agoldst/dfrtopics">dfrtopics R package</a>, which gives an interface for topic-modeling JSTOR (or similar) data with MALLET and exploring the results; for a tutorial in using the package, see my <a href="http://agoldst.github.io/dfrtopics/introduction.html">introduction to dfrtopics</a>. There are of course many other ways to make topic models, with MALLET or other software. The data for the demonstration model consists of all <em>PMLA</em> items from JSTOR's now-decommissioned <a href="http://dfr.jstor.org">Data for Research</a> service, restricted to items categorized as “full-length articles” with more than 2000 words (this leaves 5605 articles out of the 9200 items from the years 1889–2007). All but the most ten thousand frequent words and a fairly large set of <a href="https://github.com/agoldst/dfr-analysis/blob/master/demo/stoplist.txt">stop words</a> are also removed. The model has 64 topics; having experimented with more and fewer topics, this seemed to produce a reasonable, though far from perfect, broad thematic classification.</p>
 
 <p>The data files used in the demo can be downloaded from this site if you wish to look at how they are formatted: <a href="demo/data/info.json">info.json</a>, <a href="demo/data/meta.csv.zip">meta.csv.zip</a>, <a href="demo/data/tw.json">tw.json</a>, <a href="demo/data/dt.json.zip">dt.json.zip</a>, <a href="demo/data/topic_scaled.csv">topic_scaled.csv</a>.</p>
 
@@ -137,8 +137,6 @@
 
 <p>Jonathan Goodwin has adapted dfr-browser to produce a <a href="http://jgoodwin.net/htb/">topic-browser of fiction in HathiTrust from 1920–1922</a> as well as a browser of <a href="http://jgoodwin.net/mm-browser">topics in <em>Modernism/modernity</em></a>.</p>
 
-<p>Akram Al-Turk and Neal Caren adapted dfr-browser to create a <a href="http://sociologicalresearch.org/moby/">browsable topic model</a> of the social-movements journal <emph>Mobilization</emph> (edited by Caren).</p>
-
 <p>dfr-browser was adapted for topic-model visualizations of a corpus of news coverage of the humanities in the <a href="https://we1s.ucsb.edu/">WhatEvery1Says project</a>, which is documented in extensive detail.</p>
 
 <h3>License</h3>
@@ -146,34 +144,25 @@
 <p>This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). Though it is woefully under-documented, and no doubt bug-ridden and amateurish—which is why this is still an <em>alpha release</em>—perhaps it may be useful to others with similar interests. Please <a href="https://github.com/agoldst/dfr-browser">clone the repository</a> and go to town.
 <p>As this is an <em>alpha release</em>, I have not tested this browser beyond my own system, where it appears to work in Firefox, Chrome, and Safari. I have relied on <a href="http://d3js.org">d3</a> and <a href="http://getbootstrap.com">bootstrap</a>, so in principle this should work in recent web browsers on most systems, with the likely exception of Internet Explorer. <em>Known issue:</em> As for touch devices, I don&rsquo;t do too much with hover states, but my design is not quite fully responsive, and I have found problems on small screens. Further development for the <a href="https://twitter.com/goldstoneandrew/status/383297490495475712">iMallet</a> will have to await the work of some other, braver person.</p>
 
-<h2><a name="the-polished-options" class="anchor" href="#the-polished-options"><span class="octicon octicon-link"></span></a>The polished options</h2>
+<h2><a name="the-polished-options" class="anchor" href="#the-polished-options"><span class="octicon octicon-link"></span></a>Other topic-model visualizations</h2>
 
-<p>I looked into other topic-model visualization projects and was impressed by what I found. But I needed a setup which was (1) entirely static, since I didn&rsquo;t have access to a host for dynamic code and (2) tuned to the questions that looking at models of scholarly journals has raised for me. And I found working with <a href="http://d3js.org">d3.js</a> to be such a pleasure that I wanted to complete a project in it myself.</p>
+<p>When I started work on this, I looked into other topic-model visualization projects and was impressed by what I found. But I needed a setup which was (1) entirely static, since I didn&rsquo;t have access to a host for dynamic code and (2) tuned to the questions that looking at models of scholarly journals has raised for me. And I found working with <a href="http://d3js.org">d3.js</a> to be such a pleasure that I wanted to complete a project in it myself.</p>
 
-<p>Hence this <em>alpha release</em> of something tuned to my own interests and my work on JSTOR&rsquo;s Data for Research data. If you are looking for a more polished general-use model-browsing project, here are some of the options in a burgeoning field:</p>
+<p>During the time I worked on dfr-browser, a number of approaches to topic-model visualization were or became available, most more flexible and sophisticated than my own. I have not kept close tabs on developments in this area since the start of the pandemic, but here a few software projects that are still available:</p>
 
 <p><a href="https://github.com/cpsievert/LDAvis/">LDAvis</a>, by Carson Sievert, uses the Shiny R server to support statistically-sophisticated visualizations of both individual topics and the interrelations among topics.</p>
 
-<p><a href="http://www.networkedcorpus.com/">The Networked Corpus</a> is a beautiful way to visualize a topic model of a full-text corpus. </p>
+<p><a href="https://github.com/mroberts/stmBrowser">stmBrowser</a>, by Michael Freeman, Jason Chuang, Molly Roberts, Brandon Stewart and Dustin Tingley, is visualization software for the <a href="http://www.structuraltopicmodel.com/">Structural Topic Model</a>, a rich extension to the original LDA model.
 
 <p>David Mimno&rsquo;s <a href="http://mimno.infosci.cornell.edu/jsLDA/">jsLDA</a> computes the topic model in the browser as well as visualizing it in interesting ways.</p>
 
-<p><a href="http://www.jgoodwin.net/">Jonathan Goodwin</a>&rsquo;s journal topic-model browsers are very elegant: see e.g. <a href="http://jgoodwin.net/theory-browser/">this one, of literary theory journals</a>.</p>
-
 <p><a href="https://github.com/StanfordHCI/termite">Termite</a>, implemented by Jason Chuang and Ashley Jin (paper by <a href="http://vis.stanford.edu/papers/termite">Chuang, Manning, and Heer</a>), shows topics and words in visualizations geared toward the crucial task of assessing the quality of a model.</p>
-
-<p><a href="https://github.com/mroberts/stmBrowser">stmBrowser</a>, by Michael Freeman et al., generates interactive visualizations of models produced by the <a href="http://structuraltopicmodel.com/">Structural Topic Model</a> of Roberts, Stuart, and Tingley.</p>
-
-<p><a href="http://code.google.com/p/tmve/">Allison Chaney&rsquo;s Topic Model Visualization Engine</a> is a robust static-site generator.</p>
-
-<p><a href="http://code.google.com/p/topic-modeling-tool/">The Topic Modeling Tool</a> provides a GUI to make MALLET use easier.</p>
-
-
-
 
 <h2>Version history</h2>
 
 <p>Recent versions of dfr-browser can be downloaded from the repository <a href="https://github.com/agoldst/dfr-browser/releases">releases</a> page. The download links at the top of this page are for the most up-to-date code, which may be between released versions. I make no promises that any version will work without problems, but I welcome <a href="https://github.com/agoldst/dfr-browser/issues">bug reports</a>.</p>
+
+<p><em>This page last updated: July 11, 2022.</em></p>
 
 <p>June 8, 2016. v0.8a. Any metadata variable may be used for conditioning, not just year of publication.</p> 
 <p>April 7, 2016. v0.7. Further factoring of bibliography and metadata code, to make it easier to adapt this to non-JSTOR sources.</p>
@@ -192,7 +181,7 @@
     <!-- FOOTER  -->
     <div id="footer_wrap" class="outer">
       <footer class="inner">
-      <p class="copyright">dfr-browser maintained by <a href="http://andrewgoldstone.com">Andrew Goldstone</a> (<a href="http://github.com/agoldst">agoldst</a>) </p>
+      <p class="copyright">dfr-browser by <a href="http://andrewgoldstone.com">Andrew Goldstone</a> (<a href="http://github.com/agoldst">agoldst</a>) </p>
         <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
       </footer>
     </div>
