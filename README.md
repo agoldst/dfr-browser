@@ -5,7 +5,7 @@ These files use [d3](http://d3js.org) to provide a way to browse some of a topic
 This software is free to use, copy, modify, and distribute under the MIT license (which is to say, please credit me if you do use it). This project skews to my needs as a literary scholar and to my amateurishness as a programmer. No aspect of this code has been systematically tested. Sorry.
 
 I worked on this project in 2013–2019, so some parts of it are behind the times.
-I developed this brower specifically to explore models of texts from JSTOR's Data for Research service, which has been replaced by the [Constellate](https://constellate.org) "platform" for similar but differently-formatted data. This model-browser can be, and has been, adapted for topic models of other corpora. The information needed for adapting it can be found below: details may be fiddly but are not particularly complex (or at least they didn't seem so when I was actively working on this!).
+I developed this specifically to explore models of texts from JSTOR's Data for Research service, which has been replaced by the [Constellate](https://constellate.org) "platform" for similar but differently-formatted data. This model-browser can be, and has been, adapted for topic models of other corpora. The information needed for adapting it can be found below: details may be fiddly but are not particularly complex (or at least they didn't seem so when I was actively working on this!).
 
 While developing this, I used [mallet](https://mimno.github.io/Mallet) to generate topic models. The documentation below assumes a model output by mallet. Again, it is fiddly but not difficult to adjust for another topic-model output format.
 
